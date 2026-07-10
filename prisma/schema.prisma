@@ -1,0 +1,203 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+
+enum Role {
+  TEAM
+  MANAGER
+}
+
+enum CSStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PRStatus {
+  PENDING
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+}
+
+enum CurrentStage {
+  CS
+  PR
+  PO
+  PAR
+  PDD
+  MDD
+  MRD
+  WCD
+  COMPLETED
+  CANCELLED
+}
+
+enum SLAStatus {
+  ON_TRACK
+  AT_RISK
+  OVERDUE
+  COMPLETED
+}
+
+model User {
+  id              String   @id @default(cuid())
+  name            String
+  email           String   @unique
+  passwordHash    String
+  role            Role     @default(TEAM)
+  departmentId    String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  department          Department?           @relation(fields: [departmentId], references: [id])
+  procurementRequests ProcurementRequest[]
+  activityLogs        ActivityLog[]
+  notifications       Notification[]
+  sessions            Session[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  head      String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users               User[]
+  procurementRequests ProcurementRequest[]
+}
+
+model Vendor {
+  id            String   @id @default(cuid())
+  name          String
+  code          String   @unique
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  procurementRequests ProcurementRequest[]
+}
+
+model ProcurementRequest {
+  id          String   @id @default(cuid())
+
+  // Source Info
+  sourceNo          String   @unique
+  sourceDate        DateTime
+  sourceDescription String
+
+  // Department & Vendor
+  departmentId String
+  vendorId     String?
+
+  // Comparative Statement
+  comparativeDate  DateTime?
+  daysForCS        Int?
+  csStatus         CSStatus  @default(PENDING)
+
+  // Purchase Requisition
+  prNumber  String?
+  prDate    DateTime?
+  daysForPR Int?
+  prStatus  PRStatus  @default(PENDING)
+
+  // Purchase Order
+  poNumber String?
+  poDate   DateTime?
+
+  // PRL
+  prlNo   String?
+  prlDate DateTime?
+
+  // Dates
+  materialDispatchDate  DateTime?
+  materialReceivedDate  DateTime?
+  workCompletionDate    DateTime?
+  sourceCancellationDate DateTime?
+  paymentApprovalDate    DateTime?
+  paymentDoneDate        DateTime?
+
+  // Handler Info
+  currentStatusByHandler String?
+  nameOfHandler          String
+  noOfDays               Int?
+  currentStage           CurrentStage @default(CS)
+  pendingFrom            DateTime?
+  pendingDays            Int?
+
+  // SLA
+  slaStatus   SLAStatus @default(ON_TRACK)
+  slaCS       Int?
+  slaPR       Int?
+  slaPO       Int?
+  slaPAR      Int?
+  slaPDD      Int?
+  slaMDD      Int?
+  slaMRD      Int?
+  slaWCD      Int?
+
+  // Meta
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  department   Department   @relation(fields: [departmentId], references: [id])
+  vendor       Vendor?      @relation(fields: [vendorId], references: [id])
+  createdBy    User         @relation(fields: [createdById], references: [id])
+  activityLogs ActivityLog[]
+  notifications Notification[]
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  requestId String?
+  userId    String
+  action    String
+  fieldName String?
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime @default(now())
+
+  request ProcurementRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  user    User                @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  requestId String?
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user    User                @relation(fields: [userId], references: [id])
+  request ProcurementRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+}
