@@ -21,7 +21,7 @@ export function TopNav({ title }: TopNavProps) {
   const toggleMobileMenu = useLayoutStore((s) => s.toggleMobileMenu);
 
   return (
-    <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-6 gap-4 sticky top-0 z-30">
+    <header className="h-16 glass flex items-center px-6 gap-4 sticky top-0 z-30 shadow-sm border-b-0">
       {/* Mobile Menu Toggle */}
       <div className="flex items-center md:hidden -ml-2">
         <button
@@ -45,7 +45,7 @@ export function TopNav({ title }: TopNavProps) {
           <input
             type="text"
             placeholder="Search requests, vendors, departments..."
-            className="w-full pl-9 pr-4 py-2 text-sm bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all placeholder:text-muted-foreground"
+            className="w-full pl-9 pr-4 py-2 text-sm bg-white/40 border border-white/60 rounded-full focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all placeholder:text-muted-foreground shadow-inner backdrop-blur-sm"
           />
         </div>
       </div>
@@ -101,7 +101,7 @@ export function TopNav({ title }: TopNavProps) {
                 className="fixed inset-0 z-10"
                 onClick={() => setProfileOpen(false)}
               />
-              <div className="absolute right-0 mt-1 w-48 bg-background border border-border rounded-lg shadow-lg py-1 z-20">
+              <div className="absolute right-0 mt-2 w-48 glass-card rounded-xl py-1 z-20">
                 <div className="px-3 py-2 border-b border-border">
                   <p className="text-sm font-medium text-foreground">{session?.user?.name}</p>
                   <p className="text-xs text-muted-foreground">{session?.user?.email}</p>

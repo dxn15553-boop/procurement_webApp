@@ -32,9 +32,10 @@ export async function POST(req: Request) {
 
   const { password, ...rest } = parsed.data;
   const passwordHash = await bcrypt.hash(password ?? "changeme123", 12);
+  const mustChangePassword = !password; // If no password provided, they must change it
 
   const user = await prisma.user.create({
-    data: { ...rest, passwordHash },
+    data: { ...rest, passwordHash, mustChangePassword },
   });
 
   const { passwordHash: _pw, ...safeUser } = user;

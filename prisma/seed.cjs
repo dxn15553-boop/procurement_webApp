@@ -37,7 +37,7 @@ async function main() {
   const manager = await prisma.user.upsert({
     where: { email: "manager@procurex.com" },
     update: {},
-    create: { name: "Alex Manager", email: "manager@procurex.com", passwordHash: managerHash, role: "MANAGER", departmentId: departments[0].id },
+    create: { name: "Nagendra", email: "manager@procurex.com", passwordHash: managerHash, role: "MANAGER", departmentId: departments[0].id },
   });
 
   const teamMember = await prisma.user.upsert({

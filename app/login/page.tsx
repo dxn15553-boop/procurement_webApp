@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginInput } from "@/lib/validations";
-import { Eye, EyeOff, LogIn, ShieldCheck, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Package, Quote, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -46,113 +46,121 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center overflow-hidden">
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/building-bg.png')" }}
-      />
-      {/* Dark Overlay for Readability */}
-      <div className="absolute inset-0 bg-slate-950/60" />
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden font-sans selection:bg-white/30 selection:text-white">
+      
+      {/* Immersive VisionOS Abstract Background */}
+      <div className="absolute inset-0 bg-slate-900 z-0"></div>
+      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-500/40 blur-[140px] mix-blend-screen animate-pulse" style={{ animationDuration: '15s' }}></div>
+      <div className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] rounded-full bg-fuchsia-500/30 blur-[150px] mix-blend-screen animate-pulse" style={{ animationDuration: '20s' }}></div>
+      <div className="absolute top-[20%] right-[20%] w-[40%] h-[40%] rounded-full bg-cyan-500/30 blur-[130px] mix-blend-screen animate-pulse" style={{ animationDuration: '12s' }}></div>
 
-      {/* Grid Pattern Overlay */}
+      {/* Subtle glass texture overlay */}
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none mix-blend-overlay"></div>
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
 
-      {/* Futuristic Glowing Card */}
-      <div className="relative w-full max-w-[420px] mx-4 p-8 rounded-2xl bg-slate-950/70 backdrop-blur-2xl border border-blue-500/30 shadow-[0_0_50px_-12px_rgba(59,130,246,0.5)] z-10 fade-in slide-in-bottom-4 group hover:border-blue-500/50 transition-colors duration-500">
+      <div className="w-full max-w-[420px] p-4 relative z-10">
+        
+        {/* VisionOS Frosted Glass Panel */}
+        <div className="bg-white/10 backdrop-blur-[40px] p-10 rounded-[32px] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] border border-white/20 relative overflow-hidden">
+          
+          {/* Inner highlights */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none rounded-[32px]"></div>
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"></div>
 
-        {/* Decorative corner accents */}
-        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-400 rounded-tl-xl opacity-50" />
-        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-400 rounded-tr-xl opacity-50" />
-        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-400 rounded-bl-xl opacity-50" />
-        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-400 rounded-br-xl opacity-50" />
-
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-xl bg-black/50 border border-blue-500/50 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.6)] mb-4 transform group-hover:scale-110 transition-transform duration-500">
-            <ShieldCheck className="w-8 h-8 text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white mb-1 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">Procurement</h1>
-          <p className="text-xs font-mono text-blue-400/80 uppercase tracking-widest mt-1">Authentication</p>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-          {/* Email */}
-          <div className="space-y-1.5">
-            <label htmlFor="email" className="block text-xs font-mono text-blue-300/70 uppercase tracking-wider">
-              Network ID (Email)
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@company.com"
-              {...register("email")}
-              className="w-full px-4 py-3 rounded-lg border border-blue-500/20 bg-slate-950/50 text-blue-50 placeholder:text-blue-500/40 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 focus:bg-blue-950/30 transition-all text-sm shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] font-mono"
-            />
-            {errors.email && (
-              <p className="text-xs text-red-400 font-mono mt-1">{errors.email.message}</p>
-            )}
+          {/* Header */}
+          <div className="flex flex-col items-center mb-8 relative z-10 text-center">
+            <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mb-4 border border-white/20 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+              <Package className="w-8 h-8 text-white" strokeWidth={1.5} />
+            </div>
+            <h1 className="text-2xl font-medium tracking-tight text-white mb-1">
+              ProcureX
+            </h1>
+            <p className="text-sm font-light text-white/60">
+              Authorized Personnel Only
+            </p>
           </div>
 
-          {/* Password */}
-          <div className="space-y-1.5">
-            <label htmlFor="password" className="block text-xs font-mono text-blue-300/70 uppercase tracking-wider">
-              Access Code (Password)
-            </label>
-            <div className="relative">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 relative z-10">
+            
+            {/* Email */}
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-xs font-medium text-white/70 ml-1">
+                Workspace Email
+              </label>
               <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
-                placeholder="••••••••"
-                {...register("password")}
-                className="w-full px-4 py-3 pr-11 rounded-lg border border-blue-500/20 bg-slate-950/50 text-blue-50 placeholder:text-blue-500/40 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 focus:bg-blue-950/30 transition-all text-sm shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] font-mono"
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="name@company.com"
+                {...register("email")}
+                className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all text-sm shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]"
               />
+              {errors.email && (
+                <p className="text-xs font-medium text-red-300 mt-1.5 ml-1">{errors.email.message}</p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between ml-1 mr-1">
+                <label htmlFor="password" className="block text-xs font-medium text-white/70">
+                  Password
+                </label>
+              </div>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  {...register("password")}
+                  className="w-full pl-5 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all text-sm shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-white/50 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" strokeWidth={1.5} /> : <Eye className="w-5 h-5" strokeWidth={1.5} />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-xs font-medium text-red-300 mt-1.5 ml-1">{errors.password.message}</p>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between pt-2 px-1">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative flex items-center justify-center">
+                  <input type="checkbox" className="peer sr-only" />
+                  <div className="w-5 h-5 border border-white/20 rounded-md bg-white/5 peer-checked:bg-white peer-checked:border-white transition-all backdrop-blur-sm"></div>
+                  <svg className="absolute w-3.5 h-3.5 text-black pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span className="text-sm font-light text-white/70 group-hover:text-white transition-colors">Remember me</span>
+              </label>
+              
+              <a href="#" className="text-sm font-light text-white/70 hover:text-white transition-colors">
+                Recover access
+              </a>
+            </div>
+
+            {/* Submit */}
+            <div className="pt-4">
               <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-500/50 hover:text-blue-400 hover:drop-shadow-[0_0_5px_rgba(96,165,250,0.8)] transition-all p-1"
+                type="submit"
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-2 py-4 px-4 rounded-2xl bg-white text-black font-medium hover:bg-white/90 focus:outline-none active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,255,0.3)] text-sm"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" strokeWidth={1.5} />
+                ) : null}
+                {isLoading ? "Authenticating..." : "Enter Workspace"}
               </button>
             </div>
-            {errors.password && (
-              <p className="text-xs text-red-400 font-mono mt-1">{errors.password.message}</p>
-            )}
-          </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-lg bg-blue-600/20 text-blue-300 font-bold text-sm border border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.3)] hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] hover:bg-blue-500/30 hover:text-white hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all disabled:opacity-50 disabled:pointer-events-none mt-6 uppercase tracking-widest font-mono group-hover:shadow-[0_0_20px_rgba(37,99,235,0.4)]"
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <LogIn className="w-4 h-4" />
-            )}
-            {isLoading ? "Authenticating..." : "Initialize Session"}
-          </button>
-        </form>
-
-        {/* Demo credentials */}
-        <div className="mt-8 pt-6 border-t border-blue-500/20">
-          <p className="text-[10px] font-mono font-bold text-blue-500/50 mb-3 uppercase tracking-widest text-center">Authorized Personnel Only</p>
-          <div className="grid grid-cols-2 gap-3 text-xs text-slate-300 font-mono">
-            <div className="p-3 rounded border border-blue-900/50 bg-black/40 flex flex-col gap-1 hover:border-blue-500/40 hover:bg-blue-950/30 transition-colors cursor-default group/demo">
-              <span className="text-[9px] font-bold text-blue-400 group-hover/demo:text-blue-300">OP-LEVEL 1 (MANAGER)</span>
-              <span className="truncate text-slate-400">manager@procurex.com</span>
-              <span className="text-slate-500">manager123</span>
-            </div>
-            <div className="p-3 rounded border border-emerald-900/50 bg-black/40 flex flex-col gap-1 hover:border-emerald-500/40 hover:bg-emerald-950/30 transition-colors cursor-default group/demo">
-              <span className="text-[9px] font-bold text-emerald-400 group-hover/demo:text-emerald-300">OP-LEVEL 2 (TEAM)</span>
-              <span className="truncate text-slate-400">john@procurex.com</span>
-              <span className="text-slate-500">team123</span>
-            </div>
-          </div>
+          </form>
         </div>
+
       </div>
     </div>
   );

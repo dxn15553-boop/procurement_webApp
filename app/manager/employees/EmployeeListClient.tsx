@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Users, User, Mail, Shield, Building2, RefreshCw } from "lucide-react";
+import { Plus, Users, User, Mail, Shield, Building2, RefreshCw, KeyRound, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { userSchema, type UserInput } from "@/lib/validations";
@@ -28,6 +28,7 @@ export function EmployeeListClient({ initialEmployees, departments }: { initialE
   const [employees, setEmployees] = useState<Employee[]>(initialEmployees);
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resettingId, setResettingId] = useState<string | null>(null);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<UserInput>({
     resolver: zodResolver(userSchema),
@@ -64,6 +65,28 @@ export function EmployeeListClient({ initialEmployees, departments }: { initialE
       toast.error("An error occurred");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to reset ${name}'s password to 'changeme123'?`)) return;
+    
+    setResettingId(id);
+    try {
+      const res = await fetch(`/api/employees/${id}/reset-password`, {
+        method: "PATCH",
+      });
+
+      if (!res.ok) {
+        toast.error("Failed to reset password");
+        return;
+      }
+
+      toast.success(`${name}'s password has been reset successfully!`);
+    } catch {
+      toast.error("An error occurred while resetting password");
+    } finally {
+      setResettingId(null);
     }
   };
 
@@ -127,28 +150,40 @@ export function EmployeeListClient({ initialEmployees, departments }: { initialE
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {employees.map((e) => (
-          <div key={e.id} className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden">
+          <div key={e.id} className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full flex items-center justify-center pointer-events-none">
               <Users className="w-8 h-8 text-primary/10" />
             </div>
-            <div>
+            
+            <div className="relative">
               <div className="flex items-center gap-2">
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${e.role === "MANAGER" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
                   {e.role}
                 </span>
                 <span className="text-xs text-muted-foreground">{e.isActive ? "Active" : "Inactive"}</span>
               </div>
-              <h3 className="font-semibold text-foreground text-sm mt-2">{e.name}</h3>
+              <h3 className="font-semibold text-foreground text-sm mt-2 pr-8">{e.name}</h3>
+              
+              {/* Reset Password Button */}
+              <button
+                onClick={() => handleResetPassword(e.id, e.name)}
+                disabled={resettingId === e.id}
+                className="absolute right-0 top-6 p-2 rounded-full bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                title="Reset Password to default"
+              >
+                {resettingId === e.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+              </button>
             </div>
-            <div className="space-y-1.5 text-xs text-muted-foreground">
+            
+            <div className="space-y-1.5 text-xs text-muted-foreground relative">
               <div className="flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5" />
-                <span>{e.email}</span>
+                <span className="truncate">{e.email}</span>
               </div>
               {e.department && (
                 <div className="flex items-center gap-1.5">
                   <Building2 className="w-3.5 h-3.5" />
-                  <span>{e.department.name}</span>
+                  <span className="truncate">{e.department.name}</span>
                 </div>
               )}
             </div>

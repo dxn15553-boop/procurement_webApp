@@ -382,7 +382,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
       )}
 
       {/* Modern Inline Editable Grid */}
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden flex flex-col flex-1 min-h-[600px]">
+      <div className="rounded-xl glass-card overflow-hidden flex flex-col flex-1 min-h-[600px] shadow-lg border-white/20">
         <div className="overflow-auto flex-1 custom-scrollbar">
           <table className="w-full text-sm table-fixed min-w-[5000px] border-collapse">
             <thead>

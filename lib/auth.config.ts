@@ -11,10 +11,21 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const role = auth?.user?.role;
+      const mustChangePassword = (auth?.user as any)?.mustChangePassword;
 
       const isAuthPage = nextUrl.pathname.startsWith("/login");
       const isTeamRoute = nextUrl.pathname.startsWith("/team");
       const isManagerRoute = nextUrl.pathname.startsWith("/manager");
+      const isChangePasswordRoute = nextUrl.pathname.startsWith("/change-password");
+
+      if (isLoggedIn) {
+        if (mustChangePassword && !isChangePasswordRoute) {
+          return Response.redirect(new URL("/change-password", nextUrl));
+        }
+        if (!mustChangePassword && isChangePasswordRoute) {
+          return Response.redirect(new URL(role === "MANAGER" ? "/manager" : "/team", nextUrl));
+        }
+      }
 
       if (isLoggedIn && isAuthPage) {
         if (role === "MANAGER") {
@@ -23,7 +34,7 @@ export const authConfig = {
         return Response.redirect(new URL("/team", nextUrl));
       }
 
-      if (!isLoggedIn && (isTeamRoute || isManagerRoute)) {
+      if (!isLoggedIn && (isTeamRoute || isManagerRoute || isChangePasswordRoute)) {
         return false; // Redirects to signIn page (login)
       }
 
@@ -41,6 +52,7 @@ export const authConfig = {
       if (user) {
         token.role = (user as { role?: string }).role;
         token.id = user.id;
+        token.mustChangePassword = (user as any).mustChangePassword;
       }
       return token;
     },
@@ -48,6 +60,7 @@ export const authConfig = {
       if (token) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.mustChangePassword = token.mustChangePassword as boolean;
       }
       return session;
     },

@@ -155,14 +155,14 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
     COMPLETED: "text-blue-600 bg-blue-50",
   };
 
-  const inputClass = "w-full px-3 py-2 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed";
+  const inputClass = "w-full px-4 py-2 text-sm border border-white/60 rounded-xl bg-white/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-inner disabled:opacity-50 disabled:cursor-not-allowed";
   const labelClass = "block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide";
   const calcClass = "w-full px-3 py-2 text-sm border border-dashed border-border rounded-lg bg-muted/30 text-muted-foreground cursor-default";
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Section: Source Info */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="glass-card p-6">
         <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">1</span>
           Source Information
@@ -202,7 +202,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       </div>
 
       {/* Section: Comparative Statement */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="glass-card p-6">
         <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">2</span>
           Comparative Statement (CS)
@@ -226,7 +226,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       </div>
 
       {/* Section: PR */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="glass-card p-6">
         <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">3</span>
           Purchase Requisition (PR)
@@ -254,7 +254,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       </div>
 
       {/* Section: PO & PRL */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="glass-card p-6">
         <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">4</span>
           Purchase Order & PRL
@@ -280,7 +280,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       </div>
 
       {/* Section: Dates */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="glass-card p-6">
         <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center text-xs font-bold">5</span>
           Milestone Dates
@@ -306,7 +306,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       </div>
 
       {/* Section: Status & Handler */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="glass-card p-6">
         <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">6</span>
           Status & Handler

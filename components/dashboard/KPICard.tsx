@@ -90,7 +90,7 @@ export function KPICard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border border-border bg-card p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-default",
+        "stat-card",
         className
       )}
     >

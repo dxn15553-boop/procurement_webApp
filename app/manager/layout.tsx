@@ -13,7 +13,7 @@ export default async function ManagerLayout({
   if (session.user.role !== "MANAGER") redirect("/team");
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-transparent overflow-hidden">
       <Sidebar role="MANAGER" />
       <div className="flex-1 flex flex-col min-w-0">
         <TopNav />

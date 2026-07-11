@@ -43,7 +43,7 @@ async function main() {
     where: { email: "manager@procurex.com" },
     update: {},
     create: {
-      name: "Alex Manager",
+      name: "Nagendra",
       email: "manager@procurex.com",
       passwordHash: managerHash,
       role: "MANAGER",
