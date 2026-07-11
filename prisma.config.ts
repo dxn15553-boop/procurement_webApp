@@ -1,6 +1,9 @@
 import { defineConfig } from "prisma/config";
+import dotenv from "dotenv";
 
-const dbUrl = process.env.DATABASE_URL ?? "file:D:/DXN/procurement/prisma/dev.db";
+dotenv.config();
+
+const dbUrl = process.env.DATABASE_URL;
 
 export default defineConfig({
   schema: "./prisma/schema.prisma",
