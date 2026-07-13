@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Let Next.js handle Prisma automatically
 };
 
 export default nextConfig;

@@ -27,3 +27,5 @@ export async function POST(req: Request) {
   const department = await prisma.department.create({ data: parsed.data });
   return NextResponse.json({ department }, { status: 201 });
 }
+
+export const runtime = "nodejs";

@@ -75,3 +75,5 @@ export async function GET() {
 
   return NextResponse.json({ kpi, department, stage, monthly: monthlyData });
 }
+
+export const runtime = "nodejs";

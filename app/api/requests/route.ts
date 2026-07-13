@@ -228,3 +228,5 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ request }, { status: 201 });
 }
+
+export const runtime = "nodejs";

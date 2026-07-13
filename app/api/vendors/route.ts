@@ -27,3 +27,5 @@ export async function POST(req: Request) {
   const vendor = await prisma.vendor.create({ data: parsed.data });
   return NextResponse.json({ vendor }, { status: 201 });
 }
+
+export const runtime = "nodejs";

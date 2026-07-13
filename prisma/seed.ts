@@ -1,13 +1,5 @@
-import { PrismaClient } from "@prisma/client";
-import { createClient } from "@libsql/client";
+import { prisma } from "../lib/prisma";
 import bcrypt from "bcryptjs";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
-import path from "path";
-
-const dbPath = path.resolve(process.cwd(), "prisma", "dev.db").replace(/\\/g, "/");
-const adapter = new PrismaLibSql({ url: `file:///${dbPath}` });
-const prisma = new PrismaClient({ adapter });
-
 
 async function main() {
   console.log("🌱 Seeding database...");

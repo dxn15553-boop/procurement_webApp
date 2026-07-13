@@ -41,3 +41,5 @@ export async function POST(req: Request) {
   const { passwordHash: _pw, ...safeUser } = user;
   return NextResponse.json({ user: safeUser }, { status: 201 });
 }
+
+export const runtime = "nodejs";
