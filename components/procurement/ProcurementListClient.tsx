@@ -129,7 +129,7 @@ export function ProcurementListClient({ role }: ProcurementListClientProps) {
         {role === "TEAM" && (
           <Link
             href="/team/requests/new"
-            className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium whitespace-nowrap w-full sm:w-auto justify-center"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl transition-all shadow-sm hover:shadow-md font-medium text-sm flex items-center gap-2 w-full sm:w-auto justify-center"
           >
             <Plus className="w-4 h-4" />
             New Request

@@ -341,7 +341,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
   };
 
   const cellInputClass = "w-full h-full min-h-[40px] px-3 py-2 text-[13px] text-foreground bg-transparent border border-transparent hover:bg-muted/50 focus:bg-background focus:border-primary/50 focus:ring-1 focus:ring-primary/50 rounded-md outline-none transition-all placeholder:text-muted-foreground/50";
-  const headerCellClass = "px-4 py-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-r border-b border-border bg-muted/40 backdrop-blur-md whitespace-nowrap text-left sticky top-0 z-10 select-none";
+  const headerCellClass = "px-4 py-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-r border-b border-border bg-white/95 backdrop-blur-md text-balance text-left sticky top-0 z-10 select-none";
   const bodyCellClass = "p-1.5 border-r border-b border-border align-middle min-w-[160px] relative group";
 
   return (
@@ -387,7 +387,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
           <table className="w-full text-sm table-fixed min-w-[5000px] border-collapse">
             <thead>
               <tr>
-                <th className="px-4 py-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-r border-b border-border bg-muted/80 backdrop-blur-md sticky left-0 z-20 text-center w-24 select-none">
+                <th className="px-4 py-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-r border-b border-border bg-white/95 backdrop-blur-md sticky left-0 z-20 text-center w-24 select-none shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                   Actions
                 </th>
                 {isManager && <th className={headerCellClass} style={{ width: "150px" }}>Employee Name</th>}
@@ -407,7 +407,8 @@ export function ProcurementSpreadsheet({ session }: Props) {
                 <th className={headerCellClass} style={{ width: "120px" }}>PRL DATE</th>
                 <th className={headerCellClass} style={{ width: "150px" }}>Material Dispatch Date</th>
                 <th className={headerCellClass} style={{ width: "150px" }}>Material Received Date</th>
-                <th className={headerCellClass} style={{ width: "240px" }}>Work Completion Date / Source Cancellation Date</th>
+                <th className={headerCellClass} style={{ width: "150px" }}>Work Completion Date</th>
+                <th className={headerCellClass} style={{ width: "150px" }}>Source Cancellation Date</th>
                 <th className={headerCellClass} style={{ width: "150px" }}>Name of Handler *</th>
                 <th className={headerCellClass} style={{ width: "160px" }}>Current Status by Handler</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Current Stage</th>
@@ -433,14 +434,14 @@ export function ProcurementSpreadsheet({ session }: Props) {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
-                    <td className="p-3 border-r border-b border-border" colSpan={isManager ? 38 : 37}>
+                    <td className="p-3 border-r border-b border-border" colSpan={isManager ? 39 : 38}>
                       <div className="h-4 rounded shimmer w-full" />
                     </td>
                   </tr>
                 ))
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td className="p-12 text-center text-muted-foreground" colSpan={isManager ? 38 : 37}>
+                  <td className="p-12 text-center text-muted-foreground" colSpan={isManager ? 39 : 38}>
                     No requests found in this sheet.
                   </td>
                 </tr>
@@ -453,7 +454,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     }`}
                   >
                     {/* Actions sticky Left */}
-                    <td className="p-1.5 border-r border-b border-border sticky left-0 bg-muted/30 backdrop-blur-md z-10 text-center whitespace-nowrap w-24 shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
+                    <td className="p-1.5 border-r border-b border-border sticky left-0 bg-white/95 backdrop-blur-md z-10 text-center whitespace-nowrap w-24 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                       <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => handleSaveRow(row)}
@@ -660,24 +661,26 @@ export function ProcurementSpreadsheet({ session }: Props) {
                       />
                     </td>
 
-                    {/* Work Completion Date / Source Cancellation Date */}
+                    {/* Work Completion Date */}
                     <td className={bodyCellClass}>
-                      <div className="flex divide-x divide-border h-full">
-                        <input
-                          type="date"
-                          value={row.workCompletionDate}
-                          onChange={(e) => handleCellChange(row.id, "workCompletionDate", e.target.value)}
-                          className="w-1/2 h-full px-1.5 py-1 text-xs bg-transparent border-0 focus:ring-1 focus:ring-blue-500 focus:bg-background outline-none"
-                          title="Work Completion Date"
-                        />
-                        <input
-                          type="date"
-                          value={row.sourceCancellationDate}
-                          onChange={(e) => handleCellChange(row.id, "sourceCancellationDate", e.target.value)}
-                          className="w-1/2 h-full px-1.5 py-1 text-xs bg-transparent border-0 focus:ring-1 focus:ring-blue-500 focus:bg-background outline-none"
-                          title="Source Cancellation Date"
-                        />
-                      </div>
+                      <input
+                        type="date"
+                        value={row.workCompletionDate}
+                        onChange={(e) => handleCellChange(row.id, "workCompletionDate", e.target.value)}
+                        className={cellInputClass}
+                        title="Work Completion Date"
+                      />
+                    </td>
+
+                    {/* Source Cancellation Date */}
+                    <td className={bodyCellClass}>
+                      <input
+                        type="date"
+                        value={row.sourceCancellationDate}
+                        onChange={(e) => handleCellChange(row.id, "sourceCancellationDate", e.target.value)}
+                        className={cellInputClass}
+                        title="Source Cancellation Date"
+                      />
                     </td>
 
                     {/* Name of Handler */}
