@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Store, User, Mail, Phone, MapPin, RefreshCw } from "lucide-react";
+import { Plus, Store, User, Mail, Phone, MapPin, RefreshCw, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { vendorSchema, type VendorInput } from "@/lib/validations";
@@ -54,6 +54,19 @@ export function VendorListClient({ initialVendors }: { initialVendors: Vendor[] 
       toast.error("An error occurred");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this vendor?")) return;
+    try {
+      const res = await fetch(`/api/vendors/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setVendors((prev) => prev.filter((v) => v.id !== id));
+      toast.success("Vendor deleted successfully");
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete vendor");
     }
   };
 
@@ -118,6 +131,13 @@ export function VendorListClient({ initialVendors }: { initialVendors: Vendor[] 
             <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full flex items-center justify-center pointer-events-none">
               <Store className="w-8 h-8 text-primary/10" />
             </div>
+            <button 
+              onClick={() => handleDelete(v.id)}
+              className="absolute top-3 right-3 p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-md transition-colors z-10 bg-background/50 backdrop-blur-sm"
+              title="Delete Vendor"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase">{v.code}</span>

@@ -54,6 +54,19 @@ export function DepartmentListClient({ initialDepartments }: { initialDepartment
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this department?")) return;
+    try {
+      const res = await fetch(`/api/departments/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setDepartments((prev) => prev.filter((d) => d.id !== id));
+      toast.success("Department deleted successfully");
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete department");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -102,6 +115,13 @@ export function DepartmentListClient({ initialDepartments }: { initialDepartment
             <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full flex items-center justify-center pointer-events-none">
               <Building2 className="w-8 h-8 text-primary/10" />
             </div>
+            <button 
+              onClick={() => handleDelete(d.id)}
+              className="absolute top-3 right-3 p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-md transition-colors z-10 bg-background/50 backdrop-blur-sm"
+              title="Delete Department"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase">{d.code}</span>

@@ -5,15 +5,21 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   // Create departments
-  const departments = await Promise.all([
-    prisma.department.upsert({ where: { code: "COFFEE" }, update: {}, create: { name: "Coffee", code: "COFFEE", head: "John Smith" } }),
-    prisma.department.upsert({ where: { code: "COSMETICS" }, update: {}, create: { name: "Cosmetics", code: "COSMETICS", head: "Sarah Johnson" } }),
-    prisma.department.upsert({ where: { code: "AGRO" }, update: {}, create: { name: "Agro Foods", code: "AGRO", head: "Michael Chen" } }),
-    prisma.department.upsert({ where: { code: "NUTRA" }, update: {}, create: { name: "Nutraceutical", code: "NUTRA", head: "David Lee" } }),
-    prisma.department.upsert({ where: { code: "FINANCE" }, update: {}, create: { name: "Finance", code: "FINANCE", head: "Manager" } }),
-    prisma.department.upsert({ where: { code: "ADMIN" }, update: {}, create: { name: "Admin", code: "ADMIN", head: "Manager" } }),
-    prisma.department.upsert({ where: { code: "PUB" }, update: {}, create: { name: "Publications", code: "PUB", head: "Manager" } }),
-  ]);
+  const departmentNames = [
+    "Agronomy", "Ganoderma", "PF", "Spirulina", "IWH", 
+    "Maintenance", "PMD", "Wet Processing", "Kombucha", 
+    "QC", "QA", "Hospitality", "Management"
+  ];
+  
+  const departments = await Promise.all(
+    departmentNames.map((name) => 
+      prisma.department.upsert({
+        where: { code: name.toUpperCase().replace(/\s+/g, "_") },
+        update: { name },
+        create: { name, code: name.toUpperCase().replace(/\s+/g, "_"), head: "Manager" }
+      })
+    )
+  );
 
   console.log(`✅ Created ${departments.length} departments`);
 

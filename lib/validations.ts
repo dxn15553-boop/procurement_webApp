@@ -38,6 +38,10 @@ export const procurementSchema = z.object({
   slaMDD: z.number().optional().nullable(),
   slaMRD: z.number().optional().nullable(),
   slaWCD: z.number().optional().nullable(),
+  poStatus: z.string().optional().nullable(),
+  daysForPO: z.number().optional().nullable(),
+  paymentStatus: z.string().optional().nullable(),
+  daysForPayment: z.number().optional().nullable(),
 });
 
 export const departmentSchema = z.object({

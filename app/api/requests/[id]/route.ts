@@ -73,6 +73,21 @@ function cleanPRStatus(val: string | null | undefined): "PENDING" | "IN_PROGRESS
   return "PENDING";
 }
 
+function cleanPOStatus(val: string | null | undefined): "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" {
+  const v = (val || "").toUpperCase();
+  if (v.includes("CANCEL")) return "CANCELLED";
+  if (v.includes("COMPLET")) return "COMPLETED";
+  if (v.includes("PROGRESS")) return "IN_PROGRESS";
+  return "PENDING";
+}
+
+function cleanPaymentStatus(val: string | null | undefined): "PENDING" | "IN_PROGRESS" | "COMPLETED" {
+  const v = (val || "").toUpperCase();
+  if (v.includes("COMPLET")) return "COMPLETED";
+  if (v.includes("PROGRESS")) return "IN_PROGRESS";
+  return "PENDING";
+}
+
 function cleanStage(val: string | null | undefined): "CS" | "PR" | "PO" | "PAR" | "PDD" | "MDD" | "MRD" | "WCD" | "COMPLETED" | "CANCELLED" {
   const v = (val || "").toUpperCase();
   if (v.includes("CS")) return "CS";
@@ -143,8 +158,23 @@ export async function PUT(
   const currentStage = cleanStage(data.currentStage);
   const csStatus = cleanCSStatus(data.csStatus);
   const prStatus = cleanPRStatus(data.prStatus);
+  const poStatus = cleanPOStatus(data.poStatus);
+  const paymentStatus = cleanPaymentStatus(data.paymentStatus);
 
-  const calc = calculateAllFields({ sourceDate, comparativeDate, prDate, pendingFrom, currentStage });
+  const poDate = parseDate(data.poDate);
+  const prlDate = parseDate(data.prlDate);
+  const paymentDoneDate = parseDate(data.paymentDoneDate);
+
+  const calc = calculateAllFields({ 
+    sourceDate, 
+    comparativeDate, 
+    prDate, 
+    poDate,
+    prlDate,
+    paymentDoneDate,
+    pendingFrom, 
+    currentStage 
+  });
 
   const updated = await prisma.procurementRequest.update({
     where: { id },
@@ -162,15 +192,19 @@ export async function PUT(
       daysForPR: calc.daysForPR,
       prStatus: prStatus,
       poNumber: data.poNumber ?? null,
-      poDate: parseDate(data.poDate),
+      poDate,
+      poStatus,
+      daysForPO: calc.daysForPO,
       prlNo: data.prlNo ?? null,
-      prlDate: parseDate(data.prlDate),
+      prlDate,
       materialDispatchDate: parseDate(data.materialDispatchDate),
       materialReceivedDate: parseDate(data.materialReceivedDate),
       workCompletionDate: parseDate(data.workCompletionDate),
       sourceCancellationDate: parseDate(data.sourceCancellationDate),
       paymentApprovalDate: parseDate(data.paymentApprovalDate),
-      paymentDoneDate: parseDate(data.paymentDoneDate),
+      paymentDoneDate,
+      paymentStatus,
+      daysForPayment: calc.daysForPayment,
       currentStatusByHandler: data.currentStatusByHandler ?? null,
       nameOfHandler: data.nameOfHandler,
       noOfDays: calc.noOfDays,
@@ -220,9 +254,20 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  await prisma.activityLog.deleteMany({ where: { requestId: id } });
-  await prisma.notification.deleteMany({ where: { requestId: id } });
-  await prisma.procurementRequest.delete({ where: { id } });
+  
+  await prisma.procurementRequest.update({ 
+    where: { id },
+    data: { isDeleted: true }
+  });
+
+  await prisma.activityLog.create({
+    data: {
+      requestId: id,
+      userId: session.user.id!,
+      action: "DELETED",
+      newValue: "Record was soft-deleted",
+    },
+  });
 
   return NextResponse.json({ success: true });
 }

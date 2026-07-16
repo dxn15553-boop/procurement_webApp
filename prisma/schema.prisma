@@ -30,6 +30,19 @@ enum PRStatus {
   REJECTED
 }
 
+enum POStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
 enum CurrentStage {
   CS
   PR
@@ -131,6 +144,8 @@ model ProcurementRequest {
   // Purchase Order
   poNumber String?
   poDate   DateTime?
+  poStatus POStatus  @default(PENDING)
+  daysForPO Int?
 
   // PRL
   prlNo   String?
@@ -143,6 +158,11 @@ model ProcurementRequest {
   sourceCancellationDate DateTime?
   paymentApprovalDate    DateTime?
   paymentDoneDate        DateTime?
+  paymentStatus          PaymentStatus @default(PENDING)
+  daysForPayment         Int?
+
+  // Entry Management
+  isDeleted              Boolean @default(false)
 
   // Handler Info
   currentStatusByHandler String?

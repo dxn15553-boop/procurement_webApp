@@ -27,8 +27,12 @@ interface RowData {
   prStatus: string;
   poNumber: string;
   poDate: string;
+  poStatus: string;
+  daysForPO: number | null;
   prlNo: string;
   prlDate: string;
+  paymentStatus: string;
+  daysForPayment: number | null;
   materialDispatchDate: string;
   materialReceivedDate: string;
   workCompletionDate: string;
@@ -71,12 +75,19 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
   // Manager Sheet selection state
   const [activeTab, setActiveTab] = useState<string>("All");
+  const [handlers, setHandlers] = useState<{id: string, name: string}[]>([]);
 
   const isManager = session.user.role === "MANAGER";
 
   // Fetch initial user requests
   const loadData = useCallback((silent = false) => {
     if (!silent) setLoading(true);
+    
+    fetch("/api/users")
+      .then((r) => r.json())
+      .then((u) => setHandlers(u.users ?? []))
+      .catch(() => {});
+
     fetch("/api/requests")
       .then((r) => r.json())
       .then((reqData) => {
@@ -96,8 +107,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
           prStatus: r.prStatus ?? "PENDING",
           poNumber: r.poNumber ?? "",
           poDate: r.poDate ? r.poDate.split("T")[0] : "",
+          poStatus: r.poStatus ?? "PENDING",
+          daysForPO: r.daysForPO ?? null,
           prlNo: r.prlNo ?? "",
           prlDate: r.prlDate ? r.prlDate.split("T")[0] : "",
+          paymentStatus: r.paymentStatus ?? "PENDING",
+          daysForPayment: r.daysForPayment ?? null,
           materialDispatchDate: r.materialDispatchDate ? r.materialDispatchDate.split("T")[0] : "",
           materialReceivedDate: r.materialReceivedDate ? r.materialReceivedDate.split("T")[0] : "",
           workCompletionDate: r.workCompletionDate ? r.workCompletionDate.split("T")[0] : "",
@@ -180,6 +195,8 @@ export function ProcurementSpreadsheet({ session }: Props) {
   const calcRowFormulas = useCallback((row: RowData): RowData => {
     let daysForCS = null;
     let daysForPR = null;
+    let daysForPO = null;
+    let daysForPayment = null;
     let noOfDays = null;
     let pendingDays = null;
 
@@ -189,6 +206,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
     if (row.comparativeDate && row.prDate) {
       try { daysForPR = Math.max(0, differenceInDays(parseISO(row.prDate), parseISO(row.comparativeDate))); } catch {}
     }
+    if (row.prDate && row.poDate) {
+      try { daysForPO = Math.max(0, differenceInDays(parseISO(row.poDate), parseISO(row.prDate))); } catch {}
+    }
+    if (row.prlDate && row.paymentDoneDate) {
+      try { daysForPayment = Math.max(0, differenceInDays(parseISO(row.paymentDoneDate), parseISO(row.prlDate))); } catch {}
+    }
     if (row.sourceDate) {
       try { noOfDays = Math.max(0, differenceInDays(new Date(), parseISO(row.sourceDate))); } catch {}
     }
@@ -196,20 +219,32 @@ export function ProcurementSpreadsheet({ session }: Props) {
       try { pendingDays = Math.max(0, differenceInDays(new Date(), parseISO(row.pendingFrom))); } catch {}
     }
 
+    let currentStage = row.currentStage || "CS";
+    if (row.sourceCancellationDate) currentStage = "CANCELLED";
+    else if (row.workCompletionDate) currentStage = "COMPLETED";
+    else if (row.materialReceivedDate) currentStage = "WCD";
+    else if (row.materialDispatchDate) currentStage = "MRD";
+    else if (row.paymentDoneDate) currentStage = "MDD";
+    else if (row.paymentApprovalDate) currentStage = "PDD";
+    else if (row.poDate) currentStage = "PAR";
+    else if (row.prDate) currentStage = "PO";
+    else if (row.comparativeDate) currentStage = "PR";
+    else currentStage = "CS";
+
     let slaStatus = "ON_TRACK";
-    if (row.currentStage && row.currentStage !== "COMPLETED" && row.currentStage !== "CANCELLED") {
-      const customThreshold = (row as any)[`sla${row.currentStage}`];
-      const threshold = customThreshold != null ? customThreshold : SLA_THRESHOLDS[row.currentStage as keyof typeof SLA_THRESHOLDS];
+    if (currentStage && currentStage !== "COMPLETED" && currentStage !== "CANCELLED") {
+      const customThreshold = (row as any)[`sla${currentStage}`];
+      const threshold = customThreshold != null ? customThreshold : SLA_THRESHOLDS[currentStage as keyof typeof SLA_THRESHOLDS];
       if (threshold && pendingDays != null) {
         const ratio = pendingDays / threshold;
         if (ratio >= 1) slaStatus = "OVERDUE";
         else if (ratio >= 0.75) slaStatus = "AT_RISK";
       }
-    } else if (row.currentStage === "COMPLETED") {
+    } else if (currentStage === "COMPLETED") {
       slaStatus = "COMPLETED";
     }
 
-    return { ...row, daysForCS, daysForPR, noOfDays, pendingDays, slaStatus, isDirty: true };
+    return { ...row, daysForCS, daysForPR, daysForPO, daysForPayment, noOfDays, pendingDays, currentStage, slaStatus, isDirty: true };
   }, []);
 
   // Handle cell edit change
@@ -243,8 +278,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
       prStatus: "PENDING",
       poNumber: "",
       poDate: "",
+      poStatus: "PENDING",
+      daysForPO: null,
       prlNo: "",
       prlDate: "",
+      paymentStatus: "PENDING",
+      daysForPayment: null,
       materialDispatchDate: "",
       materialReceivedDate: "",
       workCompletionDate: "",
@@ -342,6 +381,18 @@ export function ProcurementSpreadsheet({ session }: Props) {
     }
   };
 
+  const handleDeleteRow = async (id: string, sourceNo: string) => {
+    if (!confirm(`Are you sure you want to delete request ${sourceNo}?`)) return;
+    try {
+      const res = await fetch(`/api/requests/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete request");
+      setRows((prev) => prev.filter((r) => r.id !== id));
+      toast.success(`Request ${sourceNo} deleted successfully`);
+    } catch {
+      toast.error("Failed to delete request");
+    }
+  };
+
   const cellInputClass = "w-full h-full min-h-[40px] px-3 py-2 text-[13px] text-foreground bg-transparent border border-transparent hover:bg-muted/50 focus:bg-background focus:border-primary/50 focus:ring-1 focus:ring-primary/50 rounded-md outline-none transition-all placeholder:text-muted-foreground/50";
   const headerCellClass = "px-4 py-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-r border-b border-border bg-white/95 backdrop-blur-md text-balance text-left sticky top-0 z-10 select-none";
   const bodyCellClass = "p-1.5 border-r border-b border-border align-middle min-w-[160px] relative group";
@@ -402,8 +453,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
                 <th className={headerCellClass} style={{ width: "120px" }}>PR Date</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>PO Number</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>PO Date</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>PO Status</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>Days for PO</th>
                 <th className={headerCellClass} style={{ width: "150px" }}>Payment Approval Date</th>
                 <th className={headerCellClass} style={{ width: "150px" }}>Payment Done Date</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>Payment Status</th>
+                <th className={headerCellClass} style={{ width: "130px" }}>Days for Payment</th>
                 <th className={headerCellClass} style={{ width: "160px" }}>Vendor Name</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>PRL NO</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>PRL DATE</th>
@@ -436,14 +491,14 @@ export function ProcurementSpreadsheet({ session }: Props) {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
-                    <td className="p-3 border-r border-b border-border" colSpan={isManager ? 39 : 38}>
+                    <td className="p-3 border-r border-b border-border" colSpan={isManager ? 43 : 42}>
                       <div className="h-4 rounded shimmer w-full" />
                     </td>
                   </tr>
                 ))
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td className="p-12 text-center text-muted-foreground" colSpan={isManager ? 39 : 38}>
+                  <td className="p-12 text-center text-muted-foreground" colSpan={isManager ? 43 : 42}>
                     No requests found in this sheet.
                   </td>
                 </tr>
@@ -486,13 +541,24 @@ export function ProcurementSpreadsheet({ session }: Props) {
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         ) : (
-                          <Link
-                            href={isManager ? `/manager/requests/${row.id}` : `/team/requests/${row.id}`}
-                            className="p-1.5 rounded bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors inline-block"
-                            title="View Detail"
-                          >
-                            <ArrowRight className="w-3 h-3" />
-                          </Link>
+                          <>
+                            <Link
+                              href={isManager ? `/manager/requests/${row.id}` : `/team/requests/${row.id}`}
+                              className="p-1.5 rounded bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors inline-block"
+                              title="View Detail"
+                            >
+                              <ArrowRight className="w-3 h-3" />
+                            </Link>
+                            {isManager && (
+                              <button
+                                onClick={() => handleDeleteRow(row.id, row.sourceNo)}
+                                className="p-1.5 rounded bg-red-50 text-red-600 hover:bg-red-100 transition-colors inline-block"
+                                title="Delete Request"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
@@ -506,9 +572,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Source No */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="text"
-                        value={row.sourceNo}
+                      <input type="text" value={row.sourceNo} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "sourceNo", e.target.value)}
                         className={cellInputClass}
                       />
@@ -516,9 +580,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Source Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="date"
-                        value={row.sourceDate}
+                      <input type="date" value={row.sourceDate} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "sourceDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -526,9 +588,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Source Description */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="text"
-                        value={row.sourceDescription}
+                      <input type="text" value={row.sourceDescription} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "sourceDescription", e.target.value)}
                         className={cellInputClass}
                         placeholder="Description..."
@@ -537,9 +597,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Department (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="text"
-                        value={row.departmentName}
+                      <input type="text" value={row.departmentName} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "departmentName", e.target.value)}
                         className={cellInputClass}
                         placeholder="e.g. Nutraceutical"
@@ -548,9 +606,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Comparative Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="date"
-                        value={row.comparativeDate}
+                      <input type="date" value={row.comparativeDate} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "comparativeDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -558,9 +614,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PR Number */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="text"
-                        value={row.prNumber}
+                      <input type="text" value={row.prNumber} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "prNumber", e.target.value)}
                         className={cellInputClass}
                         placeholder="PR-..."
@@ -569,9 +623,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PR Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="date"
-                        value={row.prDate}
+                      <input type="date" value={row.prDate} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "prDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -579,9 +631,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PO Number */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="text"
-                        value={row.poNumber}
+                      <input type="text" value={row.poNumber} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "poNumber", e.target.value)}
                         className={cellInputClass}
                         placeholder="PO-..."
@@ -590,19 +640,33 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PO Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="date"
-                        value={row.poDate}
+                      <input type="date" value={row.poDate} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "poDate", e.target.value)}
                         className={cellInputClass}
                       />
                     </td>
 
+                    {/* PO Status */}
+                    <td className={bodyCellClass}>
+                      <select value={row.poStatus} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
+                        onChange={(e) => handleCellChange(row.id, "poStatus", e.target.value)}
+                        className={cellInputClass}
+                      >
+                        <option value="PENDING">PENDING</option>
+                        <option value="IN_PROGRESS">IN_PROGRESS</option>
+                        <option value="COMPLETED">COMPLETED</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                      </select>
+                    </td>
+
+                    {/* Days for PO */}
+                    <td className="p-2 border-r border-b border-border text-center text-muted-foreground bg-muted/5 font-medium">
+                      {row.daysForPO != null ? `${row.daysForPO} d` : "—"}
+                    </td>
+
                     {/* Payment Approval Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="date"
-                        value={row.paymentApprovalDate}
+                      <input type="date" value={row.paymentApprovalDate} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "paymentApprovalDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -610,19 +674,32 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Payment Done Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="date"
-                        value={row.paymentDoneDate}
+                      <input type="date" value={row.paymentDoneDate} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "paymentDoneDate", e.target.value)}
                         className={cellInputClass}
                       />
                     </td>
 
+                    {/* Payment Status */}
+                    <td className={bodyCellClass}>
+                      <select value={row.paymentStatus} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
+                        onChange={(e) => handleCellChange(row.id, "paymentStatus", e.target.value)}
+                        className={cellInputClass}
+                      >
+                        <option value="PENDING">PENDING</option>
+                        <option value="IN_PROGRESS">IN_PROGRESS</option>
+                        <option value="COMPLETED">COMPLETED</option>
+                      </select>
+                    </td>
+
+                    {/* Days for Payment */}
+                    <td className="p-2 border-r border-b border-border text-center text-muted-foreground bg-muted/5 font-medium">
+                      {row.daysForPayment != null ? `${row.daysForPayment} d` : "—"}
+                    </td>
+
                     {/* Vendor Name (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="text"
-                        value={row.vendorName}
+                      <input type="text" value={row.vendorName} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "vendorName", e.target.value)}
                         className={cellInputClass}
                         placeholder="e.g. Tech Supplies Co."
@@ -631,9 +708,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PRL NO */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="text"
-                        value={row.prlNo}
+                      <input type="text" value={row.prlNo} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "prlNo", e.target.value)}
                         className={cellInputClass}
                         placeholder="PRL-..."
@@ -642,9 +717,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PRL DATE (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="date"
-                        value={row.prlDate}
+                      <input type="date" value={row.prlDate} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "prlDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -652,9 +725,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Material Dispatch Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="date"
-                        value={row.materialDispatchDate}
+                      <input type="date" value={row.materialDispatchDate} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "materialDispatchDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -662,9 +733,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Material Received Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="date"
-                        value={row.materialReceivedDate}
+                      <input type="date" value={row.materialReceivedDate} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "materialReceivedDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -672,9 +741,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Work Completion Date */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="date"
-                        value={row.workCompletionDate}
+                      <input type="date" value={row.workCompletionDate} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "workCompletionDate", e.target.value)}
                         className={cellInputClass}
                         title="Work Completion Date"
@@ -694,20 +761,18 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Name of Handler */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="text"
-                        value={row.nameOfHandler}
+                      <select value={row.nameOfHandler} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "nameOfHandler", e.target.value)}
                         className={cellInputClass}
-                        placeholder="Handler..."
-                      />
+                      >
+                        <option value="">Select handler...</option>
+                        {handlers.map(h => <option key={h.id} value={h.name}>{h.name}</option>)}
+                      </select>
                     </td>
 
                     {/* Current Status by Handler */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="text"
-                        value={row.currentStatusByHandler}
+                      <input type="text" value={row.currentStatusByHandler} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "currentStatusByHandler", e.target.value)}
                         className={cellInputClass}
                         placeholder="Status..."
@@ -716,9 +781,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Current Stage (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="text"
-                        value={row.currentStage}
+                      <input type="text" value={row.currentStage}
                         onChange={(e) => handleCellChange(row.id, "currentStage", e.target.value)}
                         className={cellInputClass}
                         placeholder="e.g. CS, PR, PO"
@@ -727,9 +790,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Pending From (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="date"
-                        value={row.pendingFrom}
+                      <input type="date" value={row.pendingFrom} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "pendingFrom", e.target.value)}
                         className={cellInputClass}
                       />
@@ -774,9 +835,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* CS Status (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="text"
-                        value={row.csStatus}
+                      <input type="text" value={row.csStatus} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "csStatus", e.target.value)}
                         className={cellInputClass}
                         placeholder="PENDING..."
@@ -785,9 +844,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PR Status (text input) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="text"
-                        value={row.prStatus}
+                      <input type="text" value={row.prStatus} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "prStatus", e.target.value)}
                         className={cellInputClass}
                         placeholder="PENDING..."
@@ -796,9 +853,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* CS (SLA) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="number"
-                        value={row.slaCS}
+                      <input type="number" value={row.slaCS} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "slaCS", parseInt(e.target.value) || 0)}
                         className={cellInputClass}
                       />
@@ -806,9 +861,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PR (SLA) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="number"
-                        value={row.slaPR}
+                      <input type="number" value={row.slaPR} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "slaPR", parseInt(e.target.value) || 0)}
                         className={cellInputClass}
                       />
@@ -816,9 +869,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PO (SLA) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="number"
-                        value={row.slaPO}
+                      <input type="number" value={row.slaPO} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "slaPO", parseInt(e.target.value) || 0)}
                         className={cellInputClass}
                       />
@@ -826,9 +877,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PAR (SLA) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="number"
-                        value={row.slaPAR}
+                      <input type="number" value={row.slaPAR} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "slaPAR", parseInt(e.target.value) || 0)}
                         className={cellInputClass}
                       />
@@ -836,9 +885,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PDD (SLA) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="number"
-                        value={row.slaPDD}
+                      <input type="number" value={row.slaPDD} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "slaPDD", parseInt(e.target.value) || 0)}
                         className={cellInputClass}
                       />
@@ -846,9 +893,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* MDD (SLA) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="number"
-                        value={row.slaMDD}
+                      <input type="number" value={row.slaMDD} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "slaMDD", parseInt(e.target.value) || 0)}
                         className={cellInputClass}
                       />
@@ -856,9 +901,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* MRD (SLA) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="number"
-                        value={row.slaMRD}
+                      <input type="number" value={row.slaMRD} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "slaMRD", parseInt(e.target.value) || 0)}
                         className={cellInputClass}
                       />
@@ -866,9 +909,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* WCD (SLA) */}
                     <td className={bodyCellClass}>
-                      <input
-                        type="number"
-                        value={row.slaWCD}
+                      <input type="number" value={row.slaWCD} disabled={row.currentStage === "CANCELLED" || !!row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "slaWCD", parseInt(e.target.value) || 0)}
                         className={cellInputClass}
                       />

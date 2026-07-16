@@ -39,6 +39,7 @@ export async function GET(req: Request) {
   const where: Record<string, unknown> = {};
 
   // Team members can only see their own requests
+  where.isDeleted = false;
   if (!isManager) {
     where.createdById = session.user.id;
   }
@@ -107,6 +108,21 @@ function cleanPRStatus(val: string | null | undefined): "PENDING" | "IN_PROGRESS
   return "PENDING";
 }
 
+function cleanPOStatus(val: string | null | undefined): "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" {
+  const v = (val || "").toUpperCase();
+  if (v.includes("CANCEL")) return "CANCELLED";
+  if (v.includes("COMPLET")) return "COMPLETED";
+  if (v.includes("PROGRESS")) return "IN_PROGRESS";
+  return "PENDING";
+}
+
+function cleanPaymentStatus(val: string | null | undefined): "PENDING" | "IN_PROGRESS" | "COMPLETED" {
+  const v = (val || "").toUpperCase();
+  if (v.includes("COMPLET")) return "COMPLETED";
+  if (v.includes("PROGRESS")) return "IN_PROGRESS";
+  return "PENDING";
+}
+
 function cleanStage(val: string | null | undefined): "CS" | "PR" | "PO" | "PAR" | "PDD" | "MDD" | "MRD" | "WCD" | "COMPLETED" | "CANCELLED" {
   const v = (val || "").toUpperCase();
   if (v.includes("CS")) return "CS";
@@ -164,11 +180,20 @@ export async function POST(req: Request) {
   const currentStage = cleanStage(data.currentStage);
   const csStatus = cleanCSStatus(data.csStatus);
   const prStatus = cleanPRStatus(data.prStatus);
+  const poStatus = cleanPOStatus(data.poStatus);
+  const paymentStatus = cleanPaymentStatus(data.paymentStatus);
+
+  const poDate = parseDate(data.poDate);
+  const prlDate = parseDate(data.prlDate);
+  const paymentDoneDate = parseDate(data.paymentDoneDate);
 
   const calc = calculateAllFields({
     sourceDate,
     comparativeDate,
     prDate,
+    poDate,
+    prlDate,
+    paymentDoneDate,
     pendingFrom,
     currentStage,
   });
@@ -188,15 +213,19 @@ export async function POST(req: Request) {
       daysForPR: calc.daysForPR,
       prStatus: prStatus,
       poNumber: data.poNumber ?? null,
-      poDate: parseDate(data.poDate),
+      poDate,
+      poStatus,
+      daysForPO: calc.daysForPO,
       prlNo: data.prlNo ?? null,
-      prlDate: parseDate(data.prlDate),
+      prlDate,
       materialDispatchDate: parseDate(data.materialDispatchDate),
       materialReceivedDate: parseDate(data.materialReceivedDate),
       workCompletionDate: parseDate(data.workCompletionDate),
       sourceCancellationDate: parseDate(data.sourceCancellationDate),
       paymentApprovalDate: parseDate(data.paymentApprovalDate),
-      paymentDoneDate: parseDate(data.paymentDoneDate),
+      paymentDoneDate,
+      paymentStatus,
+      daysForPayment: calc.daysForPayment,
       currentStatusByHandler: data.currentStatusByHandler ?? null,
       nameOfHandler: data.nameOfHandler,
       noOfDays: calc.noOfDays,

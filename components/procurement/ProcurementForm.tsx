@@ -29,12 +29,15 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
   const router = useRouter();
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [handlers, setHandlers] = useState<{id: string, name: string}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Auto-calculated display values
   const [calcValues, setCalcValues] = useState({
     daysForCS: null as number | null,
     daysForPR: null as number | null,
+    daysForPO: null as number | null,
+    daysForPayment: null as number | null,
     noOfDays: null as number | null,
     pendingDays: null as number | null,
     slaStatus: "ON_TRACK" as string,
@@ -52,6 +55,8 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       sourceNo: generateSourceNo(),
       csStatus: "PENDING",
       prStatus: "PENDING",
+      poStatus: "PENDING",
+      paymentStatus: "PENDING",
       currentStage: "CS",
       ...defaultValues,
     },
@@ -60,17 +65,28 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
   const sourceDate = watch("sourceDate");
   const comparativeDate = watch("comparativeDate");
   const prDate = watch("prDate");
+  const poDate = watch("poDate");
+  const prlDate = watch("prlDate");
+  const paymentApprovalDate = watch("paymentApprovalDate");
+  const paymentDoneDate = watch("paymentDoneDate");
+  const materialDispatchDate = watch("materialDispatchDate");
+  const materialReceivedDate = watch("materialReceivedDate");
+  const workCompletionDate = watch("workCompletionDate");
+  const sourceCancellationDate = watch("sourceCancellationDate");
   const pendingFrom = watch("pendingFrom");
   const currentStage = watch("currentStage");
+  const isCancelled = currentStage === "CANCELLED" || !!sourceCancellationDate;
 
   // Fetch departments and vendors
   useEffect(() => {
     Promise.all([
       fetch("/api/departments").then((r) => r.json()),
       fetch("/api/vendors").then((r) => r.json()),
-    ]).then(([deptData, vendorData]) => {
+      fetch("/api/users").then((r) => r.json()),
+    ]).then(([deptData, vendorData, userData]) => {
       setDepartments(deptData.departments ?? []);
       setVendors(vendorData.vendors ?? []);
+      setHandlers(userData.users ?? []);
     });
   }, []);
 
@@ -78,6 +94,8 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
   const recalculate = useCallback(() => {
     let daysForCS: number | null = null;
     let daysForPR: number | null = null;
+    let daysForPO: number | null = null;
+    let daysForPayment: number | null = null;
     let noOfDays: number | null = null;
     let pendingDays: number | null = null;
 
@@ -89,6 +107,16 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
     if (comparativeDate && prDate) {
       try {
         daysForPR = Math.max(0, differenceInDays(parseISO(prDate), parseISO(comparativeDate)));
+      } catch { /* ignore */ }
+    }
+    if (prDate && poDate) {
+      try {
+        daysForPO = Math.max(0, differenceInDays(parseISO(poDate), parseISO(prDate)));
+      } catch { /* ignore */ }
+    }
+    if (prlDate && paymentDoneDate) {
+      try {
+        daysForPayment = Math.max(0, differenceInDays(parseISO(paymentDoneDate), parseISO(prlDate)));
       } catch { /* ignore */ }
     }
     if (sourceDate) {
@@ -113,12 +141,52 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       }
     }
 
-    setCalcValues({ daysForCS, daysForPR, noOfDays, pendingDays, slaStatus });
-  }, [sourceDate, comparativeDate, prDate, pendingFrom, currentStage]);
+    setCalcValues({ daysForCS, daysForPR, daysForPO, daysForPayment, noOfDays, pendingDays, slaStatus });
+  }, [sourceDate, comparativeDate, prDate, poDate, prlDate, paymentDoneDate, pendingFrom, currentStage]);
 
   useEffect(() => {
     recalculate();
   }, [recalculate]);
+
+  // Auto-update statuses based on dates
+  useEffect(() => {
+    if (comparativeDate) setValue("csStatus", "COMPLETED", { shouldDirty: true });
+    if (prDate) setValue("prStatus", "COMPLETED", { shouldDirty: true });
+    if (poDate) setValue("poStatus", "COMPLETED", { shouldDirty: true });
+    if (paymentDoneDate) setValue("paymentStatus", "COMPLETED", { shouldDirty: true });
+  }, [comparativeDate, prDate, poDate, paymentDoneDate, setValue]);
+
+  useEffect(() => {
+    recalculate();
+  }, [recalculate]);
+
+  // Auto-update currentStage based on milestone dates
+  useEffect(() => {
+    let autoStage = "CS";
+    if (sourceCancellationDate) autoStage = "CANCELLED";
+    else if (workCompletionDate) autoStage = "COMPLETED";
+    else if (materialReceivedDate) autoStage = "WCD";
+    else if (materialDispatchDate) autoStage = "MRD";
+    else if (paymentDoneDate) autoStage = "MDD";
+    else if (paymentApprovalDate) autoStage = "PDD";
+    else if (poDate) autoStage = "PAR";
+    else if (prDate) autoStage = "PO";
+    else if (comparativeDate) autoStage = "PR";
+
+    setValue("currentStage", autoStage, { shouldDirty: true, shouldValidate: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    sourceCancellationDate,
+    workCompletionDate,
+    materialReceivedDate,
+    materialDispatchDate,
+    paymentDoneDate,
+    paymentApprovalDate,
+    poDate,
+    prDate,
+    comparativeDate,
+    setValue,
+  ]);
 
   const onSubmit = async (data: ProcurementInput) => {
     setIsLoading(true);
@@ -170,17 +238,17 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>Source No *</label>
-            <input {...register("sourceNo")} disabled={readOnly} className={inputClass} />
+            <input {...register("sourceNo")} disabled={readOnly || isCancelled} className={inputClass} />
             {errors.sourceNo && <p className="text-xs text-destructive mt-1">{errors.sourceNo.message}</p>}
           </div>
           <div>
             <label className={labelClass}>Source Date *</label>
-            <input type="date" {...register("sourceDate")} disabled={readOnly} className={inputClass} />
+            <input type="date" {...register("sourceDate")} disabled={readOnly || isCancelled} className={inputClass} />
             {errors.sourceDate && <p className="text-xs text-destructive mt-1">{errors.sourceDate.message}</p>}
           </div>
           <div>
             <label className={labelClass}>Department *</label>
-            <select {...register("departmentId")} disabled={readOnly} className={inputClass}>
+            <select {...register("departmentId")} disabled={readOnly || isCancelled} className={inputClass}>
               <option value="">Select department...</option>
               {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
@@ -188,12 +256,12 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div className="md:col-span-3">
             <label className={labelClass}>Source Description *</label>
-            <textarea {...register("sourceDescription")} disabled={readOnly} rows={2} className={inputClass} />
+            <textarea {...register("sourceDescription")} disabled={readOnly || isCancelled} rows={2} className={inputClass} />
             {errors.sourceDescription && <p className="text-xs text-destructive mt-1">{errors.sourceDescription.message}</p>}
           </div>
           <div>
             <label className={labelClass}>Vendor</label>
-            <select {...register("vendorId")} disabled={readOnly} className={inputClass}>
+            <select {...register("vendorId")} disabled={readOnly || isCancelled} className={inputClass}>
               <option value="">Select vendor...</option>
               {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
             </select>
@@ -210,7 +278,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>Comparative Date</label>
-            <input type="date" {...register("comparativeDate")} disabled={readOnly} className={inputClass} />
+            <input type="date" {...register("comparativeDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Days for CS <span className="text-blue-500">(Auto)</span></label>
@@ -218,7 +286,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>CS Status</label>
-            <select {...register("csStatus")} disabled={readOnly} className={inputClass}>
+            <select {...register("csStatus")} disabled={readOnly || isCancelled} className={inputClass}>
               {CS_STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
             </select>
           </div>
@@ -234,11 +302,11 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>PR Number</label>
-            <input {...register("prNumber")} disabled={readOnly} className={inputClass} placeholder="PR-YYYY-XXXX" />
+            <input {...register("prNumber")} disabled={readOnly || isCancelled} className={inputClass} placeholder="PR-YYYY-XXXX" />
           </div>
           <div>
             <label className={labelClass}>PR Date</label>
-            <input type="date" {...register("prDate")} disabled={readOnly} className={inputClass} />
+            <input type="date" {...register("prDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Days for PR <span className="text-blue-500">(Auto)</span></label>
@@ -246,35 +314,70 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>PR Status</label>
-            <select {...register("prStatus")} disabled={readOnly} className={inputClass}>
+            <select {...register("prStatus")} disabled={readOnly || isCancelled} className={inputClass}>
               {PR_STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
             </select>
           </div>
         </div>
       </div>
 
-      {/* Section: PO & PRL */}
+      {/* Section: PO */}
       <div className="glass-card p-6">
         <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">4</span>
-          Purchase Order & PRL
+          <span className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">4A</span>
+          Purchase Order (PO)
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className={labelClass}>PO Number</label>
-            <input {...register("poNumber")} disabled={readOnly} className={inputClass} placeholder="PO-YYYY-XXXX" />
+            <input {...register("poNumber")} disabled={readOnly || isCancelled} className={inputClass} placeholder="PO-YYYY-XXXX" />
           </div>
           <div>
             <label className={labelClass}>PO Date</label>
-            <input type="date" {...register("poDate")} disabled={readOnly} className={inputClass} />
+            <input type="date" {...register("poDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
+            <label className={labelClass}>Days for PO <span className="text-blue-500">(Auto)</span></label>
+            <div className={calcClass}>{calcValues.daysForPO != null ? `${calcValues.daysForPO} days` : "—"}</div>
+          </div>
+          <div>
+            <label className={labelClass}>PO Status</label>
+            <select {...register("poStatus")} disabled={readOnly || isCancelled} className={inputClass}>
+              <option value="PENDING">PENDING</option>
+              <option value="IN_PROGRESS">IN PROGRESS</option>
+              <option value="COMPLETED">COMPLETED</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Section: PRL */}
+      <div className="glass-card p-6">
+        <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xs font-bold">4B</span>
+          Payment Release (PRL)
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
             <label className={labelClass}>PRL No</label>
-            <input {...register("prlNo")} disabled={readOnly} className={inputClass} />
+            <input {...register("prlNo")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>PRL Date</label>
-            <input type="date" {...register("prlDate")} disabled={readOnly} className={inputClass} />
+            <input type="date" {...register("prlDate")} disabled={readOnly || isCancelled} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Days for Payment <span className="text-blue-500">(Auto)</span></label>
+            <div className={calcClass}>{calcValues.daysForPayment != null ? `${calcValues.daysForPayment} days` : "—"}</div>
+          </div>
+          <div>
+            <label className={labelClass}>Payment Status</label>
+            <select {...register("paymentStatus")} disabled={readOnly || isCancelled} className={inputClass}>
+              <option value="PENDING">PENDING</option>
+              <option value="IN_PROGRESS">IN PROGRESS</option>
+              <option value="COMPLETED">COMPLETED</option>
+            </select>
           </div>
         </div>
       </div>
@@ -285,18 +388,26 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           <span className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center text-xs font-bold">5</span>
           Milestone Dates
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className={labelClass}>Payment Approval Date</label>
+            <input type="date" {...register("paymentApprovalDate")} disabled={readOnly || isCancelled} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Payment Done Date</label>
+            <input type="date" {...register("paymentDoneDate")} disabled={readOnly || isCancelled} className={inputClass} />
+          </div>
           <div>
             <label className={labelClass}>Material Dispatch Date</label>
-            <input type="date" {...register("materialDispatchDate")} disabled={readOnly} className={inputClass} />
+            <input type="date" {...register("materialDispatchDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Material Received Date</label>
-            <input type="date" {...register("materialReceivedDate")} disabled={readOnly} className={inputClass} />
+            <input type="date" {...register("materialReceivedDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Work Completion Date</label>
-            <input type="date" {...register("workCompletionDate")} disabled={readOnly} className={inputClass} />
+            <input type="date" {...register("workCompletionDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Source Cancellation Date</label>
@@ -314,12 +425,15 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>Name of Handler *</label>
-            <input {...register("nameOfHandler")} disabled={readOnly} className={inputClass} />
+            <select {...register("nameOfHandler")} disabled={readOnly || isCancelled} className={inputClass}>
+              <option value="">Select handler...</option>
+              {handlers.map(h => <option key={h.id} value={h.name}>{h.name}</option>)}
+            </select>
             {errors.nameOfHandler && <p className="text-xs text-destructive mt-1">{errors.nameOfHandler.message}</p>}
           </div>
           <div>
             <label className={labelClass}>Current Status by Handler</label>
-            <input {...register("currentStatusByHandler")} disabled={readOnly} className={inputClass} />
+            <input {...register("currentStatusByHandler")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Current Stage</label>
@@ -329,7 +443,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>Pending From</label>
-            <input type="date" {...register("pendingFrom")} disabled={readOnly} className={inputClass} />
+            <input type="date" {...register("pendingFrom")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Pending Days <span className="text-blue-500">(Auto)</span></label>

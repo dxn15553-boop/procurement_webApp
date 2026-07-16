@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Users, User, Mail, Shield, Building2, RefreshCw, KeyRound, Loader2 } from "lucide-react";
+import { Plus, Users, User, Mail, Shield, Building2, RefreshCw, KeyRound, Loader2, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { userSchema, type UserInput } from "@/lib/validations";
@@ -90,6 +90,23 @@ export function EmployeeListClient({ initialEmployees, departments }: { initialE
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this employee?")) return;
+    try {
+      const res = await fetch(`/api/employees/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error || "Failed to delete employee");
+        return;
+      }
+      setEmployees((prev) => prev.filter((e) => e.id !== id));
+      toast.success("Employee deleted successfully");
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete employee");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -172,6 +189,14 @@ export function EmployeeListClient({ initialEmployees, departments }: { initialE
                 title="Reset Password to default"
               >
                 {resettingId === e.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+              </button>
+
+              <button 
+                onClick={() => handleDelete(e.id)}
+                className="absolute right-0 top-16 p-2 rounded-full bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                title="Delete Employee"
+              >
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
             

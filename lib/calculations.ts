@@ -47,6 +47,20 @@ export function calcDaysForPR(
   return calcDaysBetween(comparativeDate, prDate);
 }
 
+export function calcDaysForPO(
+  prDate: Date | null,
+  poDate: Date | null
+): number | null {
+  return calcDaysBetween(prDate, poDate);
+}
+
+export function calcDaysForPayment(
+  prlDate: Date | null,
+  paymentDate: Date | null
+): number | null {
+  return calcDaysBetween(prlDate, paymentDate);
+}
+
 export function calcNoOfDays(sourceDate: Date | null): number | null {
   return calcDaysFromToday(sourceDate);
 }
@@ -78,6 +92,9 @@ export function calculateAllFields(data: {
   sourceDate?: Date | null;
   comparativeDate?: Date | null;
   prDate?: Date | null;
+  poDate?: Date | null;
+  prlDate?: Date | null;
+  paymentDoneDate?: Date | null;
   pendingFrom?: Date | null;
   currentStage?: CurrentStage;
 }) {
@@ -89,6 +106,14 @@ export function calculateAllFields(data: {
     data.comparativeDate ?? null,
     data.prDate ?? null
   );
+  const daysForPO = calcDaysForPO(
+    data.prDate ?? null,
+    data.poDate ?? null
+  );
+  const daysForPayment = calcDaysForPayment(
+    data.prlDate ?? null,
+    data.paymentDoneDate ?? null
+  );
   const noOfDays = calcNoOfDays(data.sourceDate ?? null);
   const pendingDays = calcPendingDays(data.pendingFrom ?? null);
   const slaStatus = calcSLAStatus(
@@ -96,5 +121,5 @@ export function calculateAllFields(data: {
     pendingDays
   );
 
-  return { daysForCS, daysForPR, noOfDays, pendingDays, slaStatus };
+  return { daysForCS, daysForPR, daysForPO, daysForPayment, noOfDays, pendingDays, slaStatus };
 }
