@@ -2,10 +2,12 @@ import { Metadata } from "next";
 import { ProcurementForm } from "@/components/procurement/ProcurementForm";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "New Procurement Request" };
 
-export default function NewRequestPage() {
+export default async function NewRequestPage() {
+  const session = await auth();
   return (
     <div className="space-y-5 fade-in max-w-5xl mx-auto">
       <div className="flex items-center gap-3">
@@ -21,7 +23,13 @@ export default function NewRequestPage() {
         </div>
       </div>
 
-      <ProcurementForm mode="create" />
+      <ProcurementForm 
+        mode="create" 
+        defaultValues={{ 
+          nameOfHandler: session?.user?.name || "", 
+          sourceDate: new Date().toISOString().split("T")[0] 
+        }} 
+      />
     </div>
   );
 }

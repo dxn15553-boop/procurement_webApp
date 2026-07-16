@@ -40,7 +40,7 @@ async function getDashboardData() {
     prisma.department.findMany({
       include: { _count: { select: { procurementRequests: true } } },
       where: { isActive: true },
-      take: 8,
+      orderBy: { name: 'asc' },
     }),
     prisma.procurementRequest.groupBy({
       by: ["currentStage"],

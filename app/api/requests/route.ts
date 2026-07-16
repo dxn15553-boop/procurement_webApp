@@ -161,7 +161,7 @@ export async function POST(req: Request) {
     departmentId = dept.id;
   }
 
-  let vendorId = data.vendorId ?? null;
+  let vendorId = data.vendorId || null;
   if (vendorId && vendorId.length < 15) {
     const code = cleanCode(vendorId);
     const vend = await prisma.vendor.upsert({

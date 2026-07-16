@@ -16,7 +16,13 @@ import {
   Legend,
 } from "recharts";
 
-const COLORS = ["#3b82f6", "#8b5cf6", "#f59e0b", "#10b981", "#ef4444", "#06b6d4", "#6366f1", "#ec4899"];
+const COLORS = [
+  "#3b82f6", "#8b5cf6", "#f59e0b", "#10b981", 
+  "#ef4444", "#06b6d4", "#6366f1", "#ec4899",
+  "#f97316", "#84cc16", "#14b8a6", "#d946ef",
+  "#eab308", "#a855f7", "#0ea5e9", "#22c55e",
+  "#f43f5e", "#64748b", "#fb923c", "#34d399"
+];
 
 interface ChartCardProps {
   title: string;
