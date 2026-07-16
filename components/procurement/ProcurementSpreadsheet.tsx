@@ -7,6 +7,7 @@ import { differenceInDays, parseISO, format } from "date-fns";
 import { SLA_THRESHOLDS } from "@/lib/calculations";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface RowData {
   id: string; // "new-xxx" or real database id
@@ -63,6 +64,7 @@ interface Props {
 }
 
 export function ProcurementSpreadsheet({ session }: Props) {
+  const router = useRouter();
   const [rows, setRows] = useState<RowData[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -352,13 +354,13 @@ export function ProcurementSpreadsheet({ session }: Props) {
           <p className="text-xs text-muted-foreground">
             Spreadsheet Mode: Enter details directly by typing in any cell. To save, click the blue disk icon on the left.
           </p>
-          <button
-            onClick={handleAddRow}
+          <Link
+            href="/team/requests/new"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Add Row
-          </button>
+          </Link>
         </div>
       ) : (
         tabs.length > 1 && (
@@ -449,7 +451,14 @@ export function ProcurementSpreadsheet({ session }: Props) {
                 filteredRows.map((row) => (
                   <tr
                     key={row.id}
-                    className={`hover:bg-muted/10 transition-colors ${
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      const isInteractive = target.tagName === "INPUT" || target.tagName === "SELECT" || target.tagName === "BUTTON" || target.tagName === "A" || target.closest("a") || target.closest("button");
+                      if (!isInteractive && !row.isNew) {
+                        router.push(isManager ? `/manager/requests/${row.id}` : `/team/requests/${row.id}`);
+                      }
+                    }}
+                    className={`cursor-pointer hover:bg-muted/10 transition-colors ${
                       row.isDirty ? "bg-amber-50/10 dark:bg-amber-950/10" : ""
                     }`}
                   >
