@@ -112,23 +112,23 @@ export function Sidebar({ role }: SidebarProps) {
       
       <aside
         className={cn(
-          "flex flex-col sidebar-gradient text-foreground transition-all duration-300 ease-in-out flex-shrink-0 z-50",
+          "flex flex-col sidebar-gradient text-slate-700 transition-all duration-300 ease-in-out flex-shrink-0 z-50",
           collapsed ? "w-16" : "w-64",
-          isMobileMenuOpen ? "fixed inset-y-0 left-0 h-full w-64 shadow-2xl" : "hidden md:flex md:h-screen md:relative"
+          isMobileMenuOpen ? "fixed inset-y-0 left-0 h-full w-64 shadow-2xl bg-white/95" : "hidden md:flex md:h-screen md:relative"
         )}
       >
       {/* Logo */}
       <div className={cn(
-        "flex items-center gap-3 px-4 py-5 border-b border-border",
+        "flex items-center gap-3 px-4 py-5 border-b border-white/60",
         collapsed && "justify-center px-2"
       )}>
-        <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+        <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-md shadow-blue-500/20">
           <Package className="w-5 h-5 text-white" />
         </div>
         {!collapsed && (
           <div>
-            <span className="text-lg font-bold text-foreground">ProcureX</span>
-            <span className="block text-[10px] text-muted-foreground uppercase tracking-widest">
+            <span className="text-lg font-bold text-slate-800">ProcureX</span>
+            <span className="block text-[10px] text-slate-500 font-medium uppercase tracking-widest">
               {role === "MANAGER" ? "Manager Portal" : "Team Portal"}
             </span>
           </div>
@@ -148,26 +148,26 @@ export function Sidebar({ role }: SidebarProps) {
               href={href}
               onClick={() => closeMobileMenu()}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group relative",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group relative mx-2 border",
                 isActive
-                  ? "bg-white/80 text-primary shadow-sm ring-1 ring-primary/20 font-bold"
-                  : "text-muted-foreground hover:bg-white/50 hover:text-foreground",
+                  ? "bg-white/80 border-white text-blue-600 shadow-sm"
+                  : "bg-transparent border-transparent text-slate-500 hover:text-slate-950 hover:bg-white/40 hover:border-white/50",
                 collapsed && "justify-center px-2"
               )}
               title={collapsed ? item.label : undefined}
             >
-              <Icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+              <Icon className={cn("w-5 h-5 flex-shrink-0 transition-colors", isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-700")} />
               {!collapsed && (
                 <span className="truncate">{item.label}</span>
               )}
               {!collapsed && item.badge && item.badge > 0 && (
-                <span className="ml-auto bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                <span className="ml-auto bg-blue-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
                   {item.badge > 99 ? "99+" : item.badge}
                 </span>
               )}
               {/* Tooltip for collapsed state */}
               {collapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-white border border-border text-foreground shadow-lg text-xs rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity">
+                <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-white/95 backdrop-blur-md border border-white/80 text-slate-800 shadow-md text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-all duration-150 transform translate-x-2 group-hover:translate-x-0">
                   {item.label}
                 </div>
               )}
@@ -178,11 +178,11 @@ export function Sidebar({ role }: SidebarProps) {
 
       {/* Role badge at bottom */}
       {!collapsed && (
-        <div className="px-4 py-3 border-t border-border">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-blue-400 flex-shrink-0" />
-            <span className="text-xs text-muted-foreground">
-              Logged in as <span className="text-primary font-bold">{role}</span>
+        <div className="px-4 py-4 border-t border-white/60">
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/30 border border-white/40">
+            <ShieldCheck className="w-4 h-4 text-blue-600 flex-shrink-0" />
+            <span className="text-xs text-slate-500">
+              Role: <span className="text-slate-800 font-bold">{role}</span>
             </span>
           </div>
         </div>
@@ -191,13 +191,13 @@ export function Sidebar({ role }: SidebarProps) {
       {/* Toggle button */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-8 w-6 h-6 rounded-full bg-white border border-border shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors z-10"
+        className="absolute -right-3 top-8 w-6 h-6 rounded-full bg-white/85 backdrop-blur-sm border border-slate-200/80 shadow-sm flex items-center justify-center hover:bg-white hover:border-slate-300 transition-all duration-200 z-10"
         title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed ? (
-          <ChevronRight className="w-3 h-3 text-muted-foreground" />
+          <ChevronRight className="w-3 h-3 text-slate-600" />
         ) : (
-          <ChevronLeft className="w-3 h-3 text-muted-foreground" />
+          <ChevronLeft className="w-3 h-3 text-slate-600" />
         )}
       </button>
     </aside>
