@@ -24,7 +24,7 @@ async function getDashboardData() {
     prisma.procurementRequest.count({ where: { currentStage: "CS" } }),
     prisma.procurementRequest.count({ where: { currentStage: "PR" } }),
     prisma.procurementRequest.count({ where: { currentStage: "PO" } }),
-    prisma.procurementRequest.count({ where: { currentStage: "MDD" } }),
+    prisma.procurementRequest.count({ where: { currentStage: { in: ["MDD", "MRD", "WCD", "PAR", "PDD"] } } }),
     prisma.procurementRequest.count({ where: { currentStage: "COMPLETED" } }),
     prisma.procurementRequest.count({ where: { currentStage: "CANCELLED" } }),
     prisma.procurementRequest.count({ where: { slaStatus: "OVERDUE" } }),

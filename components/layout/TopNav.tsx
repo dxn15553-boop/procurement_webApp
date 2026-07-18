@@ -21,7 +21,7 @@ export function TopNav({ title }: TopNavProps) {
   const toggleMobileMenu = useLayoutStore((s) => s.toggleMobileMenu);
 
   return (
-    <header className="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center px-6 gap-4 sticky top-0 z-30 border-b border-slate-200/50 dark:border-slate-800/50">
+    <header className="h-16 bg-white/80 backdrop-blur-md flex items-center px-4 md:px-6 gap-4 sticky top-0 z-30 border-b border-slate-200/50">
       {/* Mobile Menu Toggle */}
       <div className="flex items-center md:hidden -ml-2">
         <button
@@ -101,10 +101,10 @@ export function TopNav({ title }: TopNavProps) {
                 className="fixed inset-0 z-10"
                 onClick={() => setProfileOpen(false)}
               />
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-1 z-20 shadow-lg">
-                <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{session?.user?.name}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{session?.user?.email}</p>
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl py-1 z-20 shadow-lg">
+                <div className="px-3 py-2 border-b border-slate-100">
+                  <p className="text-sm font-semibold text-slate-900">{session?.user?.name}</p>
+                  <p className="text-xs text-slate-500">{session?.user?.email}</p>
                 </div>
                 <Link
                   href={role === "MANAGER" ? "/manager/profile" : "/team/profile"}
@@ -127,7 +127,7 @@ export function TopNav({ title }: TopNavProps) {
                 <div className="border-t border-border mt-1 pt-1">
                   <button
                     onClick={() => signOut({ callbackUrl: "/login" })}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     Sign out

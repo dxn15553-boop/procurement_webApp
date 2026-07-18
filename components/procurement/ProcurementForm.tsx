@@ -358,7 +358,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xs font-bold">4B</span>
           Payment Release (PRL)
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>PRL No</label>
             <input {...register("prlNo")} disabled={readOnly || isCancelled} className={inputClass} />
@@ -366,6 +366,10 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           <div>
             <label className={labelClass}>PRL Date</label>
             <input type="date" {...register("prlDate")} disabled={readOnly || isCancelled} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Payment Approval Date</label>
+            <input type="date" {...register("paymentApprovalDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Payment Done Date</label>
@@ -393,10 +397,6 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           Milestone Dates
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className={labelClass}>Payment Approval Date</label>
-            <input type="date" {...register("paymentApprovalDate")} disabled={readOnly || isCancelled} className={inputClass} />
-          </div>
           <div>
             <label className={labelClass}>Material Dispatch Date</label>
             <input type="date" {...register("materialDispatchDate")} disabled={readOnly || isCancelled} className={inputClass} />
