@@ -32,6 +32,7 @@ interface DashboardData {
   departmentData: Array<{ name: string; value: number }>;
   stageData: Array<{ name: string; value: number }>;
   monthlyData: Array<{ month: string; total: number; completed: number; overdue: number }>;
+  slaChartData: Array<{ name: string; onTrack: number; atRisk: number; overdue: number }>;
 }
 
 interface Props {
@@ -39,15 +40,8 @@ interface Props {
   userName: string;
 }
 
-const slaChartData = [
-  { name: "CS", onTrack: 8, atRisk: 3, overdue: 1 },
-  { name: "PR", onTrack: 12, atRisk: 4, overdue: 2 },
-  { name: "PO", onTrack: 6, atRisk: 2, overdue: 1 },
-  { name: "MDD", onTrack: 5, atRisk: 1, overdue: 0 },
-];
-
 export function ManagerDashboardClient({ data, userName }: Props) {
-  const { kpi, recentRequests, departmentData, stageData, monthlyData } = data;
+  const { kpi, recentRequests, departmentData, stageData, monthlyData, slaChartData } = data;
 
   return (
     <div className="space-y-6 fade-in">

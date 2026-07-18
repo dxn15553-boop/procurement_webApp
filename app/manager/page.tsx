@@ -105,6 +105,29 @@ async function getDashboardData() {
     monthlyData = [{ month: m, total: 0, completed: 0, overdue: 0 }];
   }
 
+  // Calculate dynamic SLA Chart Data
+  const slaDist: Record<string, { name: string, onTrack: number, atRisk: number, overdue: number }> = {
+    CS: { name: "CS", onTrack: 0, atRisk: 0, overdue: 0 },
+    PR: { name: "PR", onTrack: 0, atRisk: 0, overdue: 0 },
+    PO: { name: "PO", onTrack: 0, atRisk: 0, overdue: 0 },
+    PAR: { name: "PAR", onTrack: 0, atRisk: 0, overdue: 0 },
+    PDD: { name: "PDD", onTrack: 0, atRisk: 0, overdue: 0 },
+    MDD: { name: "MDD", onTrack: 0, atRisk: 0, overdue: 0 },
+    MRD: { name: "MRD", onTrack: 0, atRisk: 0, overdue: 0 },
+    WCD: { name: "WCD", onTrack: 0, atRisk: 0, overdue: 0 },
+  };
+
+  allRequests.forEach(r => {
+    const stage = r.currentStage;
+    if (slaDist[stage]) {
+      if (r.slaStatus === "ON_TRACK" || r.slaStatus === "COMPLETED") slaDist[stage].onTrack++;
+      if (r.slaStatus === "AT_RISK") slaDist[stage].atRisk++;
+      if (r.slaStatus === "OVERDUE") slaDist[stage].overdue++;
+    }
+  });
+
+  const slaChartData = Object.values(slaDist).filter(d => d.onTrack > 0 || d.atRisk > 0 || d.overdue > 0);
+
   return {
     kpi: { total, pendingCS, pendingPR, pendingPO, pendingDispatch, completed, cancelled, overdue,
       avgSLA: total > 0 ? Math.round(((total - overdue) / total) * 100) : 100 },
@@ -115,6 +138,7 @@ async function getDashboardData() {
       .sort((a, b) => b.value - a.value),
     stageData: stageData.map((s) => ({ name: s.currentStage, value: s._count.id })),
     monthlyData,
+    slaChartData,
   };
 }
 
