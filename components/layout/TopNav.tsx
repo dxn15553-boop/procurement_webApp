@@ -7,6 +7,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useLayoutStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
 
 interface TopNavProps {
   title?: string;
@@ -16,9 +17,20 @@ export function TopNav({ title }: TopNavProps) {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const [profileOpen, setProfileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const role = session?.user?.role as string;
   const toggleMobileMenu = useLayoutStore((s) => s.toggleMobileMenu);
+  const router = useRouter();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const base = role === "MANAGER" ? "/manager/requests" : "/team/requests";
+    if (searchQuery.trim()) {
+      router.push(`${base}?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      router.push(base);
+    }
+  };
 
   return (
     <header className="h-16 bg-white/80 backdrop-blur-md flex items-center px-4 md:px-6 gap-4 sticky top-0 z-30 border-b border-slate-200/50">
@@ -40,14 +52,16 @@ export function TopNav({ title }: TopNavProps) {
 
       {/* Search Bar */}
       <div className="flex-1 max-w-md">
-        <div className="relative">
+        <form onSubmit={handleSearch} className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search requests, vendors, departments..."
             className="w-full pl-9 pr-4 py-2 text-sm bg-white/40 border border-white/60 rounded-full focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all placeholder:text-muted-foreground shadow-inner backdrop-blur-sm"
           />
-        </div>
+        </form>
       </div>
 
       <div className="ml-auto flex items-center gap-2">

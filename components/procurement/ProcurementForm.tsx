@@ -62,6 +62,40 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
     },
   });
 
+  const allValues = watch();
+
+  // Load Draft from LocalStorage on mount
+  useEffect(() => {
+    if (mode === "create") {
+      const draft = localStorage.getItem("procurementFormDraft");
+      if (draft) {
+        try {
+          const parsed = JSON.parse(draft);
+          Object.keys(parsed).forEach((key) => {
+            if (parsed[key] !== undefined && parsed[key] !== null && parsed[key] !== "") {
+              setValue(key as keyof ProcurementInput, parsed[key], { shouldValidate: false, shouldDirty: true });
+            }
+          });
+          toast.info("Draft restored", { 
+            description: "Your previous unsubmitted changes have been loaded.",
+            icon: <RefreshCw className="w-4 h-4" />
+          });
+        } catch { /* ignore parsing errors */ }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, setValue]);
+
+  // Save Draft to LocalStorage when form values change
+  useEffect(() => {
+    if (mode === "create" && isDirty) {
+      const handler = setTimeout(() => {
+        localStorage.setItem("procurementFormDraft", JSON.stringify(allValues));
+      }, 1500); // 1.5s debounce
+      return () => clearTimeout(handler);
+    }
+  }, [allValues, mode, isDirty]);
+
   const sourceDate = watch("sourceDate");
   const comparativeDate = watch("comparativeDate");
   const prDate = watch("prDate");
@@ -202,11 +236,24 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
 
       if (!res.ok) {
         const err = await res.json();
-        toast.error(err.error?.message ?? "Failed to save request");
+        toast.error("Failed to save request", {
+          description: err.error?.message ?? "Please verify your input and try again.",
+          icon: <AlertCircle className="w-4 h-4" />
+        });
         return;
       }
 
-      toast.success(mode === "edit" ? "Request updated successfully!" : "Request created successfully!");
+      if (mode === "create") {
+        localStorage.removeItem("procurementFormDraft");
+      }
+
+      toast.success(
+        mode === "edit" ? "Request Updated" : "Request Created", 
+        { 
+          description: `Source No ${data.sourceNo} was saved successfully!`,
+          icon: <Save className="w-4 h-4" />
+        }
+      );
       router.push(mode === "edit" ? `/manager/requests/${requestId}` : "/team/requests");
       router.refresh();
     } catch {

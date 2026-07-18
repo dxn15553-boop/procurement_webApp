@@ -5,10 +5,10 @@ import { AnalyticsClient, AnalyticsData } from "./AnalyticsClient";
 
 async function getAnalyticsData(): Promise<AnalyticsData> {
   const [departments, users, vendors, requests] = await Promise.all([
-    prisma.department.findMany({ include: { procurementRequests: true } }),
-    prisma.user.findMany({ where: { role: "TEAM" }, include: { procurementRequests: true } }),
-    prisma.vendor.findMany({ include: { procurementRequests: true } }),
-    prisma.procurementRequest.findMany(),
+    prisma.department.findMany({ include: { procurementRequests: { where: { isDeleted: false } } } }),
+    prisma.user.findMany({ where: { role: "TEAM" }, include: { procurementRequests: { where: { isDeleted: false } } } }),
+    prisma.vendor.findMany({ include: { procurementRequests: { where: { isDeleted: false } } } }),
+    prisma.procurementRequest.findMany({ where: { isDeleted: false } }),
   ]);
 
   // 1. SLA by Department
@@ -22,14 +22,24 @@ async function getAnalyticsData(): Promise<AnalyticsData> {
     return { name: dept.name, onTrack, atRisk, overdue };
   });
 
-  // 2. Average Processing Time (Mocked logic for simplicity, real logic would use dates)
-  // In a real app we'd calculate diffs, here we use noOfDays field or mock if not present
+  // 2. Average Processing Time (Dynamic)
+  let sumCS = 0, countCS = 0;
+  let sumPR = 0, countPR = 0;
+  let sumPO = 0, countPO = 0;
+  let sumPay = 0, countPay = 0;
+  
+  requests.forEach(req => {
+    if (req.daysForCS != null) { sumCS += req.daysForCS; countCS++; }
+    if (req.daysForPR != null) { sumPR += req.daysForPR; countPR++; }
+    if (req.daysForPO != null) { sumPO += req.daysForPO; countPO++; }
+    if (req.daysForPayment != null) { sumPay += req.daysForPayment; countPay++; }
+  });
+
   const stageTimeData = [
-    { stage: "CS", avgDays: 4 },
-    { stage: "PR", avgDays: 8 },
-    { stage: "PO", avgDays: 12 },
-    { stage: "MDD", avgDays: 15 },
-    { stage: "MRD", avgDays: 5 },
+    { stage: "CS", avgDays: countCS > 0 ? Math.round(sumCS / countCS) : 0 },
+    { stage: "PR", avgDays: countPR > 0 ? Math.round(sumPR / countPR) : 0 },
+    { stage: "PO", avgDays: countPO > 0 ? Math.round(sumPO / countPO) : 0 },
+    { stage: "Payment", avgDays: countPay > 0 ? Math.round(sumPay / countPay) : 0 },
   ];
 
   // 3. Handler Workload

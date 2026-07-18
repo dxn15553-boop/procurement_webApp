@@ -7,7 +7,7 @@ import { differenceInDays, parseISO, format } from "date-fns";
 import { SLA_THRESHOLDS } from "@/lib/calculations";
 import { toast } from "sonner";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface RowData {
   id: string; // "new-xxx" or real database id
@@ -69,9 +69,21 @@ interface Props {
 
 export function ProcurementSpreadsheet({ session }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const search = searchParams.get("search") || "";
+  const pageParam = parseInt(searchParams.get("page") || "1", 10);
+  
   const [rows, setRows] = useState<RowData[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+
+  const [page, setPage] = useState(pageParam);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 20;
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   // Manager Sheet selection state
   const [activeTab, setActiveTab] = useState<string>("All");
@@ -88,9 +100,15 @@ export function ProcurementSpreadsheet({ session }: Props) {
       .then((u) => setHandlers(u.users ?? []))
       .catch(() => {});
 
-    fetch("/api/requests")
+    const qs = new URLSearchParams();
+    if (search) qs.set("search", search);
+    qs.set("page", page.toString());
+    qs.set("limit", limit.toString());
+
+    fetch(`/api/requests?${qs.toString()}`)
       .then((r) => r.json())
       .then((reqData) => {
+        setTotalPages(reqData.pagination?.pages || 1);
         const initialRows = (reqData.requests ?? []).map((r: any) => ({
           id: r.id,
           sourceNo: r.sourceNo,
@@ -164,7 +182,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
       .finally(() => {
         if (!silent) setLoading(false);
       });
-  }, []);
+  }, [search, page]);
 
   useEffect(() => {
     loadData();
@@ -391,6 +409,27 @@ export function ProcurementSpreadsheet({ session }: Props) {
     } catch {
       toast.error("Failed to delete request");
     }
+  };
+
+  const exportToCSV = () => {
+    if (filteredRows.length === 0) return toast.error("No data to export");
+    const headers = [
+      "Source No", "Source Description", "Department", "Vendor", 
+      "Current Stage", "SLA Status", "CS Status", "PR Status", "PO Status"
+    ];
+    const csvContent = [
+      headers.join(","),
+      ...filteredRows.map(r => `"${r.sourceNo}","${r.sourceDescription.replace(/"/g, '""')}","${r.departmentName}","${r.vendorName}","${r.currentStage}","${r.slaStatus.replace("_", " ")}","${r.csStatus}","${r.prStatus}","${r.poStatus}"`)
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `procurement_export_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV Exported successfully!");
   };
 
   const cellInputClass = "w-full h-full min-h-[40px] px-3 py-2 text-[13px] text-foreground bg-transparent border border-transparent hover:bg-muted/50 focus:bg-background focus:border-primary/50 focus:ring-1 focus:ring-primary/50 rounded-md outline-none transition-all placeholder:text-muted-foreground/50";
@@ -919,6 +958,33 @@ export function ProcurementSpreadsheet({ session }: Props) {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Pagination & Export Controls */}
+      <div className="flex items-center justify-between py-2 px-1 pb-4">
+        <div className="flex items-center gap-2">
+          <button onClick={exportToCSV} className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors shadow-sm font-medium">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            Export to CSV
+          </button>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-3 py-1.5 text-xs font-semibold rounded-md border border-border bg-card text-foreground disabled:opacity-50 hover:bg-muted transition-colors shadow-sm"
+          >
+            Previous
+          </button>
+          <span className="text-xs font-medium text-slate-500">Page {page} of {totalPages}</span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-3 py-1.5 text-xs font-semibold rounded-md border border-border bg-card text-foreground disabled:opacity-50 hover:bg-muted transition-colors shadow-sm"
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>
