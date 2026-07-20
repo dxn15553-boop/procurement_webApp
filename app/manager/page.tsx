@@ -54,24 +54,20 @@ async function getDashboardData() {
     }),
     prisma.procurementRequest.findMany({
       where: { isDeleted: false },
-      select: { sourceDate: true, currentStage: true, slaStatus: true },
+      select: { createdAt: true, currentStage: true, slaStatus: true },
     }),
   ]);
 
   // Calculate dynamic monthly data based on available dataset range
   let monthlyData: any[] = [];
-  const validRequests = allRequests.filter(r => r.sourceDate);
+  const validRequests = allRequests.filter(r => r.createdAt);
   
   if (validRequests.length > 0) {
-    const dates = validRequests.map(r => r.sourceDate!.getTime());
-    let minDate = new Date(Math.min(...dates));
+    const dates = validRequests.map(r => r.createdAt.getTime());
     const maxDate = new Date(Math.max(...dates, Date.now()));
 
-    // Clamp minDate so the graph shows a maximum of 6 months (maxDate minus 5 months)
-    const sixMonthsAgo = new Date(maxDate.getFullYear(), maxDate.getMonth() - 5, 1);
-    if (minDate < sixMonthsAgo) {
-      minDate = sixMonthsAgo;
-    }
+    // Ensure the graph always shows the last 6 months (maxDate minus 5 months)
+    const minDate = new Date(maxDate.getFullYear(), maxDate.getMonth() - 5, 1);
 
     const monthMap = new Map<string, { month: string, total: number, completed: number, overdue: number }>();
     
@@ -89,7 +85,7 @@ async function getDashboardData() {
     }
 
     validRequests.forEach(req => {
-      const key = `${req.sourceDate!.getFullYear()}-${req.sourceDate!.getMonth()}`;
+      const key = `${req.createdAt.getFullYear()}-${req.createdAt.getMonth()}`;
       if (monthMap.has(key)) {
         const entry = monthMap.get(key)!;
         entry.total++;
@@ -100,9 +96,19 @@ async function getDashboardData() {
 
     monthlyData = Array.from(monthMap.values());
   } else {
-    // Fallback if no records exist
-    const m = new Date().toLocaleString('en-US', { month: 'short' });
-    monthlyData = [{ month: m, total: 0, completed: 0, overdue: 0 }];
+    // Fallback if no records exist, show last 6 months anyway
+    const maxDate = new Date();
+    const minDate = new Date(maxDate.getFullYear(), maxDate.getMonth() - 5, 1);
+    const monthMap = new Map<string, { month: string, total: number, completed: number, overdue: number }>();
+    const current = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+    const end = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+    while (current <= end) {
+      const m = current.toLocaleString('en-US', { month: 'short' });
+      const label = current.getFullYear() !== end.getFullYear() ? `${m} '${current.getFullYear().toString().slice(2)}` : m;
+      monthMap.set(`${current.getFullYear()}-${current.getMonth()}`, { month: label, total: 0, completed: 0, overdue: 0 });
+      current.setMonth(current.getMonth() + 1);
+    }
+    monthlyData = Array.from(monthMap.values());
   }
 
   // Calculate dynamic SLA Chart Data
@@ -128,9 +134,21 @@ async function getDashboardData() {
 
   const slaChartData = Object.values(slaDist).filter(d => d.onTrack > 0 || d.atRisk > 0 || d.overdue > 0);
 
+  const currentMonthData = monthlyData[monthlyData.length - 1];
+  const lastMonthData = monthlyData.length > 1 ? monthlyData[monthlyData.length - 2] : null;
+
+  const totalTrend = lastMonthData && lastMonthData.total > 0
+    ? Math.round(((currentMonthData.total - lastMonthData.total) / lastMonthData.total) * 100)
+    : 0;
+
+  const completedTrend = lastMonthData && lastMonthData.completed > 0
+    ? Math.round(((currentMonthData.completed - lastMonthData.completed) / lastMonthData.completed) * 100)
+    : 0;
+
   return {
     kpi: { total, pendingCS, pendingPR, pendingPO, pendingDispatch, completed, cancelled, overdue,
-      avgSLA: total > 0 ? Math.round(((total - overdue) / total) * 100) : 100 },
+      avgSLA: total > 0 ? Math.round(((total - overdue) / total) * 100) : 100,
+      totalTrend, completedTrend },
     recentRequests,
     departmentData: departmentData
       .map((d) => ({ name: d.name, value: d._count.procurementRequests }))

@@ -21,6 +21,7 @@ interface DashboardData {
   kpi: {
     total: number; pendingCS: number; pendingPR: number; pendingPO: number;
     pendingDispatch: number; completed: number; cancelled: number; overdue: number; avgSLA: number;
+    totalTrend?: number; completedTrend?: number;
   };
   recentRequests: Array<{
     id: string; sourceNo: string; sourceDescription: string; currentStage: CurrentStage;
@@ -73,7 +74,7 @@ export function ManagerDashboardClient({ data, userName }: Props) {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
         <KPICard title="Total Requests" value={kpi.total} icon={ShoppingCart} color="blue"
-          trend={{ value: 12, label: "vs last month" }} />
+          trend={kpi.totalTrend !== undefined && kpi.totalTrend !== 0 ? { value: Math.abs(kpi.totalTrend), label: "vs last month", positive: kpi.totalTrend > 0 } : undefined} />
         <KPICard title="Pending CS" value={kpi.pendingCS} icon={Clock} color="amber" />
         <KPICard title="Pending PR" value={kpi.pendingPR} icon={FileText} color="purple" />
         <KPICard title="Pending PO" value={kpi.pendingPO} icon={BarChart3} color="indigo" />
@@ -82,7 +83,7 @@ export function ManagerDashboardClient({ data, userName }: Props) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPICard title="Completed" value={kpi.completed} icon={CheckCircle2} color="green"
-          trend={{ value: 8, label: "vs last month", positive: true }} />
+          trend={kpi.completedTrend !== undefined && kpi.completedTrend !== 0 ? { value: Math.abs(kpi.completedTrend), label: "vs last month", positive: kpi.completedTrend > 0 } : undefined} />
         <KPICard title="Cancelled" value={kpi.cancelled} icon={XCircle} color="red" />
         <KPICard title="Overdue" value={kpi.overdue} icon={AlertTriangle} color="red" />
         <KPICard title="Avg SLA Score" value={`${kpi.avgSLA}%`} icon={TrendingUp} color="green" />

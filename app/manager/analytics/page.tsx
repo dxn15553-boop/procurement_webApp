@@ -19,8 +19,8 @@ async function getAnalyticsData(): Promise<AnalyticsData> {
       else if (req.slaStatus === "AT_RISK") atRisk++;
       else if (req.slaStatus === "OVERDUE") overdue++;
     });
-    return { name: dept.name, onTrack, atRisk, overdue };
-  });
+    return { name: dept.name, onTrack, atRisk, overdue, total: onTrack + atRisk + overdue };
+  }).filter(d => d.total > 0).map(({ total, ...rest }) => rest);
 
   // 2. Average Processing Time (Dynamic)
   let sumCS = 0, countCS = 0;
@@ -43,12 +43,13 @@ async function getAnalyticsData(): Promise<AnalyticsData> {
   ];
 
   // 3. Handler Workload
-  const handlerWorkloadData = users
-    .map((user) => ({
-      name: user.name,
-      value: user.procurementRequests.filter(r => r.currentStage !== "COMPLETED" && r.currentStage !== "CANCELLED").length,
-    }))
-    .filter(u => u.value > 0);
+  const handlerMap = new Map<string, number>();
+  requests.forEach((req) => {
+    if (req.currentStage !== "COMPLETED" && req.currentStage !== "CANCELLED" && req.nameOfHandler) {
+      handlerMap.set(req.nameOfHandler, (handlerMap.get(req.nameOfHandler) || 0) + 1);
+    }
+  });
+  const handlerWorkloadData = Array.from(handlerMap.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 
   // 4. Vendor Performance (Requests per vendor)
   const vendorPerformanceData = vendors
