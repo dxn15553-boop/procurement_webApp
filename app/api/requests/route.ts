@@ -145,10 +145,11 @@ export async function POST(req: Request) {
   const body = await req.json();
   const parsed = procurementSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: { message: "Validation failed" } }, { status: 400 });
   }
 
-  const data = parsed.data;
+  try {
+    const data = parsed.data;
 
   let departmentId = data.departmentId;
   if (departmentId && departmentId.length < 15) {
@@ -255,7 +256,14 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.json({ request }, { status: 201 });
+    return NextResponse.json({ request }, { status: 201 });
+  } catch (error: any) {
+    console.error("POST Error:", error);
+    return NextResponse.json(
+      { error: { message: error.message || "Internal server error" } },
+      { status: 500 }
+    );
+  }
 }
 
 export const runtime = "nodejs";

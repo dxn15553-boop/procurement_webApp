@@ -116,10 +116,11 @@ export async function PUT(
   const body = await req.json();
   const parsed = procurementSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: { message: "Validation failed" } }, { status: 400 });
   }
 
-  const existing = await prisma.procurementRequest.findUnique({ where: { id } });
+  try {
+    const existing = await prisma.procurementRequest.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (session.user.role !== "MANAGER" && existing.createdById !== session.user.id) {
@@ -239,9 +240,16 @@ export async function PUT(
         newValue: changedFields.map((f) => `${f}: ${(data as Record<string, unknown>)[f]}`).join("; "),
       },
     });
-  }
+    }
 
-  return NextResponse.json({ request: updated });
+    return NextResponse.json({ request: updated });
+  } catch (error: any) {
+    console.error("PUT Error:", error);
+    return NextResponse.json(
+      { error: { message: error.message || "Internal server error" } },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(
