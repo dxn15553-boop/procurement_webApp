@@ -141,7 +141,7 @@ export async function PUT(
   }
 
   let vendorId = data.vendorId || null;
-  if (vendorId && vendorId.length < 15) {
+  if (vendorId && vendorId.trim().length > 0) {
     const code = cleanCode(vendorId);
     const vend = await prisma.vendor.upsert({
       where: { code },
@@ -149,6 +149,8 @@ export async function PUT(
       create: { name: vendorId, code },
     });
     vendorId = vend.id;
+  } else {
+    vendorId = null;
   }
 
   const sourceDate = parseDate(data.sourceDate);

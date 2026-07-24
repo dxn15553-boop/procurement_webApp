@@ -163,7 +163,7 @@ export async function POST(req: Request) {
   }
 
   let vendorId = data.vendorId || null;
-  if (vendorId && vendorId.length < 15) {
+  if (vendorId && vendorId.trim().length > 0) {
     const code = cleanCode(vendorId);
     const vend = await prisma.vendor.upsert({
       where: { code },
@@ -171,6 +171,8 @@ export async function POST(req: Request) {
       create: { name: vendorId, code },
     });
     vendorId = vend.id;
+  } else {
+    vendorId = null;
   }
 
   const sourceDate = parseDate(data.sourceDate);
@@ -259,6 +261,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ request }, { status: 201 });
   } catch (error: any) {
     console.error("POST Error:", error);
+    
+    // Prisma Unique Constraint Violation
+    if (error.code === 'P2002' && error.meta?.target?.includes('sourceNo')) {
+      return NextResponse.json(
+        { error: { message: "This Source No already exists. Please change it and try again." } },
+        { status: 409 }
+      );
+    }
+    
     return NextResponse.json(
       { error: { message: error.message || "Internal server error" } },
       { status: 500 }

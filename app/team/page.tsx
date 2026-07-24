@@ -6,6 +6,13 @@ import Link from "next/link";
 import { cn, formatDate, getSLAColor, getStageColor, getStageName } from "@/lib/utils";
 import { ShoppingCart, Plus, Clock, CheckCircle2, AlertTriangle, TrendingUp } from "lucide-react";
 import { KPICard } from "@/components/dashboard/KPICard";
+import {
+  SourceSummaryChart,
+  MonthlyTrendChart,
+  DepartmentChart,
+  StageDistributionChart,
+  SLAPerformanceChart,
+} from "@/components/charts/DashboardCharts";
 import type { CurrentStage, SLAStatus } from "@/types";
 
 export const metadata: Metadata = { title: "My Dashboard" };
@@ -16,11 +23,12 @@ export default async function TeamDashboard() {
 
   const userId = session.user.id!;
 
-  const [total, active, completed, overdue, recent] = await Promise.all([
+  const [total, active, completed, overdue, cancelled, recent, deptRaw, stageRaw, allReqs] = await Promise.all([
     prisma.procurementRequest.count({ where: { createdById: userId } }),
     prisma.procurementRequest.count({ where: { createdById: userId, NOT: { currentStage: { in: ["COMPLETED", "CANCELLED"] } } } }),
     prisma.procurementRequest.count({ where: { createdById: userId, currentStage: "COMPLETED" } }),
     prisma.procurementRequest.count({ where: { createdById: userId, slaStatus: "OVERDUE" } }),
+    prisma.procurementRequest.count({ where: { createdById: userId, currentStage: "CANCELLED" } }),
     prisma.procurementRequest.findMany({
       where: { createdById: userId },
       orderBy: { createdAt: "desc" },
@@ -30,7 +38,95 @@ export default async function TeamDashboard() {
         vendor: { select: { name: true } },
       },
     }),
+    prisma.department.findMany({
+      include: { _count: { select: { procurementRequests: { where: { createdById: userId, isDeleted: false } } } } },
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.procurementRequest.groupBy({
+      by: ["currentStage"],
+      where: { createdById: userId, isDeleted: false },
+      _count: { id: true },
+    }),
+    prisma.procurementRequest.findMany({
+      where: { createdById: userId, isDeleted: false },
+      select: { createdAt: true, currentStage: true, slaStatus: true },
+    }),
   ]);
+
+  const departmentData = deptRaw
+    .map((d) => ({ name: d.name, value: d._count.procurementRequests }))
+    .filter((d) => d.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const stageData = stageRaw.map((s) => ({ name: s.currentStage, value: s._count.id }));
+
+  let monthlyData: any[] = [];
+  const validRequests = allReqs.filter(r => r.createdAt);
+  
+  if (validRequests.length > 0) {
+    const dates = validRequests.map(r => r.createdAt.getTime());
+    const maxDate = new Date(Math.max(...dates, Date.now()));
+    const minDate = new Date(maxDate.getFullYear(), maxDate.getMonth() - 5, 1);
+    const monthMap = new Map<string, { month: string, total: number, completed: number, overdue: number }>();
+    
+    const current = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+    const end = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+    
+    while (current <= end) {
+      const m = current.toLocaleString('en-US', { month: 'short' });
+      const label = current.getFullYear() !== end.getFullYear() ? `${m} '${current.getFullYear().toString().slice(2)}` : m;
+      monthMap.set(`${current.getFullYear()}-${current.getMonth()}`, { month: label, total: 0, completed: 0, overdue: 0 });
+      current.setMonth(current.getMonth() + 1);
+    }
+
+    validRequests.forEach(req => {
+      const key = `${req.createdAt.getFullYear()}-${req.createdAt.getMonth()}`;
+      if (monthMap.has(key)) {
+        const entry = monthMap.get(key)!;
+        entry.total++;
+        if (req.currentStage === "COMPLETED") entry.completed++;
+        if (req.slaStatus === "OVERDUE") entry.overdue++;
+      }
+    });
+
+    monthlyData = Array.from(monthMap.values());
+  } else {
+    const maxDate = new Date();
+    const minDate = new Date(maxDate.getFullYear(), maxDate.getMonth() - 5, 1);
+    const monthMap = new Map<string, { month: string, total: number, completed: number, overdue: number }>();
+    const current = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+    const end = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+    while (current <= end) {
+      const m = current.toLocaleString('en-US', { month: 'short' });
+      const label = current.getFullYear() !== end.getFullYear() ? `${m} '${current.getFullYear().toString().slice(2)}` : m;
+      monthMap.set(`${current.getFullYear()}-${current.getMonth()}`, { month: label, total: 0, completed: 0, overdue: 0 });
+      current.setMonth(current.getMonth() + 1);
+    }
+    monthlyData = Array.from(monthMap.values());
+  }
+
+  const slaDist: Record<string, { name: string, onTrack: number, atRisk: number, overdue: number }> = {
+    CS: { name: "CS", onTrack: 0, atRisk: 0, overdue: 0 },
+    PR: { name: "PR", onTrack: 0, atRisk: 0, overdue: 0 },
+    PO: { name: "PO", onTrack: 0, atRisk: 0, overdue: 0 },
+    PAR: { name: "PAR", onTrack: 0, atRisk: 0, overdue: 0 },
+    PDD: { name: "PDD", onTrack: 0, atRisk: 0, overdue: 0 },
+    MDD: { name: "MDD", onTrack: 0, atRisk: 0, overdue: 0 },
+    MRD: { name: "MRD", onTrack: 0, atRisk: 0, overdue: 0 },
+    WCD: { name: "WCD", onTrack: 0, atRisk: 0, overdue: 0 },
+  };
+
+  allReqs.forEach(r => {
+    const stage = r.currentStage;
+    if (slaDist[stage]) {
+      if (r.slaStatus === "ON_TRACK" || r.slaStatus === "COMPLETED") slaDist[stage].onTrack++;
+      if (r.slaStatus === "AT_RISK") slaDist[stage].atRisk++;
+      if (r.slaStatus === "OVERDUE") slaDist[stage].overdue++;
+    }
+  });
+
+  const slaChartData = Object.values(slaDist).filter(d => d.onTrack > 0 || d.atRisk > 0 || d.overdue > 0);
 
   return (
     <div className="space-y-6 fade-in">
@@ -58,6 +154,21 @@ export default async function TeamDashboard() {
         <KPICard title="Active" value={active} icon="clock" color="amber" />
         <KPICard title="Completed" value={completed} icon="check-circle" color="green" />
         <KPICard title="Overdue" value={overdue} icon="alert-triangle" color="red" />
+      </div>
+
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <MonthlyTrendChart data={monthlyData} />
+        </div>
+        <DepartmentChart data={departmentData.length > 0 ? departmentData : [{ name: "No Data", value: 1 }]} />
+      </div>
+
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <SourceSummaryChart data={[{ name: "Metrics", total, active, cancelled }]} />
+        <StageDistributionChart data={stageData.length > 0 ? stageData : [{ name: "No Data", value: 1 }]} />
+        <SLAPerformanceChart data={slaChartData} />
       </div>
 
       {/* My Requests Table */}

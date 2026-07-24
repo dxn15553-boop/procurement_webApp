@@ -11,6 +11,8 @@ import {
   BarChart3,
   TrendingUp,
   HelpCircle,
+  Package,
+  XCircle,
   LucideIcon
 } from "lucide-react";
 
@@ -23,6 +25,8 @@ const iconMap: Record<string, LucideIcon> = {
   "file-text": FileText,
   "bar-chart": BarChart3,
   "trending-up": TrendingUp,
+  "package": Package,
+  "x-circle": XCircle,
 };
 
 interface KPICardProps {
@@ -31,8 +35,9 @@ interface KPICardProps {
   subtitle?: string;
   icon: LucideIcon | string;
   trend?: { value: number; label: string; positive?: boolean };
-  color?: "blue" | "green" | "amber" | "red" | "purple" | "cyan" | "indigo";
+  color?: "blue" | "green" | "amber" | "red" | "purple" | "cyan" | "indigo" | "slate";
   className?: string;
+  layout?: "default" | "vertical";
 }
 
 const colorMap = {
@@ -71,6 +76,11 @@ const colorMap = {
     badge: "bg-indigo-50 border-indigo-100",
     accent: "from-indigo-500/10",
   },
+  slate: {
+    icon: "bg-slate-800 text-slate-100 dark:bg-slate-200 dark:text-slate-900",
+    badge: "bg-slate-100 border-slate-200",
+    accent: "from-slate-500/10",
+  },
 };
 
 export function KPICard({
@@ -81,6 +91,7 @@ export function KPICard({
   trend,
   color = "blue",
   className,
+  layout = "default",
 }: KPICardProps) {
   const colors = colorMap[color];
 
@@ -103,36 +114,53 @@ export function KPICard({
         )}
       />
 
-      <div className="relative flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            {title}
-          </p>
-          <p className="mt-2 text-3xl font-bold text-foreground">
+      {layout === "vertical" ? (
+        <div className="relative flex flex-col items-start">
+          <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center mb-4", colors.icon)}>
+            <IconComponent className="w-5 h-5" />
+          </div>
+          <p className="text-3xl font-bold text-foreground">
             {typeof value === "number" ? value.toLocaleString() : value}
+          </p>
+          <p className="mt-1 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+            {title}
           </p>
           {subtitle && (
             <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
           )}
-          {trend && (
-            <div className="mt-3 flex items-center gap-1.5">
-              <span
-                className={cn(
-                  "text-xs font-medium",
-                  trend.positive === false ? "text-red-600" : "text-emerald-600"
-                )}
-              >
-                {trend.positive !== false ? "+" : ""}{trend.value}%
-              </span>
-              <span className="text-xs text-muted-foreground">{trend.label}</span>
-            </div>
-          )}
         </div>
+      ) : (
+        <div className="relative flex items-start justify-between">
+          <div className="flex-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {title}
+            </p>
+            <p className="mt-2 text-3xl font-bold text-foreground">
+              {typeof value === "number" ? value.toLocaleString() : value}
+            </p>
+            {subtitle && (
+              <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+            )}
+            {trend && (
+              <div className="mt-3 flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    "text-xs font-medium",
+                    trend.positive === false ? "text-red-600" : "text-emerald-600"
+                  )}
+                >
+                  {trend.positive !== false ? "+" : ""}{trend.value}%
+                </span>
+                <span className="text-xs text-muted-foreground">{trend.label}</span>
+              </div>
+            )}
+          </div>
 
-        <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0", colors.icon)}>
-          <IconComponent className="w-5 h-5" />
+          <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0", colors.icon)}>
+            <IconComponent className="w-5 h-5" />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

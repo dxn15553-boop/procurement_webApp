@@ -6,6 +6,7 @@ import {
   DepartmentChart,
   StageDistributionChart,
   SLAPerformanceChart,
+  SourceSummaryChart,
 } from "@/components/charts/DashboardCharts";
 import { formatDate, getSLAColor, getStageColor, getStageName } from "@/lib/utils";
 import {
@@ -19,7 +20,7 @@ import type { CurrentStage, SLAStatus } from "@/types";
 
 interface DashboardData {
   kpi: {
-    total: number; pendingCS: number; pendingPR: number; pendingPO: number;
+    total: number; activeSource: number; pendingCS: number; pendingPR: number; pendingPO: number;
     pendingDispatch: number; completed: number; cancelled: number; overdue: number; avgSLA: number;
     totalTrend?: number; completedTrend?: number;
   };
@@ -98,7 +99,8 @@ export function ManagerDashboardClient({ data, userName }: Props) {
       </div>
 
       {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <SourceSummaryChart data={[{ name: "Metrics", total: kpi.total, active: kpi.activeSource, cancelled: kpi.cancelled }]} />
         <StageDistributionChart data={stageData.length > 0 ? stageData : [{ name: "No Data", value: 1 }]} />
         <SLAPerformanceChart data={slaChartData} />
       </div>

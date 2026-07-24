@@ -146,7 +146,7 @@ async function getDashboardData() {
     : 0;
 
   return {
-    kpi: { total, pendingCS, pendingPR, pendingPO, pendingDispatch, completed, cancelled, overdue,
+    kpi: { total, activeSource: total - cancelled, pendingCS, pendingPR, pendingPO, pendingDispatch, completed, cancelled, overdue,
       avgSLA: total > 0 ? Math.round(((total - overdue) / total) * 100) : 100,
       totalTrend, completedTrend },
     recentRequests,

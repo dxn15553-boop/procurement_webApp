@@ -21,7 +21,10 @@ export default async function EditRequestPage({
 
   const { id } = await params;
 
-  const request = await prisma.procurementRequest.findUnique({ where: { id } });
+  const request = await prisma.procurementRequest.findUnique({
+    where: { id },
+    include: { vendor: true }
+  });
   if (!request) notFound();
 
   const defaultValues = {
@@ -29,7 +32,7 @@ export default async function EditRequestPage({
     sourceDate: fmtDateInput(request.sourceDate),
     sourceDescription: request.sourceDescription,
     departmentId: request.departmentId,
-    vendorId: request.vendorId ?? undefined,
+    vendorId: request.vendor?.name ?? undefined,
     comparativeDate: fmtDateInput(request.comparativeDate),
     csStatus: request.csStatus as "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED",
     prNumber: request.prNumber ?? undefined,

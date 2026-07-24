@@ -308,10 +308,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>Vendor</label>
-            <select {...register("vendorId")} disabled={readOnly || isCancelled} className={inputClass}>
-              <option value="">Select vendor...</option>
-              {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-            </select>
+            <input type="text" {...register("vendorId")} disabled={readOnly || isCancelled} className={inputClass} placeholder="Enter vendor name..." />
           </div>
         </div>
       </div>

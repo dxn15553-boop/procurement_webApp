@@ -14,10 +14,11 @@ import {
   BarChart,
   Bar,
   Legend,
+  LabelList,
 } from "recharts";
 
 const COLORS = [
-  "#3b82f6", "#8b5cf6", "#f59e0b", "#10b981", 
+  "#3b82f6", "#8b5cf6", "#f59e0b", "#10b981",
   "#ef4444", "#06b6d4", "#6366f1", "#ec4899",
   "#f97316", "#84cc16", "#14b8a6", "#d946ef",
   "#eab308", "#a855f7", "#0ea5e9", "#22c55e",
@@ -131,6 +132,40 @@ export function SLAPerformanceChart({ data }: { data: SLAData[] }) {
           <Bar dataKey="onTrack" stackId="a" fill="#10b981" name="On Track" radius={[0, 0, 0, 0]} />
           <Bar dataKey="atRisk" stackId="a" fill="#f59e0b" name="At Risk" />
           <Bar dataKey="overdue" stackId="a" fill="#ef4444" name="Overdue" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+}
+
+interface SourceSummaryData {
+  name: string;
+  total: number;
+  active: number;
+  cancelled: number;
+}
+
+export function SourceSummaryChart({ data }: { data: SourceSummaryData[] }) {
+  return (
+    <ChartCard title="Source Summary Overview" subtitle="Comparison of all sources">
+      <ResponsiveContainer width="100%" height={180}>
+        <BarChart data={data} margin={{ top: 25, right: 10, left: 0, bottom: 0 }} maxBarSize={40}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={35} />
+          <Tooltip
+            contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+          />
+          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
+          <Bar dataKey="total" fill="#64748b" name="Total Source" radius={[4, 4, 0, 0]}>
+            <LabelList dataKey="total" position="top" style={{ fill: "hsl(var(--foreground))", fontSize: 11, fontWeight: "bold" }} />
+          </Bar>
+          <Bar dataKey="active" fill="#6366f1" name="Active Source" radius={[4, 4, 0, 0]}>
+            <LabelList dataKey="active" position="top" style={{ fill: "hsl(var(--foreground))", fontSize: 11, fontWeight: "bold" }} />
+          </Bar>
+          <Bar dataKey="cancelled" fill="#ef4444" name="Cancelled" radius={[4, 4, 0, 0]}>
+            <LabelList dataKey="cancelled" position="top" style={{ fill: "hsl(var(--foreground))", fontSize: 11, fontWeight: "bold" }} />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>
