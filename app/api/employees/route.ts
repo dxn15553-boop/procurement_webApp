@@ -30,16 +30,25 @@ export async function POST(req: Request) {
   const parsed = userSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { password, ...rest } = parsed.data;
-  const passwordHash = await bcrypt.hash(password ?? "changeme123", 12);
+  const { password, departmentId, ...rest } = parsed.data;
+  const passwordHash = await bcrypt.hash(password || "changeme123", 12);
   const mustChangePassword = !password; // If no password provided, they must change it
 
-  const user = await prisma.user.create({
-    data: { ...rest, passwordHash, mustChangePassword },
-  });
+  const validDepartmentId = departmentId === "" ? null : departmentId;
 
-  const { passwordHash: _pw, ...safeUser } = user;
-  return NextResponse.json({ user: safeUser }, { status: 201 });
+  try {
+    const user = await prisma.user.create({
+      data: { ...rest, departmentId: validDepartmentId, passwordHash, mustChangePassword },
+    });
+
+    const { passwordHash: _pw, ...safeUser } = user;
+    return NextResponse.json({ user: safeUser }, { status: 201 });
+  } catch (error: any) {
+    if (error.code === "P2002") {
+      return NextResponse.json({ error: "A user with this email already exists" }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
+  }
 }
 
 export const runtime = "nodejs";

@@ -44,7 +44,8 @@ export function EmployeeListClient({ initialEmployees, departments }: { initialE
       });
 
       if (!res.ok) {
-        toast.error("Failed to create user");
+        const errorData = await res.json().catch(() => null);
+        toast.error(errorData?.error || "Failed to create user");
         return;
       }
 

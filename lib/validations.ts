@@ -62,7 +62,7 @@ export const vendorSchema = z.object({
 export const userSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Please enter a valid email"),
-  password: z.string().min(6, "Password must be at least 6 characters").optional(),
+  password: z.string().min(6, "Password must be at least 6 characters").optional().or(z.literal("")),
   role: z.enum(["TEAM", "MANAGER"]),
   departmentId: z.string().optional().nullable(),
 });
