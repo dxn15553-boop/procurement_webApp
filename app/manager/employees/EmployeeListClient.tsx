@@ -261,7 +261,7 @@ export function EmployeeListClient({ initialEmployees, departments }: { initialE
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this employee?")) return;
     try {
-      const res = await fetch(`/api/employees/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json();
         toast.error(data.error || "Failed to delete employee");
