@@ -89,7 +89,7 @@ export function DepartmentChart({ data }: { data: PieData[] }) {
           <Tooltip
             contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
           />
-          <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "11px", lineHeight: "1.5", maxHeight: "250px", overflowY: "auto", width: "40%", paddingRight: "10px" }} />
+          <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={10} wrapperStyle={{ fontSize: "13px", fontWeight: "500", lineHeight: "1.6", maxHeight: "250px", overflowY: "auto", width: "45%", paddingRight: "10px", color: "hsl(var(--slate-700))" }} />
         </PieChart>
       </ResponsiveContainer>
     </ChartCard>
