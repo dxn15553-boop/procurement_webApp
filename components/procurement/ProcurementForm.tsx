@@ -72,6 +72,9 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         try {
           const parsed = JSON.parse(draft);
           Object.keys(parsed).forEach((key) => {
+            // Never restore sourceNo from draft so it's always blank by default on new requests
+            if (key === "sourceNo") return;
+            
             if (parsed[key] !== undefined && parsed[key] !== null && parsed[key] !== "") {
               setValue(key as keyof ProcurementInput, parsed[key], { shouldValidate: false, shouldDirty: true });
             }
