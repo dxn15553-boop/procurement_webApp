@@ -285,7 +285,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>Source No *</label>
-            <input {...register("sourceNo")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input {...register("sourceNo")} disabled={readOnly || isCancelled} className={`\${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  />
             {errors.sourceNo && <p className="text-xs text-destructive mt-1">{errors.sourceNo.message}</p>}
           </div>
           <div>
@@ -295,20 +295,17 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>Department *</label>
-            <select {...register("departmentId")} disabled={readOnly || isCancelled} className={inputClass}>
-              <option value="">Select department...</option>
-              {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
+            <input type="text" {...register("departmentId")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} placeholder="Enter department..." onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
             {errors.departmentId && <p className="text-xs text-destructive mt-1">{errors.departmentId.message}</p>}
           </div>
           <div className="md:col-span-3">
             <label className={labelClass}>Source Description *</label>
-            <textarea {...register("sourceDescription")} disabled={readOnly || isCancelled} rows={2} className={inputClass} />
+            <textarea {...register("sourceDescription")} disabled={readOnly || isCancelled} rows={2} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
             {errors.sourceDescription && <p className="text-xs text-destructive mt-1">{errors.sourceDescription.message}</p>}
           </div>
           <div>
             <label className={labelClass}>Vendor</label>
-            <input type="text" {...register("vendorId")} disabled={readOnly || isCancelled} className={inputClass} placeholder="Enter vendor name..." />
+            <input type="text" {...register("vendorId")} disabled={readOnly || isCancelled} className={`\${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="Enter vendor name..." />
           </div>
         </div>
       </div>
@@ -330,9 +327,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>CS Status</label>
-            <select {...register("csStatus")} disabled={readOnly || isCancelled} className={inputClass}>
-              {CS_STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
-            </select>
+            <input type="text" {...register("csStatus")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} placeholder="e.g. PENDING, IN PROGRESS" onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
           </div>
         </div>
       </div>
@@ -346,7 +341,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>PR Number</label>
-            <input {...register("prNumber")} disabled={readOnly || isCancelled} className={inputClass} placeholder="PR-YYYY-XXXX" />
+            <input {...register("prNumber")} disabled={readOnly || isCancelled} className={`\${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="PR-YYYY-XXXX" />
           </div>
           <div>
             <label className={labelClass}>PR Date</label>
@@ -358,9 +353,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>PR Status</label>
-            <select {...register("prStatus")} disabled={readOnly || isCancelled} className={inputClass}>
-              {PR_STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
-            </select>
+            <input type="text" {...register("prStatus")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} placeholder="e.g. PENDING, IN PROGRESS" onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
           </div>
         </div>
       </div>
@@ -374,7 +367,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className={labelClass}>PO Number</label>
-            <input {...register("poNumber")} disabled={readOnly || isCancelled} className={inputClass} placeholder="PO-YYYY-XXXX" />
+            <input {...register("poNumber")} disabled={readOnly || isCancelled} className={`\${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="PO-YYYY-XXXX" />
           </div>
           <div>
             <label className={labelClass}>PO Date</label>
@@ -386,12 +379,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>PO Status</label>
-            <select {...register("poStatus")} disabled={readOnly || isCancelled} className={inputClass}>
-              <option value="PENDING">PENDING</option>
-              <option value="IN_PROGRESS">IN PROGRESS</option>
-              <option value="COMPLETED">COMPLETED</option>
-              <option value="CANCELLED">CANCELLED</option>
-            </select>
+            <input type="text" {...register("poStatus")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} placeholder="e.g. PENDING, IN PROGRESS" onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
           </div>
         </div>
       </div>
@@ -405,7 +393,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>PRL No</label>
-            <input {...register("prlNo")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input {...register("prlNo")} disabled={readOnly || isCancelled} className={`\${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  />
           </div>
           <div>
             <label className={labelClass}>PRL Date</label>
@@ -425,11 +413,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>Payment Status</label>
-            <select {...register("paymentStatus")} disabled={readOnly || isCancelled} className={inputClass}>
-              <option value="PENDING">PENDING</option>
-              <option value="IN_PROGRESS">IN PROGRESS</option>
-              <option value="COMPLETED">COMPLETED</option>
-            </select>
+            <input type="text" {...register("paymentStatus")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} placeholder="e.g. PENDING, IN PROGRESS" onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
           </div>
         </div>
       </div>
@@ -469,21 +453,16 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>Name of Handler *</label>
-            <select {...register("nameOfHandler")} disabled={readOnly || isCancelled} className={inputClass}>
-              <option value="">Select handler...</option>
-              {handlers.map(h => <option key={h.id} value={h.name}>{h.name}</option>)}
-            </select>
+            <input type="text" {...register("nameOfHandler")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} placeholder="Enter handler name..." onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
             {errors.nameOfHandler && <p className="text-xs text-destructive mt-1">{errors.nameOfHandler.message}</p>}
           </div>
           <div>
             <label className={labelClass}>Current Status by Handler</label>
-            <input {...register("currentStatusByHandler")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input {...register("currentStatusByHandler")} disabled={readOnly || isCancelled} className={`\${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  />
           </div>
           <div>
             <label className={labelClass}>Current Stage</label>
-            <select {...register("currentStage")} disabled={readOnly} className={inputClass}>
-              {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <input type="text" {...register("currentStage")} disabled={readOnly} className={`${inputClass} uppercase`} placeholder="e.g. CS, PR, PO" onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
           </div>
           <div>
             <label className={labelClass}>Pending From</label>

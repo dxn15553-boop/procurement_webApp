@@ -152,7 +152,7 @@ export async function POST(req: Request) {
     const data = parsed.data;
 
   let departmentId = data.departmentId;
-  if (departmentId && departmentId.length < 15) {
+  if (departmentId && departmentId.trim().length > 0 && (!departmentId.startsWith("c") || departmentId.length !== 25)) {
     const code = cleanCode(departmentId);
     const dept = await prisma.department.upsert({
       where: { code },
