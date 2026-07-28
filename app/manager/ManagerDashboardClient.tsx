@@ -11,9 +11,10 @@ import { formatDate, getSLAColor, getStageColor, getStageName } from "@/lib/util
 import {
   ShoppingCart, CheckCircle2, XCircle, AlertTriangle,
   Clock, TrendingUp, Truck, FileText, BarChart3, Activity,
-  ArrowRight, RefreshCw
+  ArrowRight, RefreshCw, ExternalLink
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { CurrentStage, SLAStatus } from "@/types";
 
@@ -43,6 +44,7 @@ interface Props {
 }
 
 export function ManagerDashboardClient({ data, userName }: Props) {
+  const router = useRouter();
   const { kpi, recentRequests, departmentData, stageData, monthlyData, slaChartData } = data;
 
   const kpiCards = [
@@ -70,7 +72,10 @@ export function ManagerDashboardClient({ data, userName }: Props) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors">
+          <button 
+            onClick={() => router.refresh()}
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors active:scale-95"
+          >
             <RefreshCw className="w-4 h-4" />
             Refresh
           </button>
@@ -160,7 +165,7 @@ export function ManagerDashboardClient({ data, userName }: Props) {
                 <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Handler</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {recentRequests.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 lg:px-8 py-12 text-center text-slate-500 font-medium text-sm bg-slate-50/30">
@@ -169,11 +174,16 @@ export function ManagerDashboardClient({ data, userName }: Props) {
                 </tr>
               ) : (
                 recentRequests.map((r) => (
-                  <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors group">
+                  <tr 
+                    key={r.id} 
+                    onClick={() => router.push(`/manager/requests/${r.id}`)}
+                    className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                  >
                     <td className="px-6 lg:px-8 py-4">
-                      <Link href={`/manager/requests/${r.id}`} className="text-indigo-600 hover:text-indigo-700 font-bold text-xs tracking-wide">
+                      <div className="text-indigo-600 font-bold text-xs tracking-wide flex items-center gap-2">
                         {r.sourceNo}
-                      </Link>
+                        <ExternalLink className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
                     </td>
                     <td className="px-6 py-4 max-w-48">
                       <p className="truncate text-xs font-medium text-slate-700">{r.sourceDescription}</p>
