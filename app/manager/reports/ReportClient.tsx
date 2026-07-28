@@ -65,11 +65,12 @@ export function ReportClient({ departments, vendors }: Props) {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-6 relative overflow-hidden group">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-slate-100/50 to-transparent rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none"></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Report Type</label>
-          <select value={type} onChange={(e) => setType(e.target.value)} className="w-full px-3 py-2 text-sm border border-input rounded-lg bg-background">
+          <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Report Type</label>
+          <select value={type} onChange={(e) => setType(e.target.value)} className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900 font-medium">
             <option value="all">Master Procurement Report</option>
             <option value="dept">Department-wise SLA Report</option>
             <option value="vendor">Vendor Compliance Report</option>
@@ -77,8 +78,8 @@ export function ReportClient({ departments, vendors }: Props) {
         </div>
         {type === "dept" && (
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Department</label>
-            <select value={deptId} onChange={(e) => setDeptId(e.target.value)} className="w-full px-3 py-2 text-sm border border-input rounded-lg bg-background">
+            <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Department</label>
+            <select value={deptId} onChange={(e) => setDeptId(e.target.value)} className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900 font-medium">
               <option value="">All Departments</option>
               {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
@@ -86,8 +87,8 @@ export function ReportClient({ departments, vendors }: Props) {
         )}
         {type === "vendor" && (
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Vendor</label>
-            <select value={vendorId} onChange={(e) => setVendorId(e.target.value)} className="w-full px-3 py-2 text-sm border border-input rounded-lg bg-background">
+            <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Vendor</label>
+            <select value={vendorId} onChange={(e) => setVendorId(e.target.value)} className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900 font-medium">
               <option value="">All Vendors</option>
               {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
             </select>
@@ -95,22 +96,22 @@ export function ReportClient({ departments, vendors }: Props) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">From Date</label>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full px-3 py-2 text-sm border border-input rounded-lg bg-background" />
+          <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">From Date</label>
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900 font-medium" />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">To Date</label>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full px-3 py-2 text-sm border border-input rounded-lg bg-background" />
+          <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">To Date</label>
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900 font-medium" />
         </div>
       </div>
 
-      <div className="flex gap-3 justify-end pt-4 border-t border-border/50">
+      <div className="flex gap-3 justify-end pt-6 border-t border-slate-100 relative z-10">
         <button
           disabled={loading}
           onClick={() => handleExport("csv")}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-sm rounded-lg border border-border hover:bg-muted font-medium transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-sm bg-white disabled:opacity-50"
         >
           {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
           Export CSV
@@ -118,7 +119,7 @@ export function ReportClient({ departments, vendors }: Props) {
         <button
           disabled={loading}
           onClick={() => handleExport("pdf")}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-sm rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200 disabled:opacity-50"
         >
           <Printer className="w-4 h-4" />
           Print / PDF

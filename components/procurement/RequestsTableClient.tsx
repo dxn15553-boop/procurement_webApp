@@ -104,19 +104,19 @@ export function RequestsTableClient({ role }: { role: "TEAM" | "MANAGER" }) {
       {/* Filters Bar */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             placeholder="Search source no, description, vendor..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+            className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900"
           />
         </div>
 
         <select
           value={stage}
           onChange={(e) => setStage(e.target.value)}
-          className="px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+          className="px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer font-medium text-slate-700"
         >
           <option value="">All Stages</option>
           {STAGES.filter(Boolean).map((s) => <option key={s} value={s}>{s}</option>)}
@@ -125,7 +125,7 @@ export function RequestsTableClient({ role }: { role: "TEAM" | "MANAGER" }) {
         <select
           value={slaStatus}
           onChange={(e) => setSlaStatus(e.target.value)}
-          className="px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+          className="px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer font-medium text-slate-700"
         >
           <option value="">All SLA</option>
           {SLA_STATUSES.filter(Boolean).map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
@@ -133,16 +133,16 @@ export function RequestsTableClient({ role }: { role: "TEAM" | "MANAGER" }) {
 
         <button
           onClick={() => fetchRequests(pagination.page)}
-          className="p-2 rounded-lg border border-border hover:bg-muted transition-colors"
+          className="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm bg-white"
           title="Refresh"
         >
-          <RefreshCw className="w-4 h-4 text-muted-foreground" />
+          <RefreshCw className="w-4 h-4 text-slate-500" />
         </button>
 
         {role === "MANAGER" && (
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2.5 text-sm rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors font-bold text-slate-700 shadow-sm bg-white"
           >
             <Download className="w-4 h-4" />
             Export CSV
@@ -151,52 +151,52 @@ export function RequestsTableClient({ role }: { role: "TEAM" | "MANAGER" }) {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-100 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/30">
-                {role === "MANAGER" && <th className="px-4 py-3 w-8"><input type="checkbox" className="rounded" /></th>}
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground whitespace-nowrap">Source No</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Description</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Department</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Vendor</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Stage</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground whitespace-nowrap">SLA Status</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground whitespace-nowrap">Pending Days</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Handler</th>
-                {role === "MANAGER" && <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Created By</th>}
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Date</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Actions</th>
+              <tr className="border-b border-slate-100 bg-slate-50/80">
+                {role === "MANAGER" && <th className="px-6 py-4 w-8"><input type="checkbox" className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" /></th>}
+                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">Source No</th>
+                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Description</th>
+                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Department</th>
+                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Vendor</th>
+                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Stage</th>
+                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">SLA Status</th>
+                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">Pending Days</th>
+                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Handler</th>
+                {role === "MANAGER" && <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Created By</th>}
+                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</th>
+                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b border-border/50">
+                  <tr key={i} className="animate-pulse">
                     {Array.from({ length: role === "MANAGER" ? 12 : 10 }).map((_, j) => (
-                      <td key={j} className="px-4 py-3">
-                        <div className="h-4 rounded shimmer" />
+                      <td key={j} className="px-6 py-5">
+                        <div className="h-4 bg-slate-100 rounded w-full" />
                       </td>
                     ))}
                   </tr>
                 ))
               ) : requests.length === 0 ? (
                 <tr>
-                  <td colSpan={role === "MANAGER" ? 12 : 10} className="px-4 py-12 text-center text-muted-foreground text-sm">
+                  <td colSpan={role === "MANAGER" ? 12 : 10} className="px-6 py-12 text-center text-slate-500 font-medium text-sm bg-slate-50/30">
                     No requests found. {role === "TEAM" && (
-                      <Link href="/team/requests/new" className="text-primary hover:underline ml-1">Create one →</Link>
+                      <Link href="/team/requests/new" className="text-indigo-600 hover:underline font-bold ml-1">Create one →</Link>
                     )}
                   </td>
                 </tr>
               ) : (
                 requests.map((r) => (
-                  <tr key={r.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                  <tr key={r.id} className="hover:bg-slate-50/80 transition-colors group">
                     {role === "MANAGER" && (
-                      <td className="px-4 py-3">
+                      <td className="px-6 py-5">
                         <input
                           type="checkbox"
-                          className="rounded"
+                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                           checked={selectedIds.has(r.id)}
                           onChange={(e) => {
                             const next = new Set(selectedIds);
@@ -206,58 +206,58 @@ export function RequestsTableClient({ role }: { role: "TEAM" | "MANAGER" }) {
                         />
                       </td>
                     )}
-                    <td className="px-4 py-3">
-                      <Link href={`${basePath}/requests/${r.id}`} className="text-primary hover:underline font-medium text-xs whitespace-nowrap">
+                    <td className="px-6 py-5">
+                      <Link href={`${basePath}/requests/${r.id}`} className="text-indigo-600 hover:text-indigo-700 font-bold text-xs whitespace-nowrap tracking-wide">
                         {r.sourceNo}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 max-w-40">
-                      <p className="truncate text-xs text-foreground" title={r.sourceDescription}>{r.sourceDescription}</p>
+                    <td className="px-6 py-5 max-w-40">
+                      <p className="truncate text-xs font-medium text-slate-700" title={r.sourceDescription}>{r.sourceDescription}</p>
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{r.department?.name ?? "—"}</td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{r.vendor?.name ?? "—"}</td>
-                    <td className="px-4 py-3">
-                      <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap", getStageColor(r.currentStage))}>
+                    <td className="px-6 py-5 text-xs font-medium text-slate-500 whitespace-nowrap">{r.department?.name ?? "—"}</td>
+                    <td className="px-6 py-5 text-xs font-medium text-slate-500 whitespace-nowrap">{r.vendor?.name ?? "—"}</td>
+                    <td className="px-6 py-5">
+                      <span className={cn("px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider whitespace-nowrap", getStageColor(r.currentStage))}>
                         {getStageName(r.currentStage)}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap", getSLAColor(r.slaStatus))}>
+                    <td className="px-6 py-5">
+                      <span className={cn("px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider border whitespace-nowrap", getSLAColor(r.slaStatus))}>
                         {r.slaStatus.replace("_", " ")}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                    <td className="px-6 py-5 text-xs font-medium text-slate-500 whitespace-nowrap">
                       {r.pendingDays != null ? `${r.pendingDays} days` : "—"}
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{r.nameOfHandler}</td>
+                    <td className="px-6 py-5 text-xs font-medium text-slate-500 whitespace-nowrap">{r.nameOfHandler}</td>
                     {role === "MANAGER" && (
-                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{r.createdBy?.name ?? "—"}</td>
+                      <td className="px-6 py-5 text-xs font-medium text-slate-500 whitespace-nowrap">{r.createdBy?.name ?? "—"}</td>
                     )}
-                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(r.createdAt)}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-5 text-xs font-medium text-slate-500 whitespace-nowrap">{formatDate(r.createdAt)}</td>
+                    <td className="px-6 py-5">
                       <div className="flex items-center gap-1">
                         <Link
                           href={`${basePath}/requests/${r.id}`}
-                          className="p-1.5 rounded hover:bg-muted transition-colors"
+                          className="p-2 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors shadow-sm"
                           title="View"
                         >
-                          <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                          <Eye className="w-3.5 h-3.5" />
                         </Link>
                         {role === "MANAGER" && (
                           <>
                             <Link
                               href={`/manager/requests/${r.id}/edit`}
-                              className="p-1.5 rounded hover:bg-muted transition-colors"
+                              className="p-2 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
                               title="Edit"
                             >
-                              <Edit className="w-3.5 h-3.5 text-muted-foreground" />
+                              <Edit className="w-3.5 h-3.5" />
                             </Link>
                             <button
                               onClick={() => handleDelete(r.id)}
-                              className="p-1.5 rounded hover:bg-red-50 transition-colors"
+                              className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                               title="Delete"
                             >
-                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </>
                         )}

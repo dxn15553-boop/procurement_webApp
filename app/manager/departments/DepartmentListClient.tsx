@@ -72,7 +72,7 @@ export function DepartmentListClient({ initialDepartments }: { initialDepartment
       <div className="flex justify-between items-center">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium ml-auto"
+          className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200 active:scale-[0.98] ml-auto"
         >
           <Plus className="w-4 h-4" />
           Add Department
@@ -80,28 +80,29 @@ export function DepartmentListClient({ initialDepartments }: { initialDepartment
       </div>
 
       {isOpen && (
-        <form onSubmit={handleSubmit(onSubmit)} className="p-5 border border-border bg-card rounded-xl shadow-sm max-w-xl space-y-4 slide-in">
-          <h3 className="text-sm font-bold text-foreground">Create Department</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 lg:p-8 bg-white border border-slate-100 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-xl space-y-6 slide-in relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-slate-100/50 to-transparent rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none"></div>
+          <h3 className="text-lg font-bold text-slate-900 tracking-tight relative z-10">Create Department</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">Code *</label>
-              <input {...register("code")} className="w-full px-3 py-2 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="e.g. IT, MFG" />
-              {errors.code && <p className="text-xs text-destructive mt-1">{errors.code.message}</p>}
+              <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Code *</label>
+              <input {...register("code")} className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900" placeholder="e.g. IT, MFG" />
+              {errors.code && <p className="text-xs text-red-500 font-medium mt-1">{errors.code.message}</p>}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">Name *</label>
-              <input {...register("name")} className="w-full px-3 py-2 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="e.g. Information Technology" />
-              {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
+              <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Name *</label>
+              <input {...register("name")} className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900" placeholder="e.g. Information Technology" />
+              {errors.name && <p className="text-xs text-red-500 font-medium mt-1">{errors.name.message}</p>}
             </div>
             <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">Department Head</label>
-              <input {...register("head")} className="w-full px-3 py-2 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="e.g. John Smith" />
+              <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Department Head</label>
+              <input {...register("head")} className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900" placeholder="e.g. John Smith" />
             </div>
           </div>
-          <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => setIsOpen(false)} className="px-4 py-2 text-xs rounded-lg border border-border hover:bg-muted transition-colors">Cancel</button>
-            <button type="submit" disabled={isSubmitting} className="flex items-center gap-1.5 px-4 py-2 text-xs rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 disabled:opacity-50">
-              {isSubmitting && <RefreshCw className="w-3 h-3 animate-spin" />}
+          <div className="flex gap-3 justify-end relative z-10">
+            <button type="button" onClick={() => setIsOpen(false)} className="px-6 py-2.5 text-sm font-bold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-sm bg-white">Cancel</button>
+            <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200 disabled:opacity-50">
+              {isSubmitting && <RefreshCw className="w-4 h-4 animate-spin" />}
               Save
             </button>
           </div>
@@ -111,37 +112,35 @@ export function DepartmentListClient({ initialDepartments }: { initialDepartment
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {departments.map((d) => (
-          <div key={d.id} className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full flex items-center justify-center pointer-events-none">
-              <Building2 className="w-8 h-8 text-primary/10" />
-            </div>
+          <div key={d.id} className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-slate-100/50 to-transparent rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none group-hover:from-indigo-50/50 transition-colors"></div>
             <button 
               onClick={() => handleDelete(d.id)}
-              className="absolute top-3 right-3 p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-md transition-colors z-10 bg-background/50 backdrop-blur-sm"
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors z-10 bg-white shadow-sm border border-slate-100"
               title="Delete Department"
             >
               <Trash2 className="w-4 h-4" />
             </button>
-            <div>
+            <div className="relative z-10">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase">{d.code}</span>
-                <span className="text-xs text-muted-foreground">{d.isActive ? "Active" : "Inactive"}</span>
+                <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 uppercase tracking-wider">{d.code}</span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{d.isActive ? "Active" : "Inactive"}</span>
               </div>
-              <h3 className="font-semibold text-foreground text-sm mt-2">{d.name}</h3>
+              <h3 className="font-bold text-slate-900 text-lg mt-3 tracking-tight">{d.name}</h3>
             </div>
-            <div className="space-y-1.5 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5" />
-                <span>Head: <span className="font-medium text-foreground">{d.head ?? "Not assigned"}</span></span>
+            <div className="space-y-2 text-sm font-medium text-slate-500 mt-4 relative z-10">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-slate-400" />
+                <span>Head: <span className="font-bold text-slate-700">{d.head ?? "Not assigned"}</span></span>
               </div>
-              <div className="flex gap-4 mt-2">
+              <div className="flex gap-6 mt-4 pt-4 border-t border-slate-100">
                 <div>
-                  <span className="block text-foreground font-semibold text-sm">{d._count.users}</span>
-                  <span>Employees</span>
+                  <span className="block text-slate-900 font-bold text-base">{d._count.users}</span>
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Employees</span>
                 </div>
                 <div>
-                  <span className="block text-foreground font-semibold text-sm">{d._count.procurementRequests}</span>
-                  <span>Requests</span>
+                  <span className="block text-slate-900 font-bold text-base">{d._count.procurementRequests}</span>
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Requests</span>
                 </div>
               </div>
             </div>

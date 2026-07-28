@@ -24,12 +24,15 @@ interface ChartCardProps {
 
 function ChartCard({ title, subtitle, children }: ChartCardProps) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-      <div className="mb-4">
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+    <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col h-full relative">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-slate-100/50 to-transparent rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none"></div>
+      <div className="mb-6 relative z-10">
+        <h3 className="text-lg font-bold text-slate-900 tracking-tight">{title}</h3>
+        {subtitle && <p className="text-xs font-medium text-slate-500 mt-1">{subtitle}</p>}
       </div>
-      {children}
+      <div className="flex-1 relative z-10 w-full">
+        {children}
+      </div>
     </div>
   );
 }

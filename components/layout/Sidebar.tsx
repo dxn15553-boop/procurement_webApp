@@ -119,10 +119,10 @@ export function Sidebar({ role }: SidebarProps) {
       >
       {/* Logo */}
       <div className={cn(
-        "flex items-center gap-3 px-4 py-5 border-b border-white/60",
+        "flex items-center gap-3 px-4 py-5 border-b border-slate-100",
         collapsed && "justify-center px-2"
       )}>
-        <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-md shadow-blue-500/20">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-500/20">
           <Package className="w-5 h-5 text-white" />
         </div>
         {!collapsed && (
@@ -150,18 +150,18 @@ export function Sidebar({ role }: SidebarProps) {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group relative mx-2 border",
                 isActive
-                  ? "bg-white/80 border-white text-blue-600 shadow-sm"
-                  : "bg-transparent border-transparent text-slate-500 hover:text-slate-950 hover:bg-white/40 hover:border-white/50",
+                  ? "bg-indigo-50/50 border-indigo-100/50 text-indigo-700 shadow-sm"
+                  : "bg-transparent border-transparent text-slate-500 hover:text-slate-950 hover:bg-slate-50 hover:border-slate-200/50",
                 collapsed && "justify-center px-2"
               )}
               title={collapsed ? item.label : undefined}
             >
-              <Icon className={cn("w-5 h-5 flex-shrink-0 transition-colors", isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-700")} />
+              <Icon className={cn("w-5 h-5 flex-shrink-0 transition-colors", isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-700")} />
               {!collapsed && (
                 <span className="truncate">{item.label}</span>
               )}
               {!collapsed && item.badge && item.badge > 0 && (
-                <span className="ml-auto bg-blue-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
+                <span className="ml-auto bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
                   {item.badge > 99 ? "99+" : item.badge}
                 </span>
               )}
@@ -178,9 +178,9 @@ export function Sidebar({ role }: SidebarProps) {
 
       {/* Role badge at bottom */}
       {!collapsed && (
-        <div className="px-4 py-4 border-t border-white/60">
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/30 border border-white/40">
-            <ShieldCheck className="w-4 h-4 text-blue-600 flex-shrink-0" />
+        <div className="px-4 py-4 border-t border-slate-100">
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+            <ShieldCheck className="w-4 h-4 text-indigo-600 flex-shrink-0" />
             <span className="text-xs text-slate-500">
               Role: <span className="text-slate-800 font-bold">{role}</span>
             </span>

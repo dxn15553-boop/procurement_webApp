@@ -107,14 +107,14 @@ export function ProcurementListClient({ role }: ProcurementListClientProps) {
               placeholder="Search requests..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900"
             />
           </div>
           <div className="relative">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none pl-9 pr-8 py-2 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all cursor-pointer"
+              className="appearance-none pl-9 pr-8 py-2.5 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer font-medium text-slate-700"
             >
               <option value="ALL">All Statuses</option>
               <option value="ON_TRACK">On Track</option>
@@ -122,14 +122,14 @@ export function ProcurementListClient({ role }: ProcurementListClientProps) {
               <option value="OVERDUE">Overdue</option>
               <option value="COMPLETED">Completed</option>
             </select>
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
 
         {role === "TEAM" && (
           <Link
             href="/team/requests/new"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl transition-all shadow-sm hover:shadow-md font-medium text-sm flex items-center gap-2 w-full sm:w-auto justify-center"
+            className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200 active:scale-[0.98] w-full sm:w-auto justify-center"
           >
             <Plus className="w-4 h-4" />
             New Request
@@ -138,22 +138,22 @@ export function ProcurementListClient({ role }: ProcurementListClientProps) {
       </div>
 
       {/* Data Table */}
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-100 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead>
-              <tr className="bg-muted/50 border-b border-border">
-                <th className="px-6 py-4 font-semibold text-muted-foreground">Source Info</th>
-                <th className="px-6 py-4 font-semibold text-muted-foreground hidden md:table-cell">Department</th>
-                <th className="px-6 py-4 font-semibold text-muted-foreground text-center">Stage</th>
-                <th className="px-6 py-4 font-semibold text-muted-foreground text-center hidden sm:table-cell">SLA Status</th>
+              <tr className="bg-slate-50/80 border-b border-slate-100">
+                <th className="px-6 lg:px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Source Info</th>
+                <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-slate-400 hidden md:table-cell">Department</th>
+                <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center">Stage</th>
+                <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center hidden sm:table-cell">SLA Status</th>
                 {role === "MANAGER" && (
-                  <th className="px-6 py-4 font-semibold text-muted-foreground hidden lg:table-cell">Submitted By</th>
+                  <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-slate-400 hidden lg:table-cell">Submitted By</th>
                 )}
-                <th className="px-6 py-4 font-semibold text-muted-foreground text-right">Actions</th>
+                <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
@@ -176,53 +176,53 @@ export function ProcurementListClient({ role }: ProcurementListClientProps) {
                 </tr>
               ) : (
                 filteredRequests.map((req) => (
-                  <tr key={req.id} className="hover:bg-muted/30 transition-colors group">
-                    <td className="px-6 py-4">
+                  <tr key={req.id} className="hover:bg-slate-50/80 transition-colors group">
+                    <td className="px-6 lg:px-8 py-5">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                        <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
                           {req.sourceNo}
                         </span>
-                        <span className="text-xs text-muted-foreground mt-0.5 line-clamp-1 max-w-[250px]">
+                        <span className="text-xs font-medium text-slate-500 mt-0.5 line-clamp-1 max-w-[250px]">
                           {req.sourceDescription || "No description provided"}
                         </span>
-                        <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground md:hidden">
+                        <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-500 md:hidden">
                           <Building2 className="w-3 h-3" />
                           <span>{req.department?.name || "No Dept"}</span>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 hidden md:table-cell text-muted-foreground">
+                    <td className="px-6 py-5 hidden md:table-cell text-slate-500 font-medium">
                       <div className="flex items-center gap-1.5">
-                        <Building2 className="w-4 h-4 text-muted-foreground/50" />
+                        <Building2 className="w-4 h-4 text-slate-400" />
                         <span className="truncate max-w-[150px]">{req.department?.name || "—"}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap", getStageColor(req.currentStage))}>
+                    <td className="px-6 py-5 text-center">
+                      <span className={cn("px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider", getStageColor(req.currentStage))}>
                         {req.currentStage}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center hidden sm:table-cell">
-                      <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap border uppercase tracking-wider flex items-center justify-center gap-1.5 w-max mx-auto", getSLAColor(req.slaStatus))}>
+                    <td className="px-6 py-5 text-center hidden sm:table-cell">
+                      <span className={cn("px-2.5 py-1 rounded-md text-[10px] font-bold whitespace-nowrap border uppercase tracking-wider flex items-center justify-center gap-1.5 w-max mx-auto", getSLAColor(req.slaStatus))}>
                         {req.slaStatus === 'AT_RISK' && <Clock className="w-3 h-3" />}
                         {req.slaStatus === 'OVERDUE' && <AlertCircle className="w-3 h-3" />}
                         {req.slaStatus.replace("_", " ")}
                       </span>
                     </td>
                     {role === "MANAGER" && (
-                      <td className="px-6 py-4 hidden lg:table-cell">
+                      <td className="px-6 py-5 hidden lg:table-cell">
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-foreground">{req.createdBy?.name || "System"}</span>
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-sm font-bold text-slate-700">{req.createdBy?.name || "System"}</span>
+                          <span className="text-[10px] font-medium text-slate-500">
                             {req.createdAt ? format(new Date(req.createdAt), "dd MMM yyyy") : "—"}
                           </span>
                         </div>
                       </td>
                     )}
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-5 text-right">
                       <Link
                         href={role === "MANAGER" ? `/manager/requests/${req.id}` : `/team/requests/${req.id}`}
-                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors shadow-sm"
                         title="View Details"
                       >
                         <ArrowRight className="w-4 h-4" />

@@ -270,16 +270,16 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
     COMPLETED: "text-blue-600 bg-blue-50",
   };
 
-  const inputClass = "w-full px-4 py-2 text-sm border border-white/60 rounded-xl bg-white/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-inner disabled:opacity-50 disabled:cursor-not-allowed";
-  const labelClass = "block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide";
-  const calcClass = "w-full px-3 py-2 text-sm border border-dashed border-border rounded-lg bg-muted/30 text-muted-foreground cursor-default";
+  const inputClass = "w-full px-4 py-3 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-50 text-slate-900";
+  const labelClass = "block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider";
+  const calcClass = "w-full px-4 py-3 text-sm border border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-slate-500 cursor-default font-medium";
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Section: Source Info */}
-      <div className="glass-card p-6">
-        <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">1</span>
+      <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">1</span>
           Source Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -311,9 +311,9 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       </div>
 
       {/* Section: Comparative Statement */}
-      <div className="glass-card p-6">
-        <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">2</span>
+      <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">2</span>
           Comparative Statement (CS)
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -333,9 +333,9 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       </div>
 
       {/* Section: PR */}
-      <div className="glass-card p-6">
-        <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">3</span>
+      <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">3</span>
           Purchase Requisition (PR)
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -359,9 +359,9 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       </div>
 
       {/* Section: PO */}
-      <div className="glass-card p-6">
-        <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">4A</span>
+      <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">4A</span>
           Purchase Order (PO)
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -385,9 +385,9 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       </div>
 
       {/* Section: PRL */}
-      <div className="glass-card p-6">
-        <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xs font-bold">4B</span>
+      <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">4B</span>
           Payment Release (PRL)
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -419,9 +419,9 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       </div>
 
       {/* Section: Dates */}
-      <div className="glass-card p-6">
-        <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center text-xs font-bold">5</span>
+      <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">5</span>
           Milestone Dates
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -445,9 +445,9 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       </div>
 
       {/* Section: Status & Handler */}
-      <div className="glass-card p-6">
-        <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">6</span>
+      <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">6</span>
           Status & Handler
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

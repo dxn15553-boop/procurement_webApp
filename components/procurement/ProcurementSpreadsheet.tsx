@@ -458,9 +458,9 @@ export function ProcurementSpreadsheet({ session }: Props) {
     toast.success("CSV Exported successfully!");
   };
 
-  const cellInputClass = "w-full h-full min-h-[40px] px-3 py-2 text-[13px] text-foreground bg-transparent border border-transparent hover:bg-muted/50 focus:bg-background focus:border-primary/50 focus:ring-1 focus:ring-primary/50 rounded-md outline-none transition-all placeholder:text-muted-foreground/50";
-  const headerCellClass = "px-4 py-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-r border-b border-border bg-white/95 backdrop-blur-md text-balance text-left sticky top-0 z-10 select-none";
-  const bodyCellClass = "p-1.5 border-r border-b border-border align-middle min-w-[160px] relative group";
+  const cellInputClass = "w-full h-full min-h-[40px] px-3 py-2 text-[13px] font-medium text-slate-700 bg-transparent border border-transparent hover:bg-slate-50 focus:bg-white focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 rounded-md outline-none transition-all placeholder:text-slate-400";
+  const headerCellClass = "px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-b border-slate-100 bg-slate-50/95 backdrop-blur-md text-balance text-left sticky top-0 z-10 select-none";
+  const bodyCellClass = "p-1.5 border-r border-b border-slate-100 align-middle min-w-[160px] relative group";
 
   return (
     <div className="space-y-4 flex flex-col h-full">
@@ -500,12 +500,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
       )}
 
       {/* Modern Inline Editable Grid */}
-      <div className="rounded-xl glass-card overflow-hidden flex flex-col flex-1 min-h-[600px] shadow-lg border-white/20">
+      <div className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden flex flex-col flex-1 min-h-[600px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative">
         <div className="overflow-auto flex-1 custom-scrollbar">
           <table className="w-full text-sm table-fixed min-w-[5000px] border-collapse">
             <thead>
               <tr>
-                <th className="px-4 py-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-r border-b border-border bg-white/95 backdrop-blur-md sticky left-0 z-20 text-center w-24 select-none shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
+                <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-b border-slate-100 bg-slate-50/95 backdrop-blur-md sticky left-0 z-20 text-center w-24 select-none shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                   Actions
                 </th>
                 {isManager && <th className={headerCellClass} style={{ width: "150px" }}>Employee Name</th>}
@@ -583,7 +583,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     }`}
                   >
                     {/* Actions sticky Left */}
-                    <td className="p-1.5 border-r border-b border-border sticky left-0 bg-white/95 backdrop-blur-md z-10 text-center whitespace-nowrap w-24 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
+                    <td className="p-1.5 border-r border-b border-slate-100 sticky left-0 bg-slate-50/95 backdrop-blur-md z-10 text-center whitespace-nowrap w-24 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                       <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => handleSaveRow(row)}

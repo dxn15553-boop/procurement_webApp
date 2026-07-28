@@ -101,10 +101,15 @@ export function KPICard({
   return (
     <div
       className={cn(
-        "stat-card",
+        "group bg-white border border-slate-100 rounded-[2rem] p-7 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-15px_rgba(79,70,229,0.15)] hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden flex flex-col",
         className
       )}
     >
+      {/* Premium Glow effect on hover */}
+      <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-indigo-100/50 to-transparent rounded-full blur-3xl -mr-16 -mt-16 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+
+      {/* Decorative subtle border top */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
       {/* Background gradient accent */}
       <div
         className={cn(
