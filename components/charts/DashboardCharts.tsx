@@ -56,8 +56,8 @@ interface MonthlyData {
 export function MonthlyTrendChart({ data }: { data: MonthlyData[] }) {
   return (
     <ChartCard title="Monthly Procurement Trend" subtitle="Requests over the last 6 months">
-      <ResponsiveContainer width="100%" height={220}>
-        <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={320}>
+        <LineChart data={data} margin={{ top: 20, right: 20, left: -10, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
           <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={35} />
@@ -79,9 +79,9 @@ interface PieData { name: string; value: number; }
 export function DepartmentChart({ data }: { data: PieData[] }) {
   return (
     <ChartCard title="Department-wise Requests" subtitle="Distribution by department">
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={320}>
         <PieChart>
-          <Pie data={data} cx="35%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
+          <Pie data={data} cx="45%" cy="50%" innerRadius={80} outerRadius={120} paddingAngle={3} dataKey="value">
             {data.map((_, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
@@ -89,7 +89,7 @@ export function DepartmentChart({ data }: { data: PieData[] }) {
           <Tooltip
             contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
           />
-          <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "11px", lineHeight: "1.5", maxHeight: "200px", overflowY: "auto", width: "45%" }} />
+          <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "11px", lineHeight: "1.5", maxHeight: "250px", overflowY: "auto", width: "40%", paddingRight: "10px" }} />
         </PieChart>
       </ResponsiveContainer>
     </ChartCard>
@@ -99,7 +99,7 @@ export function DepartmentChart({ data }: { data: PieData[] }) {
 export function StageDistributionChart({ data }: { data: PieData[] }) {
   return (
     <ChartCard title="Current Stage Distribution" subtitle="Active requests by stage">
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={180}>
         <BarChart data={data} layout="vertical">
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
           <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
@@ -123,8 +123,8 @@ interface SLAData { name: string; onTrack: number; atRisk: number; overdue: numb
 export function SLAPerformanceChart({ data }: { data: SLAData[] }) {
   return (
     <ChartCard title="SLA Performance" subtitle="On-track vs at-risk vs overdue">
-      <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={180}>
+        <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} maxBarSize={40}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={35} />

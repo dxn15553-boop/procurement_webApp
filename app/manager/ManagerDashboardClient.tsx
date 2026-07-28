@@ -6,8 +6,6 @@ import {
   DepartmentChart,
   StageDistributionChart,
   SLAPerformanceChart,
-  SourceSummaryChart,
-  KPISummaryChart,
 } from "@/components/charts/DashboardCharts";
 import { formatDate, getSLAColor, getStageColor, getStageName } from "@/lib/utils";
 import {
@@ -24,6 +22,7 @@ interface DashboardData {
     total: number; activeSource: number; pendingCS: number; pendingPR: number; pendingPO: number;
     pendingDispatch: number; completed: number; cancelled: number; overdue: number; avgSLA: number;
     totalTrend?: number; completedTrend?: number;
+    csDone: number; prDone: number; poDone: number; paymentDone: number; pendingPayment: number; materialDone: number;
   };
   recentRequests: Array<{
     id: string; sourceNo: string; sourceDescription: string; currentStage: CurrentStage;
@@ -46,15 +45,16 @@ interface Props {
 export function ManagerDashboardClient({ data, userName }: Props) {
   const { kpi, recentRequests, departmentData, stageData, monthlyData, slaChartData } = data;
 
-  const kpiChartData = [
-    { name: "Total", value: kpi.total, fill: "#3b82f6" },
-    { name: "Pending CS", value: kpi.pendingCS, fill: "#f59e0b" },
-    { name: "Pending PR", value: kpi.pendingPR, fill: "#a855f7" },
-    { name: "Pending PO", value: kpi.pendingPO, fill: "#6366f1" },
-    { name: "Pending Dispatch", value: kpi.pendingDispatch, fill: "#06b6d4" },
-    { name: "Completed", value: kpi.completed, fill: "#22c55e" },
-    { name: "Cancelled", value: kpi.cancelled, fill: "#ef4444" },
-    { name: "Overdue", value: kpi.overdue, fill: "#dc2626" },
+  const kpiCards = [
+    { type: "single", label: "TOTAL SOURCE", value: kpi.total, icon: <BarChart3 className="w-5 h-5 text-slate-700" />, iconBg: "bg-slate-100" },
+    { type: "single", label: "CANCELLED", value: kpi.cancelled, icon: <XCircle className="w-5 h-5 text-red-500" />, iconBg: "bg-red-50" },
+    { type: "single", label: "ACTIVE SOURCE", value: kpi.activeSource, icon: <Activity className="w-5 h-5 text-indigo-600" />, iconBg: "bg-indigo-50" },
+    { type: "dual", label: "CS STATUS", done: kpi.csDone, pending: kpi.pendingCS, icon: <FileText className="w-5 h-5 text-blue-500" />, iconBg: "bg-blue-50" },
+    { type: "dual", label: "PR STATUS", done: kpi.prDone, pending: kpi.pendingPR, icon: <ShoppingCart className="w-5 h-5 text-cyan-500" />, iconBg: "bg-cyan-50" },
+    { type: "dual", label: "PO STATUS", done: kpi.poDone, pending: kpi.pendingPO, icon: <FileText className="w-5 h-5 text-emerald-500" />, iconBg: "bg-emerald-50" },
+    { type: "dual", label: "PAYMENT STATUS", done: kpi.paymentDone, pending: kpi.pendingPayment, icon: <Activity className="w-5 h-5 text-purple-500" />, iconBg: "bg-purple-50" },
+    { type: "dual", label: "MATERIAL STATUS", done: kpi.materialDone, pending: kpi.pendingDispatch, icon: <Truck className="w-5 h-5 text-orange-500" />, iconBg: "bg-orange-50" },
+    { type: "single", label: "WORK COMPLETED", value: kpi.completed, icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" />, iconBg: "bg-emerald-50" },
   ];
 
   return (
@@ -84,22 +84,46 @@ export function ManagerDashboardClient({ data, userName }: Props) {
         </div>
       </div>
 
-      {/* KPI Summary Chart */}
-      <div className="grid grid-cols-1 gap-4">
-        <KPISummaryChart data={kpiChartData} />
+      {/* KPI Summary Overview */}
+      <div className="flex overflow-x-auto gap-4 pb-4 custom-scrollbar w-full">
+        {kpiCards.map((card, idx) => (
+          <div key={idx} className="flex-shrink-0 flex-1 min-w-[140px] bg-white border border-slate-100 rounded-[1.5rem] p-4 xl:p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col justify-between h-[140px] xl:h-[150px] transition-transform hover:-translate-y-1">
+            <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center mb-2", card.iconBg)}>
+              {card.icon}
+            </div>
+            
+            {card.type === "single" ? (
+              <div className="mt-auto">
+                <p className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-1">{card.value}</p>
+                <p className="text-[9px] font-bold tracking-widest uppercase text-slate-400">{card.label}</p>
+              </div>
+            ) : (
+              <div className="mt-auto">
+                <p className="text-[9px] font-bold tracking-widest uppercase text-slate-400 mb-2">{card.label}</p>
+                <div className="flex items-end justify-between">
+                  <div>
+                    <p className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">{card.done}</p>
+                    <p className="text-[8px] font-bold tracking-widest uppercase text-slate-400">DONE</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-black text-orange-500 tracking-tight leading-none mb-1">{card.pending}</p>
+                    <p className="text-[8px] font-bold tracking-widest uppercase text-slate-400">PENDING</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <MonthlyTrendChart data={monthlyData} />
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <MonthlyTrendChart data={monthlyData} />
         <DepartmentChart data={departmentData.length > 0 ? departmentData : [{ name: "No Data", value: 1 }]} />
       </div>
 
       {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <SourceSummaryChart data={[{ name: "Metrics", total: kpi.total, active: kpi.activeSource, cancelled: kpi.cancelled }]} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <StageDistributionChart data={stageData.length > 0 ? stageData : [{ name: "No Data", value: 1 }]} />
         <SLAPerformanceChart data={slaChartData} />
       </div>

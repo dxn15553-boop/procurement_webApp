@@ -11,27 +11,11 @@ export const revalidate = 0;
 
 async function getDashboardData() {
   const [
-    total,
-    pendingCS,
-    pendingPR,
-    pendingPO,
-    pendingDispatch,
-    completed,
-    cancelled,
-    overdue,
     recentRequests,
     departmentData,
     stageData,
     allRequests,
   ] = await Promise.all([
-    prisma.procurementRequest.count({ where: { isDeleted: false } }),
-    prisma.procurementRequest.count({ where: { currentStage: "CS", isDeleted: false } }),
-    prisma.procurementRequest.count({ where: { currentStage: "PR", isDeleted: false } }),
-    prisma.procurementRequest.count({ where: { currentStage: "PO", isDeleted: false } }),
-    prisma.procurementRequest.count({ where: { currentStage: { in: ["MDD", "MRD", "WCD", "PAR", "PDD"] }, isDeleted: false } }),
-    prisma.procurementRequest.count({ where: { currentStage: "COMPLETED", isDeleted: false } }),
-    prisma.procurementRequest.count({ where: { currentStage: "CANCELLED", isDeleted: false } }),
-    prisma.procurementRequest.count({ where: { slaStatus: "OVERDUE", isDeleted: false } }),
     prisma.procurementRequest.findMany({
       where: { isDeleted: false },
       orderBy: { createdAt: "desc" },
@@ -54,9 +38,30 @@ async function getDashboardData() {
     }),
     prisma.procurementRequest.findMany({
       where: { isDeleted: false },
-      select: { createdAt: true, currentStage: true, slaStatus: true },
+      select: { createdAt: true, currentStage: true, slaStatus: true, paymentStatus: true, materialReceivedDate: true },
     }),
   ]);
+
+  const total = allRequests.length;
+  const activeSource = total - allRequests.filter(r => r.currentStage === "CANCELLED").length;
+  const cancelled = allRequests.filter(r => r.currentStage === "CANCELLED").length;
+  const completed = allRequests.filter(r => r.currentStage === "COMPLETED").length;
+  const overdue = allRequests.filter(r => r.slaStatus === "OVERDUE").length;
+
+  const pendingCS = allRequests.filter(r => r.currentStage === "CS").length;
+  const csDone = allRequests.filter(r => ["PR", "PO", "MDD", "MRD", "WCD", "PAR", "PDD", "COMPLETED"].includes(r.currentStage)).length;
+  
+  const pendingPR = allRequests.filter(r => r.currentStage === "PR").length;
+  const prDone = allRequests.filter(r => ["PO", "MDD", "MRD", "WCD", "PAR", "PDD", "COMPLETED"].includes(r.currentStage)).length;
+  
+  const pendingPO = allRequests.filter(r => r.currentStage === "PO").length;
+  const poDone = allRequests.filter(r => ["MDD", "MRD", "WCD", "PAR", "PDD", "COMPLETED"].includes(r.currentStage)).length;
+  
+  const pendingPayment = allRequests.filter(r => r.paymentStatus === "PENDING" || r.paymentStatus === "IN_PROGRESS").length;
+  const paymentDone = allRequests.filter(r => r.paymentStatus === "COMPLETED").length;
+  
+  const pendingDispatch = allRequests.filter(r => !r.materialReceivedDate && ["MDD", "MRD", "WCD", "COMPLETED"].includes(r.currentStage)).length;
+  const materialDone = allRequests.filter(r => r.materialReceivedDate != null).length;
 
   // Calculate dynamic monthly data based on available dataset range
   let monthlyData: any[] = [];
@@ -146,9 +151,16 @@ async function getDashboardData() {
     : 0;
 
   return {
-    kpi: { total, activeSource: total - cancelled, pendingCS, pendingPR, pendingPO, pendingDispatch, completed, cancelled, overdue,
+    kpi: { 
+      total, activeSource, cancelled, completed, overdue,
       avgSLA: total > 0 ? Math.round(((total - overdue) / total) * 100) : 100,
-      totalTrend, completedTrend },
+      totalTrend, completedTrend,
+      pendingCS, csDone,
+      pendingPR, prDone,
+      pendingPO, poDone,
+      pendingPayment, paymentDone,
+      pendingDispatch, materialDone
+    },
     recentRequests,
     departmentData: departmentData
       .map((d) => ({ name: d.name, value: d._count.procurementRequests }))
