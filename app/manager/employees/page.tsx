@@ -12,6 +12,7 @@ export default async function EmployeesPage() {
 
   const [employees, departments] = await Promise.all([
     prisma.user.findMany({
+      where: { isActive: true },
       include: {
         department: { select: { name: true } },
       },
