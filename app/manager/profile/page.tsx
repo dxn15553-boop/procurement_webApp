@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { User } from "lucide-react";
+import { ChangePasswordSection } from "@/components/profile/ChangePasswordSection";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -46,12 +47,7 @@ export default async function ProfilePage() {
             <input type="text" value="System Manager (Admin access)" disabled className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-md bg-slate-50/50 text-slate-600 cursor-not-allowed" />
           </div>
 
-          <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
-            <div>
-              <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-base">Security & Authentication</h3>
-              <p className="text-xs text-slate-500">Contact the system administrator to change passwords or update permissions.</p>
-            </div>
-          </div>
+          <ChangePasswordSection />
         </div>
       </div>
     </div>

@@ -19,9 +19,6 @@ export const authConfig = {
       const isChangePasswordRoute = nextUrl.pathname.startsWith("/change-password");
 
       if (isLoggedIn) {
-        if (mustChangePassword && !isChangePasswordRoute) {
-          return Response.redirect(new URL("/change-password", nextUrl));
-        }
         if (!mustChangePassword && isChangePasswordRoute) {
           return Response.redirect(new URL(role === "MANAGER" ? "/manager" : "/team", nextUrl));
         }

@@ -171,3 +171,33 @@ export function SourceSummaryChart({ data }: { data: SourceSummaryData[] }) {
     </ChartCard>
   );
 }
+
+interface KPISummaryData {
+  name: string;
+  value: number;
+  fill: string;
+}
+
+export function KPISummaryChart({ data }: { data: KPISummaryData[] }) {
+  return (
+    <ChartCard title="KPI Summary Overview" subtitle="Key metrics visualized">
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={data} margin={{ top: 25, right: 10, left: 0, bottom: 0 }} maxBarSize={50}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+          <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={35} />
+          <Tooltip
+            contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+            cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
+          />
+          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.fill} />
+            ))}
+            <LabelList dataKey="value" position="top" style={{ fill: "hsl(var(--foreground))", fontSize: 11, fontWeight: "bold" }} />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+}

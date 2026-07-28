@@ -7,6 +7,7 @@ import {
   StageDistributionChart,
   SLAPerformanceChart,
   SourceSummaryChart,
+  KPISummaryChart,
 } from "@/components/charts/DashboardCharts";
 import { formatDate, getSLAColor, getStageColor, getStageName } from "@/lib/utils";
 import {
@@ -45,6 +46,17 @@ interface Props {
 export function ManagerDashboardClient({ data, userName }: Props) {
   const { kpi, recentRequests, departmentData, stageData, monthlyData, slaChartData } = data;
 
+  const kpiChartData = [
+    { name: "Total", value: kpi.total, fill: "#3b82f6" },
+    { name: "Pending CS", value: kpi.pendingCS, fill: "#f59e0b" },
+    { name: "Pending PR", value: kpi.pendingPR, fill: "#a855f7" },
+    { name: "Pending PO", value: kpi.pendingPO, fill: "#6366f1" },
+    { name: "Pending Dispatch", value: kpi.pendingDispatch, fill: "#06b6d4" },
+    { name: "Completed", value: kpi.completed, fill: "#22c55e" },
+    { name: "Cancelled", value: kpi.cancelled, fill: "#ef4444" },
+    { name: "Overdue", value: kpi.overdue, fill: "#dc2626" },
+  ];
+
   return (
     <div className="space-y-6 fade-in">
       {/* Header */}
@@ -72,22 +84,9 @@ export function ManagerDashboardClient({ data, userName }: Props) {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-        <KPICard title="Total Requests" value={kpi.total} icon={ShoppingCart} color="blue"
-          trend={kpi.totalTrend !== undefined && kpi.totalTrend !== 0 ? { value: Math.abs(kpi.totalTrend), label: "vs last month", positive: kpi.totalTrend > 0 } : undefined} />
-        <KPICard title="Pending CS" value={kpi.pendingCS} icon={Clock} color="amber" />
-        <KPICard title="Pending PR" value={kpi.pendingPR} icon={FileText} color="purple" />
-        <KPICard title="Pending PO" value={kpi.pendingPO} icon={BarChart3} color="indigo" />
-        <KPICard title="Pending Dispatch" value={kpi.pendingDispatch} icon={Truck} color="cyan" />
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KPICard title="Completed" value={kpi.completed} icon={CheckCircle2} color="green"
-          trend={kpi.completedTrend !== undefined && kpi.completedTrend !== 0 ? { value: Math.abs(kpi.completedTrend), label: "vs last month", positive: kpi.completedTrend > 0 } : undefined} />
-        <KPICard title="Cancelled" value={kpi.cancelled} icon={XCircle} color="red" />
-        <KPICard title="Overdue" value={kpi.overdue} icon={AlertTriangle} color="red" />
-        <KPICard title="Avg SLA Score" value={`${kpi.avgSLA}%`} icon={TrendingUp} color="green" />
+      {/* KPI Summary Chart */}
+      <div className="grid grid-cols-1 gap-4">
+        <KPISummaryChart data={kpiChartData} />
       </div>
 
       {/* Charts Row 1 */}
@@ -104,6 +103,8 @@ export function ManagerDashboardClient({ data, userName }: Props) {
         <StageDistributionChart data={stageData.length > 0 ? stageData : [{ name: "No Data", value: 1 }]} />
         <SLAPerformanceChart data={slaChartData} />
       </div>
+
+
 
       {/* Recent Requests Table */}
       <div className="rounded-xl border border-border bg-card shadow-sm">

@@ -14,12 +14,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Default reset password
-    const newPasswordHash = await bcrypt.hash("changeme123", 12);
+    const body = await req.json().catch(() => ({}));
+    const newPassword = body.newPassword || "changeme123";
+
+    // Default or specified reset password
+    const newPasswordHash = await bcrypt.hash(newPassword, 12);
 
     const updatedUser = await prisma.user.update({
       where: { id: id },
-      data: { passwordHash: newPasswordHash, mustChangePassword: true },
+      data: { passwordHash: newPasswordHash, mustChangePassword: false, tempPassword: newPassword },
     });
 
     return NextResponse.json({ message: "Password reset successfully" });

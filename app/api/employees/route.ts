@@ -15,7 +15,7 @@ export async function GET() {
     orderBy: { name: "asc" },
   });
 
-  // Remove password hashes
+  // Return all fields except the hash; include tempPassword for manager view
   const safe = employees.map(({ passwordHash: _pw, ...e }) => e);
   return NextResponse.json({ employees: safe });
 }
@@ -31,14 +31,16 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const { password, departmentId, ...rest } = parsed.data;
-  const passwordHash = await bcrypt.hash(password || "changeme123", 12);
-  const mustChangePassword = !password; // If no password provided, they must change it
+
+  const plainPassword = password || "changeme123";
+  const passwordHash = await bcrypt.hash(plainPassword, 12);
+  const mustChangePassword = !password;
 
   const validDepartmentId = departmentId === "" ? null : departmentId;
 
   try {
     const user = await prisma.user.create({
-      data: { ...rest, departmentId: validDepartmentId, passwordHash, mustChangePassword },
+      data: { ...rest, departmentId: validDepartmentId, passwordHash, mustChangePassword, tempPassword: plainPassword },
     });
 
     const { passwordHash: _pw, ...safeUser } = user;

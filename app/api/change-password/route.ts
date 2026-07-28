@@ -11,10 +11,10 @@ const changePasswordSchema = z.object({
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    
-    // User must be logged in
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    // Only Managers can change passwords
+    if (!session?.user || session.user.role !== "MANAGER") {
+      return NextResponse.json({ error: "Unauthorized. Only managers can change passwords." }, { status: 401 });
     }
 
     const body = await req.json();

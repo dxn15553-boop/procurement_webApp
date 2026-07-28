@@ -22,6 +22,7 @@ export default async function EmployeesPage() {
     }),
   ]);
 
+  // Strip only the hash — keep tempPassword visible to Manager
   const safeEmployees = employees.map(({ passwordHash: _pw, ...e }) => e);
 
   return (

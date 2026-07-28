@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { ProcurementSpreadsheet } from "@/components/procurement/ProcurementSpreadsheet";
+import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
@@ -10,11 +11,18 @@ export default async function ManagerRequestsPage() {
   const session = await auth();
   if (!session?.user || session.user.role !== "MANAGER") redirect("/login");
 
+  const totalCount = await prisma.procurementRequest.count({
+    where: { isDeleted: false }
+  });
+
   return (
     <div className="space-y-5 fade-in max-w-[100vw] overflow-hidden">
       <div className="flex items-center justify-between px-2">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Procurement Database</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold text-foreground">Procurement Database</h1>
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">Total: {totalCount}</span>
+          </div>
           <p className="text-xs text-muted-foreground mt-0.5">Manage and track all procurement requests</p>
         </div>
         <Link 
