@@ -308,7 +308,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>Vendor</label>
-            <input type="text" {...register("vendorId")} disabled={readOnly || isCancelled} className={`\${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="Enter vendor name..." />
+            <input type="text" {...register("vendorId")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="Enter vendor name..." />
           </div>
         </div>
       </div>
@@ -344,7 +344,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>PR Number</label>
-            <input {...register("prNumber")} disabled={readOnly || isCancelled} className={`\${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="PR-YYYY-XXXX" />
+            <input {...register("prNumber")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="PR-YYYY-XXXX" />
           </div>
           <div>
             <label className={labelClass}>PR Date</label>
@@ -370,7 +370,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className={labelClass}>PO Number</label>
-            <input {...register("poNumber")} disabled={readOnly || isCancelled} className={`\${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="PO-YYYY-XXXX" />
+            <input {...register("poNumber")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="PO-YYYY-XXXX" />
           </div>
           <div>
             <label className={labelClass}>PO Date</label>
@@ -396,7 +396,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>PRL No</label>
-            <input {...register("prlNo")} disabled={readOnly || isCancelled} className={`\${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  />
+            <input {...register("prlNo")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  />
           </div>
           <div>
             <label className={labelClass}>PRL Date</label>
