@@ -90,66 +90,72 @@ export function ManagerDashboardClient({ data, userName }: Props) {
       </div>
 
       {/* KPI Summary Overview */}
-      <div className="flex overflow-x-auto gap-3 pb-2 custom-scrollbar w-full">
+      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-3 w-full">
         {kpiCards.map((card, idx) => {
           const pct = card.type === "dual" && card.done !== undefined && card.pending !== undefined && (card.done + card.pending) > 0
             ? Math.round((card.done / (card.done + card.pending)) * 100)
             : null;
 
+          const accentColor =
+            card.label === "CANCELLED"     ? "border-l-rose-400"   :
+            card.label === "WORK COMPLETED"? "border-l-emerald-400" :
+            card.label === "ACTIVE SOURCE" ? "border-l-indigo-400"  :
+            card.label === "TOTAL SOURCE"  ? "border-l-slate-400"   :
+            card.label === "CS STATUS"     ? "border-l-blue-400"    :
+            card.label === "PR STATUS"     ? "border-l-cyan-500"    :
+            card.label === "PO STATUS"     ? "border-l-teal-400"    :
+            card.label === "PAYMENT STATUS"? "border-l-violet-400"  :
+                                             "border-l-amber-400";
+
           return (
             <div
               key={idx}
-              className="flex-shrink-0 flex-1 min-w-[155px] h-[168px] bg-gradient-to-b from-white to-slate-50/60 border border-slate-200 rounded-2xl flex flex-col overflow-hidden transition-all duration-300 hover:shadow-[0_8px_30px_rgb(99,102,241,0.13)] hover:border-indigo-200 hover:-translate-y-0.5 group"
+              className={cn(
+                "bg-white border border-slate-200 border-l-[3px] rounded-xl flex flex-col overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group",
+                accentColor
+              )}
             >
-              {/* Top accent strip — indigo on hover */}
-              <div className="h-[3px] w-full bg-transparent group-hover:bg-gradient-to-r group-hover:from-indigo-400 group-hover:to-violet-400 transition-all duration-500" />
-
-              <div className="flex flex-col flex-1 px-4 pt-3 pb-4">
-                {/* Header: label + icon */}
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[9px] font-extrabold tracking-[0.12em] uppercase text-slate-400">
-                    {card.label}
-                  </span>
+              <div className="flex flex-col flex-1 p-3.5 gap-3">
+                {/* Header: icon + label */}
+                <div className="flex items-center gap-2">
                   <div className={cn(
-                    "w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ring-1 ring-white group-hover:ring-indigo-100 transition-all duration-300",
+                    "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0",
                     card.iconBg
                   )}>
                     {card.icon}
                   </div>
+                  <span className="text-[9px] font-bold tracking-[0.1em] uppercase text-slate-500 leading-tight">
+                    {card.label}
+                  </span>
                 </div>
 
-                {/* Thin divider */}
-                <div className="w-full h-px bg-slate-100 mb-3" />
+                {/* Divider */}
+                <div className="w-full h-px bg-slate-100" />
 
                 {/* Values */}
                 {card.type === "single" ? (
-                  <div className="flex flex-col flex-1 justify-end">
-                    <p className="text-[2.2rem] font-black text-slate-900 tracking-tight leading-none tabular-nums">
+                  <div>
+                    <p className="text-3xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
                       {card.value}
                     </p>
-                    <p className="text-[10px] font-semibold text-slate-400 mt-1.5">requests total</p>
+                    <p className="text-[9px] text-slate-400 font-medium mt-1.5">total records</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col flex-1 justify-end gap-2.5">
-                    {/* Numbers row */}
+                  <div className="space-y-2">
                     <div className="flex items-end justify-between">
                       <div>
-                        <p className="text-2xl font-black text-slate-900 tracking-tight leading-none tabular-nums">{card.done}</p>
-                        <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1">Done</p>
+                        <p className="text-xl font-black text-slate-900 leading-none tabular-nums">{card.done}</p>
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Done</p>
                       </div>
-                      <div className="flex flex-col items-center gap-0.5 pb-0.5">
-                        <span className="text-[10px] font-bold text-indigo-500 tabular-nums">{pct ?? 0}%</span>
-                        <div className="w-px h-4 bg-slate-200" />
-                      </div>
+                      <span className="text-[9px] font-bold text-indigo-500 tabular-nums pb-3">{pct ?? 0}%</span>
                       <div className="text-right">
-                        <p className="text-2xl font-black text-amber-500 tracking-tight leading-none tabular-nums">{card.pending}</p>
-                        <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1">Pending</p>
+                        <p className="text-xl font-black text-amber-500 leading-none tabular-nums">{card.pending}</p>
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Pending</p>
                       </div>
                     </div>
-                    {/* Progress track */}
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-indigo-400 to-indigo-500 rounded-full transition-all duration-700"
+                        className="h-full bg-indigo-400 rounded-full transition-all duration-700"
                         style={{ width: `${pct ?? 0}%` }}
                       />
                     </div>
