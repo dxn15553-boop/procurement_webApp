@@ -63,4 +63,5 @@ export const authConfig = {
     },
   },
   providers: [], // Overridden in auth.ts with database-dependent providers
+  trustHost: true,
 } satisfies NextAuthConfig;

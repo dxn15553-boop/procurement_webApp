@@ -12,8 +12,10 @@ export const metadata: Metadata = { title: "Request Details" };
 function Field({ label, value }: { label: string; value?: string | number | null }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-sm text-foreground">{value ?? "—"}</p>
+      <p className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">{label}</p>
+      <div className="w-full px-4 py-3 text-sm border border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-slate-700 font-medium uppercase min-h-[46px] flex items-center">
+        {value ?? "—"}
+      </div>
     </div>
   );
 }
@@ -48,67 +50,75 @@ export default async function RequestDetailPage({
   const basePath = isManager ? "/manager" : "/team";
 
   return (
-    <div className="space-y-5 fade-in max-w-5xl mx-auto">
+    <div className="space-y-6 fade-in max-w-6xl mx-auto pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href={`${basePath}/requests`} className="p-2 rounded-lg hover:bg-muted transition-colors">
-            <ArrowLeft className="w-4 h-4" />
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-4">
+          <Link href={`${basePath}/requests`} className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors shadow-sm">
+            <ArrowLeft className="w-4 h-4 text-slate-700" />
           </Link>
           <div>
-            <h1 className="text-xl font-bold text-foreground">{request.sourceNo}</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">{request.sourceDescription}</p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{request.sourceNo}</h1>
+            <p className="text-sm text-slate-500 mt-1 uppercase tracking-wider font-medium">{request.sourceDescription}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold", getStageColor(request.currentStage as CurrentStage))}>
+          <span className={cn("px-3 py-1.5 rounded-full text-xs font-bold tracking-wider", getStageColor(request.currentStage as CurrentStage))}>
             {getStageName(request.currentStage as CurrentStage)}
           </span>
-          <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold border", getSLAColor(request.slaStatus as SLAStatus))}>
+          <span className={cn("px-3 py-1.5 rounded-full text-xs font-bold tracking-wider border", getSLAColor(request.slaStatus as SLAStatus))}>
             {request.slaStatus.replace("_", " ")}
           </span>
           {isManager && (
             <Link
               href={`/manager/requests/${request.id}/edit`}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200 active:scale-[0.98]"
             >
-              <Edit className="w-3.5 h-3.5" />
-              Edit
+              <Edit className="w-4 h-4" />
+              Edit Request
             </Link>
           )}
         </div>
       </div>
 
       {/* Source Info */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-blue-500" />
+      <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">1</span>
           Source Information
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Field label="Source No" value={request.sourceNo} />
           <Field label="Source Date" value={formatDate(request.sourceDate)} />
           <Field label="Department" value={request.department?.name} />
           <Field label="Vendor" value={request.vendor?.name} />
-          <div className="col-span-2 md:col-span-4">
+          <div className="md:col-span-2 lg:col-span-4">
             <Field label="Description" value={request.sourceDescription} />
           </div>
         </div>
       </div>
 
       {/* CS & PR */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-          <h3 className="text-sm font-bold mb-4">Comparative Statement</h3>
-          <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+          <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+            <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">2</span>
+            Comparative Statement
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Comparative Date" value={formatDate(request.comparativeDate)} />
             <Field label="Days for CS" value={request.daysForCS != null ? `${request.daysForCS} days` : null} />
-            <Field label="CS Status" value={request.csStatus} />
+            <div className="md:col-span-2">
+              <Field label="CS Status" value={request.csStatus} />
+            </div>
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-          <h3 className="text-sm font-bold mb-4">Purchase Requisition</h3>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+          <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+            <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">3</span>
+            Purchase Requisition
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="PR Number" value={request.prNumber} />
             <Field label="PR Date" value={formatDate(request.prDate)} />
             <Field label="Days for PR" value={request.daysForPR != null ? `${request.daysForPR} days` : null} />
@@ -118,9 +128,12 @@ export default async function RequestDetailPage({
       </div>
 
       {/* PO & PRL */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <h3 className="text-sm font-bold mb-4">Purchase Order & PRL</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">4</span>
+          Purchase Order & PRL
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Field label="PO Number" value={request.poNumber} />
           <Field label="PO Date" value={formatDate(request.poDate)} />
           <Field label="PRL No" value={request.prlNo} />
@@ -129,12 +142,12 @@ export default async function RequestDetailPage({
       </div>
 
       {/* Milestone Dates */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-cyan-500" />
+      <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">5</span>
           Milestone Dates
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Field label="Material Dispatch Date" value={formatDate(request.materialDispatchDate)} />
           <Field label="Material Received Date" value={formatDate(request.materialReceivedDate)} />
           <Field label="Work Completion Date" value={formatDate(request.workCompletionDate)} />
@@ -143,25 +156,31 @@ export default async function RequestDetailPage({
       </div>
 
       {/* Handler & Status */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-          <User className="w-4 h-4 text-indigo-500" />
+      <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">6</span>
           Handler & Status
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Field label="Handler Name" value={request.nameOfHandler} />
           <Field label="Current Status" value={request.currentStatusByHandler} />
           <Field label="Current Stage" value={request.currentStage} />
           <Field label="No. of Days" value={request.noOfDays != null ? `${request.noOfDays} days` : null} />
           <Field label="Pending From" value={formatDate(request.pendingFrom)} />
           <Field label="Pending Days" value={request.pendingDays != null ? `${request.pendingDays} days` : null} />
-          <Field label="SLA Status" value={request.slaStatus.replace("_", " ")} />
+          <div className="md:col-span-2">
+            <Field label="SLA Status" value={request.slaStatus.replace("_", " ")} />
+          </div>
         </div>
       </div>
 
       {/* Meta */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">i</span>
+          Meta Details
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Field label="Created By" value={request.createdBy?.name} />
           <Field label="Created Date" value={formatDate(request.createdAt)} />
           <Field label="Last Updated" value={formatDate(request.updatedAt)} />
@@ -170,20 +189,22 @@ export default async function RequestDetailPage({
 
       {/* Activity Log */}
       {request.activityLogs.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-          <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-purple-500" />
+        <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+          <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
+            <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">
+              <Clock className="w-4 h-4" />
+            </span>
             Activity Log
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {request.activityLogs.map((log) => (
-              <div key={log.id} className="flex items-start gap-3 text-xs">
-                <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <span className="font-medium">{log.user.name}</span>
-                  <span className="text-muted-foreground"> {log.action.toLowerCase()}</span>
-                  {log.fieldName && <span className="text-muted-foreground"> — {log.fieldName}</span>}
-                  <span className="block text-muted-foreground mt-0.5">{formatDate(log.createdAt, "dd MMM yyyy, HH:mm")}</span>
+              <div key={log.id} className="flex items-start gap-3 text-sm">
+                <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 mt-1.5 flex-shrink-0 shadow-sm" />
+                <div className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4">
+                  <span className="font-bold text-slate-700">{log.user.name}</span>
+                  <span className="text-slate-500 font-medium"> {log.action.toLowerCase()}</span>
+                  {log.fieldName && <span className="text-slate-500 font-medium"> — {log.fieldName}</span>}
+                  <span className="block text-xs font-bold uppercase tracking-wider text-slate-400 mt-2">{formatDate(log.createdAt, "dd MMM yyyy, HH:mm")}</span>
                 </div>
               </div>
             ))}

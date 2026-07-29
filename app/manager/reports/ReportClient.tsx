@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { FileText, Download, Printer, RefreshCw } from "lucide-react";
+import { useState, useRef } from "react";
+import { FileText, Download, Printer, RefreshCw, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
@@ -11,11 +11,46 @@ interface Props {
 
 export function ReportClient({ departments, vendors }: Props) {
   const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [type, setType] = useState("all");
   const [deptId, setDeptId] = useState("");
   const [vendorId, setVendorId] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/requests/import", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || "Failed to import file");
+      }
+
+      toast.success(`Successfully imported ${data.importedCount} records!`);
+      if (data.skippedCount > 0) {
+        toast.warning(`Skipped ${data.skippedCount} records (duplicates/invalid)`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred during import");
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   const handleExport = async (format: "csv" | "excel" | "pdf") => {
     setLoading(true);
@@ -108,8 +143,23 @@ export function ReportClient({ departments, vendors }: Props) {
       </div>
 
       <div className="flex gap-3 justify-end pt-6 border-t border-slate-100 relative z-10">
+        <input 
+          type="file" 
+          accept=".csv, .xlsx, .xls" 
+          className="hidden" 
+          ref={fileInputRef} 
+          onChange={handleImportFile}
+        />
         <button
-          disabled={loading}
+          disabled={loading || importing}
+          onClick={() => fileInputRef.current?.click()}
+          className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-sm bg-white disabled:opacity-50"
+        >
+          {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+          Import Data
+        </button>
+        <button
+          disabled={loading || importing}
           onClick={() => handleExport("csv")}
           className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-sm bg-white disabled:opacity-50"
         >
@@ -117,7 +167,7 @@ export function ReportClient({ departments, vendors }: Props) {
           Export CSV
         </button>
         <button
-          disabled={loading}
+          disabled={loading || importing}
           onClick={() => handleExport("pdf")}
           className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200 disabled:opacity-50"
         >

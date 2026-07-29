@@ -458,7 +458,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
     toast.success("CSV Exported successfully!");
   };
 
-  const cellInputClass = "w-full h-full min-h-[40px] px-3 py-2 text-[13px] font-medium text-slate-700 bg-transparent border border-transparent hover:bg-slate-50 focus:bg-white focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 rounded-md outline-none transition-all placeholder:text-slate-400";
+  const cellInputClass = "uppercase w-full h-full min-h-[40px] px-3 py-2 text-[13px] font-medium text-slate-700 bg-transparent border border-transparent hover:bg-slate-50 focus:bg-white focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 rounded-md outline-none transition-all placeholder:text-slate-400";
   const headerCellClass = "px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-b border-slate-100 bg-slate-50/95 backdrop-blur-md text-balance text-left sticky top-0 z-10 select-none";
   const bodyCellClass = "p-1.5 border-r border-b border-slate-100 align-middle min-w-[160px] relative group";
 
@@ -552,7 +552,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                 <th className={headerCellClass} style={{ width: "80px" }}>WCD (SLA)</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="uppercase">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>

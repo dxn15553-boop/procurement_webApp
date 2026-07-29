@@ -141,7 +141,7 @@ export function TeamDashboardClient({ data, userName }: Props) {
                 <th className="text-left px-6 lg:px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="uppercase">
               {recentRequests.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 lg:px-8 py-12 text-center">
