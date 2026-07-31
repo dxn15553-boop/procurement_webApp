@@ -35,7 +35,7 @@ export default async function TeamRequestDetailPage({
       id,
       OR: [
         { createdById: session.user.id! },
-        { nameOfHandler: { equals: session.user.name, mode: "insensitive" } },
+        { nameOfHandler: { equals: session.user.name ?? "", mode: "insensitive" } },
       ],
     },
     include: {

@@ -46,7 +46,7 @@ export async function GET(req: Request) {
       {
         OR: [
           { createdById: session.user.id },
-          { nameOfHandler: { equals: session.user.name, mode: "insensitive" } },
+          { nameOfHandler: { equals: session.user.name ?? "", mode: "insensitive" } },
         ],
       },
     ];
