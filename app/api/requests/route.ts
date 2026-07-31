@@ -40,20 +40,36 @@ export async function GET(req: Request) {
 
   // Team members can only see their own requests
   where.isDeleted = false;
+  // Team members can see requests they created OR requests where they are the named handler
   if (!isManager) {
-    where.createdById = session.user.id;
+    where.AND = [
+      {
+        OR: [
+          { createdById: session.user.id },
+          { nameOfHandler: { equals: session.user.name, mode: "insensitive" } },
+        ],
+      },
+    ];
   }
 
   if (search) {
-    where.OR = [
-      { sourceNo: { contains: search } },
-      { sourceDescription: { contains: search } },
-      { prNumber: { contains: search } },
-      { poNumber: { contains: search } },
-      { nameOfHandler: { contains: search } },
-      { vendor: { name: { contains: search } } },
-      { department: { name: { contains: search } } },
-    ];
+    const searchFilter = {
+      OR: [
+        { sourceNo: { contains: search } },
+        { sourceDescription: { contains: search } },
+        { prNumber: { contains: search } },
+        { poNumber: { contains: search } },
+        { nameOfHandler: { contains: search } },
+        { vendor: { name: { contains: search } } },
+        { department: { name: { contains: search } } },
+      ],
+    };
+
+    if (!isManager && Array.isArray(where.AND)) {
+      (where.AND as unknown[]).push(searchFilter);
+    } else {
+      where.AND = [searchFilter];
+    }
   }
 
   if (stage) where.currentStage = stage;

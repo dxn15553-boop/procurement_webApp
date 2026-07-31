@@ -30,8 +30,14 @@ export default async function TeamRequestDetailPage({
 
   const { id } = await params;
 
-  const request = await prisma.procurementRequest.findUnique({
-    where: { id, createdById: session.user.id! },
+  const request = await prisma.procurementRequest.findFirst({
+    where: {
+      id,
+      OR: [
+        { createdById: session.user.id! },
+        { nameOfHandler: { equals: session.user.name, mode: "insensitive" } },
+      ],
+    },
     include: {
       department: true,
       vendor: true,

@@ -508,7 +508,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                 <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-b border-slate-100 bg-slate-50/95 backdrop-blur-md sticky left-0 z-20 text-center w-24 select-none shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                   Actions
                 </th>
-                {isManager && <th className={headerCellClass} style={{ width: "150px" }}>Employee Name</th>}
+                <th className={headerCellClass} style={{ width: "150px" }}>{isManager ? "Employee Name" : "Created By"}</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Source No</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Source Date *</th>
                 <th className={headerCellClass} style={{ width: "260px" }}>Source Description *</th>
@@ -556,14 +556,14 @@ export function ProcurementSpreadsheet({ session }: Props) {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
-                    <td className="p-3 border-r border-b border-border" colSpan={isManager ? 43 : 42}>
+                    <td className="p-3 border-r border-b border-border" colSpan={43}>
                       <div className="h-4 rounded shimmer w-full" />
                     </td>
                   </tr>
                 ))
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td className="p-12 text-center text-muted-foreground" colSpan={isManager ? 43 : 42}>
+                  <td className="p-12 text-center text-muted-foreground" colSpan={43}>
                     No requests found in this sheet.
                   </td>
                 </tr>
@@ -628,12 +628,10 @@ export function ProcurementSpreadsheet({ session }: Props) {
                       </div>
                     </td>
 
-                    {/* Employee Reference Name (Manager only) */}
-                    {isManager && (
-                      <td className="p-2 border-r border-b border-border font-medium text-blue-600 dark:text-blue-400 bg-muted/15 whitespace-nowrap overflow-hidden text-ellipsis">
-                        {row.createdBy?.name ?? "System"}
-                      </td>
-                    )}
+                    {/* Employee Reference Name (visible to all) */}
+                    <td className="p-2 border-r border-b border-border font-medium text-blue-600 dark:text-blue-400 bg-muted/15 whitespace-nowrap overflow-hidden text-ellipsis">
+                      {row.createdBy?.name ?? "System"}
+                    </td>
 
                     {/* Source No */}
                     <td className={bodyCellClass}>
