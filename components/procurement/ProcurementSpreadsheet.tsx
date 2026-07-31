@@ -344,6 +344,15 @@ export function ProcurementSpreadsheet({ session }: Props) {
       toast.error("Department is required before saving.");
       return;
     }
+    
+    // Validate Handler Name
+    const isValidHandler = handlers.some(
+      (h) => h.name.toLowerCase() === row.nameOfHandler.trim().toLowerCase()
+    );
+    if (!isValidHandler) {
+      toast.error("Handler Name not found. Please enter the correct account name.");
+      return;
+    }
 
     setSavingId(row.id);
     try {

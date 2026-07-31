@@ -227,6 +227,17 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
 
   const onSubmit = async (data: ProcurementInput) => {
     setIsLoading(true);
+    
+    // Validate Handler Name
+    const isValidHandler = handlers.some(
+      (h) => h.name.toLowerCase() === data.nameOfHandler.trim().toLowerCase()
+    );
+    if (!isValidHandler) {
+      toast.error("Handler Name not found. Please enter the correct account name.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const url = mode === "edit" ? `/api/requests/${requestId}` : "/api/requests";
       const method = mode === "edit" ? "PUT" : "POST";
