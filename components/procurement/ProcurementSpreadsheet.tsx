@@ -467,9 +467,10 @@ export function ProcurementSpreadsheet({ session }: Props) {
     toast.success("CSV Exported successfully!");
   };
 
-  const cellInputClass = "uppercase w-full h-full min-h-[40px] px-3 py-2 text-[13px] font-medium text-slate-700 bg-transparent border border-transparent hover:bg-slate-50 focus:bg-white focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 rounded-md outline-none transition-all placeholder:text-slate-400";
-  const headerCellClass = "px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-b border-slate-100 bg-slate-50/95 backdrop-blur-md text-balance text-left sticky top-0 z-10 select-none";
-  const bodyCellClass = "p-1.5 border-r border-b border-slate-100 align-middle min-w-[160px] relative group";
+  const cellInputClass = "uppercase w-full h-full min-h-[36px] px-2.5 py-1.5 text-[12px] font-medium text-slate-700 bg-transparent border border-transparent hover:bg-slate-50 focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 rounded-md outline-none transition-all placeholder:text-slate-300";
+  const headerCellClass = "px-3 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50 text-left sticky top-0 z-20 select-none whitespace-nowrap";
+  const bodyCellClass = "p-1 border-r border-b border-slate-100 align-middle relative";
+  const readonlyCellClass = "px-3 py-2 border-r border-b border-slate-100 align-middle text-center text-[12px] text-slate-400 bg-slate-50/40";
 
   return (
     <div className="space-y-4 flex flex-col h-full">
@@ -508,13 +509,13 @@ export function ProcurementSpreadsheet({ session }: Props) {
         )
       )}
 
-      {/* Modern Inline Editable Grid */}
-      <div className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden flex flex-col flex-1 min-h-[600px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative">
-        <div className="overflow-auto flex-1 custom-scrollbar">
+      {/* Table */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="overflow-auto custom-scrollbar" style={{ maxHeight: "calc(100vh - 220px)", minHeight: "500px" }}>
           <table className="w-full text-sm table-fixed min-w-[5000px] border-collapse">
             <thead>
               <tr>
-                <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-b border-slate-100 bg-slate-50/95 backdrop-blur-md sticky left-0 z-20 text-center w-24 select-none shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
+                <th className="px-3 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50 sticky top-0 left-0 z-30 text-center w-28 select-none" style={{ boxShadow: "2px 0 6px rgba(0,0,0,0.04)" }}>
                   Actions
                 </th>
                 <th className={headerCellClass} style={{ width: "150px" }}>{isManager ? "Employee Name" : "Created By"}</th>
@@ -561,23 +562,23 @@ export function ProcurementSpreadsheet({ session }: Props) {
                 <th className={headerCellClass} style={{ width: "80px" }}>WCD (SLA)</th>
               </tr>
             </thead>
-            <tbody className="uppercase">
+            <tbody>
               {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
+                Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i}>
-                    <td className="p-3 border-r border-b border-border" colSpan={43}>
-                      <div className="h-4 rounded shimmer w-full" />
+                    <td className="p-3 border-b border-slate-100" colSpan={43}>
+                      <div className="h-5 rounded shimmer w-full" />
                     </td>
                   </tr>
                 ))
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td className="p-12 text-center text-muted-foreground" colSpan={43}>
+                  <td className="py-20 text-center text-slate-400 text-sm" colSpan={43}>
                     No requests found in this sheet.
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((row) => (
+                filteredRows.map((row, rowIdx) => (
                   <tr
                     key={row.id}
                     onClick={(e) => {
@@ -587,17 +588,21 @@ export function ProcurementSpreadsheet({ session }: Props) {
                         router.push(isManager ? `/manager/requests/${row.id}` : `/team/requests/${row.id}`);
                       }
                     }}
-                    className={`cursor-pointer hover:bg-muted/10 transition-colors ${
-                      row.isDirty ? "bg-amber-50/10 dark:bg-amber-950/10" : ""
+                    className={`cursor-pointer transition-colors ${
+                      row.isDirty
+                        ? "bg-amber-50"
+                        : rowIdx % 2 === 0
+                        ? "bg-white hover:bg-slate-50"
+                        : "bg-slate-50/50 hover:bg-slate-100/50"
                     }`}
                   >
                     {/* Actions sticky Left */}
-                    <td className="p-1.5 border-r border-b border-slate-100 sticky left-0 bg-slate-50/95 backdrop-blur-md z-10 text-center whitespace-nowrap w-24 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
-                      <div className="flex items-center justify-center gap-1.5">
+                    <td className="p-2 border-r border-b border-slate-100 sticky left-0 z-10 text-center whitespace-nowrap w-28 bg-white" style={{ boxShadow: "2px 0 6px rgba(0,0,0,0.04)" }}>
+                      <div className="flex items-center justify-center gap-1">
                         <button
                           onClick={() => handleSaveRow(row)}
                           disabled={savingId === row.id || !row.isDirty}
-                          className="p-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-30 disabled:hover:bg-blue-50 transition-colors"
+                          className="p-1.5 rounded-md bg-indigo-50 text-indigo-600 hover:bg-indigo-100 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
                           title="Save Row"
                         >
                           {savingId === row.id ? (
@@ -609,7 +614,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                         {row.isNew ? (
                           <button
                             onClick={() => handleRemoveNewRow(row.id)}
-                            className="p-1 rounded bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                            className="p-1.5 rounded-md bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
                             title="Discard"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -618,18 +623,18 @@ export function ProcurementSpreadsheet({ session }: Props) {
                           <>
                             <Link
                               href={isManager ? `/manager/requests/${row.id}` : `/team/requests/${row.id}`}
-                              className="p-1.5 rounded bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors inline-block"
+                              className="p-1.5 rounded-md bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors inline-block"
                               title="View Detail"
                             >
-                              <ArrowRight className="w-3 h-3" />
+                              <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
                             {isManager && (
                               <button
                                 onClick={() => handleDeleteRow(row.id, row.sourceNo)}
-                                className="p-1.5 rounded bg-red-50 text-red-600 hover:bg-red-100 transition-colors inline-block"
+                                className="p-1.5 rounded-md bg-red-50 text-red-500 hover:bg-red-100 transition-colors inline-block"
                                 title="Delete Request"
                               >
-                                <Trash2 className="w-3 h-3" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             )}
                           </>
@@ -637,8 +642,8 @@ export function ProcurementSpreadsheet({ session }: Props) {
                       </div>
                     </td>
 
-                    {/* Employee Reference Name (visible to all) */}
-                    <td className="p-2 border-r border-b border-border font-medium text-blue-600 dark:text-blue-400 bg-muted/15 whitespace-nowrap overflow-hidden text-ellipsis">
+                    {/* Employee Reference Name */}
+                    <td className="px-3 py-2 border-r border-b border-slate-100 text-[12px] font-semibold text-slate-700 whitespace-nowrap">
                       {row.createdBy?.name ?? "System"}
                     </td>
 
@@ -732,9 +737,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     </td>
 
                     {/* Days for PO */}
-                    <td className="p-2 border-r border-b border-border text-center text-muted-foreground bg-muted/5 font-medium">
-                      {row.daysForPO != null ? `${row.daysForPO} d` : "—"}
-                    </td>
+                    <td className={readonlyCellClass}>{row.daysForPO != null ? `${row.daysForPO}d` : "—"}</td>
 
                     {/* Payment Approval Date (text input) */}
                     <td className={bodyCellClass}>
@@ -765,9 +768,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     </td>
 
                     {/* Days for Payment */}
-                    <td className="p-2 border-r border-b border-border text-center text-muted-foreground bg-muted/5 font-medium">
-                      {row.daysForPayment != null ? `${row.daysForPayment} d` : "—"}
-                    </td>
+                    <td className={readonlyCellClass}>{row.daysForPayment != null ? `${row.daysForPayment}d` : "—"}</td>
 
                     {/* Vendor Name (text input) */}
                     <td className={bodyCellClass}>
@@ -869,40 +870,28 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     </td>
 
                     {/* Days for CS */}
-                    <td className="p-2 border-r border-b border-border text-center text-muted-foreground bg-muted/5 font-medium">
-                      {row.daysForCS != null ? `${row.daysForCS} d` : "—"}
-                    </td>
+                    <td className={readonlyCellClass}>{row.daysForCS != null ? `${row.daysForCS}d` : "—"}</td>
 
                     {/* Days for PR */}
-                    <td className="p-2 border-r border-b border-border text-center text-muted-foreground bg-muted/5 font-medium">
-                      {row.daysForPR != null ? `${row.daysForPR} d` : "—"}
-                    </td>
+                    <td className={readonlyCellClass}>{row.daysForPR != null ? `${row.daysForPR}d` : "—"}</td>
 
                     {/* Pending Days */}
-                    <td className="p-2 border-r border-b border-border text-center text-muted-foreground bg-muted/5 font-medium">
-                      {row.pendingDays != null ? `${row.pendingDays} d` : "—"}
-                    </td>
+                    <td className={`${readonlyCellClass} ${
+                      row.pendingDays != null && row.pendingDays > 30 ? "text-red-500 font-semibold" :
+                      row.pendingDays != null && row.pendingDays > 14 ? "text-amber-600" : ""
+                    }`}>{row.pendingDays != null ? `${row.pendingDays}d` : "—"}</td>
 
                     {/* No of Days */}
-                    <td className="p-2 border-r border-b border-border text-center text-muted-foreground bg-muted/5 font-medium">
-                      {row.noOfDays != null ? `${row.noOfDays} d` : "—"}
-                    </td>
+                    <td className={readonlyCellClass}>{row.noOfDays != null ? `${row.noOfDays}d` : "—"}</td>
 
                     {/* SLA Status */}
-                    <td className="p-2 border-r border-b border-border text-center bg-muted/5 font-bold">
-                      <span
-                        className={`px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap ${
-                          row.slaStatus === "ON_TRACK"
-                            ? "text-emerald-700 bg-emerald-50 dark:bg-emerald-950/20"
-                            : row.slaStatus === "AT_RISK"
-                            ? "text-amber-700 bg-amber-50 dark:bg-amber-950/20"
-                            : row.slaStatus === "OVERDUE"
-                            ? "text-red-700 bg-red-50 dark:bg-red-950/20"
-                            : "text-blue-700 bg-blue-50 dark:bg-blue-950/20"
-                        }`}
-                      >
-                        {row.slaStatus.replace("_", " ")}
-                      </span>
+                    <td className="px-2 py-2 border-r border-b border-slate-100 text-center">
+                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
+                        row.slaStatus === "ON_TRACK" ? "bg-emerald-50 text-emerald-700" :
+                        row.slaStatus === "AT_RISK" ? "bg-amber-50 text-amber-700" :
+                        row.slaStatus === "OVERDUE" ? "bg-red-50 text-red-700" :
+                        "bg-blue-50 text-blue-700"
+                      }`}>{row.slaStatus.replace("_", " ")}</span>
                     </td>
 
                     {/* CS Status (text input) */}
@@ -995,28 +984,18 @@ export function ProcurementSpreadsheet({ session }: Props) {
       </div>
 
       {/* Pagination & Export Controls */}
-      <div className="flex items-center justify-between py-2 px-1 pb-4">
+      <div className="flex items-center justify-between pt-3 pb-1 px-1">
+        <button onClick={exportToCSV} className="text-xs flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          Export to CSV
+        </button>
         <div className="flex items-center gap-2">
-          <button onClick={exportToCSV} className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors shadow-sm font-medium">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-            Export to CSV
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-colors">
+            ← Prev
           </button>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-3 py-1.5 text-xs font-semibold rounded-md border border-border bg-card text-foreground disabled:opacity-50 hover:bg-muted transition-colors shadow-sm"
-          >
-            Previous
-          </button>
-          <span className="text-xs font-medium text-slate-500">Page {page} of {totalPages}</span>
-          <button
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="px-3 py-1.5 text-xs font-semibold rounded-md border border-border bg-card text-foreground disabled:opacity-50 hover:bg-muted transition-colors shadow-sm"
-          >
-            Next
+          <span className="px-3 py-1.5 text-xs text-slate-500 bg-slate-50 rounded-lg border border-slate-200">{page} / {totalPages}</span>
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-colors">
+            Next →
           </button>
         </div>
       </div>
