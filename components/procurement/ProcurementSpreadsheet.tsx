@@ -467,22 +467,23 @@ export function ProcurementSpreadsheet({ session }: Props) {
     toast.success("CSV Exported successfully!");
   };
 
-  const cellInputClass = "uppercase w-full h-full min-h-[36px] px-2.5 py-1.5 text-[12px] font-medium text-slate-700 bg-transparent border border-transparent hover:bg-slate-50 focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 rounded-md outline-none transition-all placeholder:text-slate-300";
-  const headerCellClass = "px-3 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50 text-left sticky top-0 z-20 select-none whitespace-nowrap";
+  const cellInputClass = "uppercase w-full h-full min-h-[38px] px-3 py-1.5 text-[12px] font-medium text-slate-800 bg-transparent border border-transparent hover:bg-white hover:border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg outline-none transition-all placeholder:text-slate-300";
+  const headerCellClass = "px-3.5 py-3.5 text-[10px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/60 bg-gradient-to-b from-slate-900 to-slate-800 text-left sticky top-0 z-20 select-none whitespace-nowrap";
   const bodyCellClass = "p-1 border-r border-b border-slate-100 align-middle relative";
-  const readonlyCellClass = "px-3 py-2 border-r border-b border-slate-100 align-middle text-center text-[12px] text-slate-400 bg-slate-50/40";
+  const readonlyCellClass = "px-3 py-2 border-r border-b border-slate-100 align-middle text-center text-[12px] font-semibold text-slate-600 bg-slate-50/50";
 
   return (
     <div className="space-y-4 flex flex-col h-full">
       {/* Spreadsheet Control Header */}
       {!isManager ? (
-        <div className="flex justify-between items-center">
-          <p className="text-xs text-muted-foreground">
-            Spreadsheet Mode: Enter details directly by typing in any cell. To save, click the blue disk icon on the left.
+        <div className="flex justify-between items-center bg-slate-900 text-slate-200 p-4 rounded-xl shadow-md">
+          <p className="text-xs font-medium text-slate-300 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            Spreadsheet Mode: Type directly into any cell to edit. Click the save icon to persist changes.
           </p>
           <Link
             href="/team/requests/new"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 text-white hover:from-indigo-600 hover:to-violet-700 shadow-md shadow-indigo-500/25 transition-all"
           >
             <Plus className="w-4 h-4" />
             Add Row
@@ -490,16 +491,16 @@ export function ProcurementSpreadsheet({ session }: Props) {
         </div>
       ) : (
         tabs.length > 1 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-2">Filter by Employee:</span>
+          <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100/80 rounded-xl border border-slate-200/80">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-2">Employee Filter:</span>
             {tabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1.5 text-xs rounded-full transition-all font-medium border ${
+                className={`px-3.5 py-1.5 text-xs rounded-lg transition-all font-semibold ${
                   activeTab === tab
-                    ? "bg-blue-500 text-white border-blue-500 shadow-sm"
-                    : "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                    ? "bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white shadow-md shadow-indigo-500/20"
+                    : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/60"
                 }`}
               >
                 {tab === "All" ? "Master Sheet (Everyone)" : tab}
@@ -509,13 +510,13 @@ export function ProcurementSpreadsheet({ session }: Props) {
         )
       )}
 
-      {/* Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-auto custom-scrollbar" style={{ maxHeight: "calc(100vh - 220px)", minHeight: "500px" }}>
+      {/* Table Card Container */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.06)] flex flex-col flex-1">
+        <div className="overflow-auto custom-scrollbar flex-1" style={{ maxHeight: "calc(100vh - 220px)", minHeight: "500px" }}>
           <table className="w-full text-sm table-fixed min-w-[5000px] border-collapse">
             <thead>
               <tr>
-                <th className="px-3 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50 sticky top-0 left-0 z-30 text-center w-28 select-none" style={{ boxShadow: "2px 0 6px rgba(0,0,0,0.04)" }}>
+                <th className="px-3 py-3.5 text-[10px] font-bold text-indigo-300 uppercase tracking-wider border-r border-slate-700/60 bg-gradient-to-b from-slate-900 to-slate-800 sticky top-0 left-0 z-30 text-center w-28 select-none shadow-[4px_0_10px_rgba(0,0,0,0.2)]">
                   Actions
                 </th>
                 <th className={headerCellClass} style={{ width: "150px" }}>{isManager ? "Employee Name" : "Created By"}</th>
@@ -565,15 +566,15 @@ export function ProcurementSpreadsheet({ session }: Props) {
             <tbody>
               {loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={i}>
+                  <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-slate-50/40"}>
                     <td className="p-3 border-b border-slate-100" colSpan={43}>
-                      <div className="h-5 rounded shimmer w-full" />
+                      <div className="h-5 rounded bg-slate-100 animate-pulse w-full" />
                     </td>
                   </tr>
                 ))
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td className="py-20 text-center text-slate-400 text-sm" colSpan={43}>
+                  <td className="py-20 text-center text-slate-400 text-sm font-semibold" colSpan={43}>
                     No requests found in this sheet.
                   </td>
                 </tr>
@@ -588,21 +589,30 @@ export function ProcurementSpreadsheet({ session }: Props) {
                         router.push(isManager ? `/manager/requests/${row.id}` : `/team/requests/${row.id}`);
                       }
                     }}
-                    className={`cursor-pointer transition-colors ${
+                    className={`group cursor-pointer transition-colors duration-150 ${
                       row.isDirty
-                        ? "bg-amber-50"
+                        ? "bg-amber-50/80 hover:bg-amber-50"
                         : rowIdx % 2 === 0
-                        ? "bg-white hover:bg-slate-50"
-                        : "bg-slate-50/50 hover:bg-slate-100/50"
+                        ? "bg-white hover:bg-indigo-50/50"
+                        : "bg-slate-50/60 hover:bg-indigo-50/50"
                     }`}
                   >
                     {/* Actions sticky Left */}
-                    <td className="p-2 border-r border-b border-slate-100 sticky left-0 z-10 text-center whitespace-nowrap w-28 bg-white" style={{ boxShadow: "2px 0 6px rgba(0,0,0,0.04)" }}>
-                      <div className="flex items-center justify-center gap-1">
+                    <td 
+                      className={`p-2 border-r border-b border-slate-100 sticky left-0 z-10 text-center whitespace-nowrap w-28 transition-colors duration-150 ${
+                        row.isDirty
+                          ? "bg-amber-50 group-hover:bg-amber-50"
+                          : rowIdx % 2 === 0
+                          ? "bg-white group-hover:bg-indigo-50/50"
+                          : "bg-slate-50 group-hover:bg-indigo-50/50"
+                      }`} 
+                      style={{ boxShadow: "4px 0 8px rgba(0,0,0,0.03)" }}
+                    >
+                      <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => handleSaveRow(row)}
                           disabled={savingId === row.id || !row.isDirty}
-                          className="p-1.5 rounded-md bg-indigo-50 text-indigo-600 hover:bg-indigo-100 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                          className="p-1.5 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 text-white shadow-sm hover:shadow-md hover:from-indigo-600 hover:to-blue-700 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
                           title="Save Row"
                         >
                           {savingId === row.id ? (
@@ -614,7 +624,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                         {row.isNew ? (
                           <button
                             onClick={() => handleRemoveNewRow(row.id)}
-                            className="p-1.5 rounded-md bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                            className="p-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
                             title="Discard"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -623,7 +633,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                           <>
                             <Link
                               href={isManager ? `/manager/requests/${row.id}` : `/team/requests/${row.id}`}
-                              className="p-1.5 rounded-md bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors inline-block"
+                              className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors inline-block"
                               title="View Detail"
                             >
                               <ArrowRight className="w-3.5 h-3.5" />
@@ -631,7 +641,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                             {isManager && (
                               <button
                                 onClick={() => handleDeleteRow(row.id, row.sourceNo)}
-                                className="p-1.5 rounded-md bg-red-50 text-red-500 hover:bg-red-100 transition-colors inline-block"
+                                className="p-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors inline-block"
                                 title="Delete Request"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -885,13 +895,20 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     <td className={readonlyCellClass}>{row.noOfDays != null ? `${row.noOfDays}d` : "—"}</td>
 
                     {/* SLA Status */}
-                    <td className="px-2 py-2 border-r border-b border-slate-100 text-center">
-                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
-                        row.slaStatus === "ON_TRACK" ? "bg-emerald-50 text-emerald-700" :
-                        row.slaStatus === "AT_RISK" ? "bg-amber-50 text-amber-700" :
-                        row.slaStatus === "OVERDUE" ? "bg-red-50 text-red-700" :
-                        "bg-blue-50 text-blue-700"
-                      }`}>{row.slaStatus.replace("_", " ")}</span>
+                    <td className="px-2.5 py-2 border-r border-b border-slate-100 text-center">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold shadow-sm ${
+                        row.slaStatus === "ON_TRACK" ? "bg-emerald-50 text-emerald-700 border border-emerald-300/80" :
+                        row.slaStatus === "AT_RISK" ? "bg-amber-50 text-amber-700 border border-amber-300/80" :
+                        row.slaStatus === "OVERDUE" ? "bg-rose-50 text-rose-700 border border-rose-300/80" :
+                        "bg-indigo-50 text-indigo-700 border border-indigo-300/80"
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                          row.slaStatus === "ON_TRACK" ? "bg-emerald-500" :
+                          row.slaStatus === "AT_RISK" ? "bg-amber-500" :
+                          row.slaStatus === "OVERDUE" ? "bg-rose-500" : "bg-indigo-500"
+                        }`} />
+                        {row.slaStatus.replace("_", " ")}
+                      </span>
                     </td>
 
                     {/* CS Status (text input) */}
@@ -985,16 +1002,16 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
       {/* Pagination & Export Controls */}
       <div className="flex items-center justify-between pt-3 pb-1 px-1">
-        <button onClick={exportToCSV} className="text-xs flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold">
+        <button onClick={exportToCSV} className="text-xs flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white rounded-xl hover:from-indigo-700 hover:to-violet-800 transition-all font-bold shadow-md shadow-indigo-500/20">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
           Export to CSV
         </button>
         <div className="flex items-center gap-2">
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-colors">
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-colors shadow-sm">
             ← Prev
           </button>
-          <span className="px-3 py-1.5 text-xs text-slate-500 bg-slate-50 rounded-lg border border-slate-200">{page} / {totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-colors">
+          <span className="px-3.5 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl border border-slate-200/80">{page} / {totalPages}</span>
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-colors shadow-sm">
             Next →
           </button>
         </div>
