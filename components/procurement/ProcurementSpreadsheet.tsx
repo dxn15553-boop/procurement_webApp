@@ -467,8 +467,8 @@ export function ProcurementSpreadsheet({ session }: Props) {
     toast.success("CSV Exported successfully!");
   };
 
-  const cellInputClass = "uppercase w-full h-full min-h-[38px] px-3 py-1.5 text-[12px] font-medium text-slate-800 bg-transparent border border-transparent hover:bg-white hover:border-slate-300 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg outline-none transition-all placeholder:text-slate-300";
-  const headerCellClass = "px-4 py-3.5 text-[11px] font-bold text-slate-600 uppercase tracking-wider border-r border-b border-slate-200 bg-slate-100/90 text-left sticky top-0 z-20 select-none whitespace-nowrap shadow-sm";
+  const cellInputClass = "uppercase w-full h-full min-h-[38px] px-3 py-1.5 text-[12px] font-medium text-slate-800 bg-transparent border border-transparent hover:bg-white hover:border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg outline-none transition-all placeholder:text-slate-300";
+  const headerCellClass = "px-3.5 py-3 text-[11px] font-bold text-white uppercase tracking-wider border-r border-blue-500/40 border-b border-blue-800 bg-blue-600 text-left sticky top-0 z-20 select-none whitespace-nowrap shadow-sm";
   const bodyCellClass = "p-1 border-r border-b border-slate-100 align-middle relative";
   const readonlyCellClass = "px-3 py-2 border-r border-b border-slate-100 align-middle text-center text-[12px] font-semibold text-slate-600 bg-slate-50/50";
 
@@ -516,51 +516,51 @@ export function ProcurementSpreadsheet({ session }: Props) {
           <table className="w-full text-sm table-fixed min-w-[5000px] border-collapse">
             <thead>
               <tr>
-                <th className="px-3 py-3.5 text-[11px] font-bold text-slate-700 uppercase tracking-wider border-r border-b border-slate-200 bg-slate-100/90 sticky top-0 left-0 z-30 text-center w-28 select-none shadow-[2px_0_6px_rgba(0,0,0,0.04)]">
+                <th className="px-3 py-3 text-[11px] font-bold text-white uppercase tracking-wider border-r border-blue-500/40 border-b border-blue-800 bg-blue-700 sticky top-0 left-0 z-30 text-center w-28 select-none shadow-[2px_0_6px_rgba(0,0,0,0.1)]">
                   Actions
                 </th>
-                <th className={headerCellClass} style={{ width: "160px" }}>{isManager ? "Employee Name" : "Created By"}</th>
-                <th className={headerCellClass} style={{ width: "140px" }}>Source No</th>
-                <th className={headerCellClass} style={{ width: "140px" }}>Source Date *</th>
-                <th className={headerCellClass} style={{ width: "300px" }}>Source Description *</th>
-                <th className={headerCellClass} style={{ width: "180px" }}>Department *</th>
-                <th className={headerCellClass} style={{ width: "150px" }}>Comparative Date</th>
-                <th className={headerCellClass} style={{ width: "140px" }}>PR Number</th>
-                <th className={headerCellClass} style={{ width: "140px" }}>PR Date</th>
-                <th className={headerCellClass} style={{ width: "140px" }}>PO Number</th>
-                <th className={headerCellClass} style={{ width: "140px" }}>PO Date</th>
-                <th className={headerCellClass} style={{ width: "140px" }}>PO Status</th>
-                <th className={headerCellClass} style={{ width: "130px" }}>Days for PO</th>
-                <th className={headerCellClass} style={{ width: "180px" }}>Payment Approval Date</th>
-                <th className={headerCellClass} style={{ width: "180px" }}>Payment Done Date</th>
-                <th className={headerCellClass} style={{ width: "140px" }}>Payment Status</th>
-                <th className={headerCellClass} style={{ width: "140px" }}>Days for Payment</th>
-                <th className={headerCellClass} style={{ width: "200px" }}>Vendor Name</th>
-                <th className={headerCellClass} style={{ width: "130px" }}>PRL NO</th>
-                <th className={headerCellClass} style={{ width: "130px" }}>PRL DATE</th>
-                <th className={headerCellClass} style={{ width: "180px" }}>Material Dispatch Date</th>
-                <th className={headerCellClass} style={{ width: "180px" }}>Material Received Date</th>
-                <th className={headerCellClass} style={{ width: "180px" }}>Work Completion Date</th>
-                <th className={headerCellClass} style={{ width: "190px" }}>Source Cancellation Date</th>
-                <th className={headerCellClass} style={{ width: "170px" }}>Name of Handler *</th>
-                <th className={headerCellClass} style={{ width: "220px" }}>Current Status by Handler</th>
-                <th className={headerCellClass} style={{ width: "130px" }}>Current Stage</th>
-                <th className={headerCellClass} style={{ width: "140px" }}>Pending From</th>
+                <th className={headerCellClass} style={{ width: "150px" }}>{isManager ? "Employee Name" : "Created By"}</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>Source No</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>Source Date *</th>
+                <th className={headerCellClass} style={{ width: "260px" }}>Source Description *</th>
+                <th className={headerCellClass} style={{ width: "160px" }}>Department *</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>Comparative Date</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>PR Number</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>PR Date</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>PO Number</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>PO Date</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>PO Status</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>Days for PO</th>
+                <th className={headerCellClass} style={{ width: "150px" }}>Payment Approval Date</th>
+                <th className={headerCellClass} style={{ width: "150px" }}>Payment Done Date</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>Payment Status</th>
+                <th className={headerCellClass} style={{ width: "130px" }}>Days for Payment</th>
+                <th className={headerCellClass} style={{ width: "160px" }}>Vendor Name</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>PRL NO</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>PRL DATE</th>
+                <th className={headerCellClass} style={{ width: "150px" }}>Material Dispatch Date</th>
+                <th className={headerCellClass} style={{ width: "150px" }}>Material Received Date</th>
+                <th className={headerCellClass} style={{ width: "150px" }}>Work Completion Date</th>
+                <th className={headerCellClass} style={{ width: "150px" }}>Source Cancellation Date</th>
+                <th className={headerCellClass} style={{ width: "150px" }}>Name of Handler *</th>
+                <th className={headerCellClass} style={{ width: "160px" }}>Current Status by Handler</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>Current Stage</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>Pending From</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Days for CS</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Days for PR</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Pending Days</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>No of Days</th>
-                <th className={headerCellClass} style={{ width: "140px" }}>SLA Status</th>
-                <th className={headerCellClass} style={{ width: "130px" }}>CS Status</th>
-                <th className={headerCellClass} style={{ width: "130px" }}>PR Status</th>
-                <th className={headerCellClass} style={{ width: "90px" }}>CS (SLA)</th>
-                <th className={headerCellClass} style={{ width: "90px" }}>PR (SLA)</th>
-                <th className={headerCellClass} style={{ width: "90px" }}>PO (SLA)</th>
-                <th className={headerCellClass} style={{ width: "90px" }}>PAR (SLA)</th>
-                <th className={headerCellClass} style={{ width: "90px" }}>PDD (SLA)</th>
-                <th className={headerCellClass} style={{ width: "90px" }}>MDD (SLA)</th>
-                <th className={headerCellClass} style={{ width: "90px" }}>MRD (SLA)</th>
-                <th className={headerCellClass} style={{ width: "90px" }}>WCD (SLA)</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>SLA Status</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>CS Status</th>
+                <th className={headerCellClass} style={{ width: "120px" }}>PR Status</th>
+                <th className={headerCellClass} style={{ width: "80px" }}>CS (SLA)</th>
+                <th className={headerCellClass} style={{ width: "80px" }}>PR (SLA)</th>
+                <th className={headerCellClass} style={{ width: "80px" }}>PO (SLA)</th>
+                <th className={headerCellClass} style={{ width: "80px" }}>PAR (SLA)</th>
+                <th className={headerCellClass} style={{ width: "80px" }}>PDD (SLA)</th>
+                <th className={headerCellClass} style={{ width: "80px" }}>MDD (SLA)</th>
+                <th className={headerCellClass} style={{ width: "80px" }}>MRD (SLA)</th>
+                <th className={headerCellClass} style={{ width: "80px" }}>WCD (SLA)</th>
               </tr>
             </thead>
             <tbody>
