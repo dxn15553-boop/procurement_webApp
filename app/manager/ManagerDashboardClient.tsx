@@ -48,15 +48,15 @@ export function ManagerDashboardClient({ data, userName }: Props) {
   const { kpi, recentRequests, departmentData, stageData, monthlyData, slaChartData } = data;
 
   const kpiCards = [
-    { type: "single", label: "TOTAL SOURCE", value: kpi.total, bgIcon: <BarChart3 className="w-20 h-20 text-slate-800" /> },
-    { type: "single", label: "CANCELLED", value: kpi.cancelled, bgIcon: <XCircle className="w-20 h-20 text-rose-600" /> },
-    { type: "single", label: "ACTIVE SOURCE", value: kpi.activeSource, bgIcon: <Activity className="w-20 h-20 text-indigo-600" /> },
-    { type: "dual", label: "CS STATUS", done: kpi.csDone, pending: kpi.pendingCS, bgIcon: <FileText className="w-20 h-20 text-blue-600" /> },
-    { type: "dual", label: "PR STATUS", done: kpi.prDone, pending: kpi.pendingPR, bgIcon: <ShoppingCart className="w-20 h-20 text-cyan-600" /> },
-    { type: "dual", label: "PO STATUS", done: kpi.poDone, pending: kpi.pendingPO, bgIcon: <FileText className="w-20 h-20 text-teal-600" /> },
-    { type: "dual", label: "PAYMENT STATUS", done: kpi.paymentDone, pending: kpi.pendingPayment, bgIcon: <Activity className="w-20 h-20 text-purple-600" /> },
-    { type: "dual", label: "MATERIAL STATUS", done: kpi.materialDone, pending: kpi.pendingDispatch, bgIcon: <Truck className="w-20 h-20 text-amber-600" /> },
-    { type: "single", label: "WORK COMPLETED", value: kpi.completed, bgIcon: <CheckCircle2 className="w-20 h-20 text-emerald-600" /> },
+    { type: "single", label: "TOTAL SOURCE", value: kpi.total, bgIcon: <BarChart3 className="w-24 h-24 text-slate-800" /> },
+    { type: "single", label: "CANCELLED", value: kpi.cancelled, bgIcon: <XCircle className="w-24 h-24 text-rose-600" /> },
+    { type: "single", label: "ACTIVE SOURCE", value: kpi.activeSource, bgIcon: <Activity className="w-24 h-24 text-indigo-600" /> },
+    { type: "dual", label: "CS STATUS", done: kpi.csDone, pending: kpi.pendingCS, bgIcon: <FileText className="w-24 h-24 text-blue-600" /> },
+    { type: "dual", label: "PR STATUS", done: kpi.prDone, pending: kpi.pendingPR, bgIcon: <ShoppingCart className="w-24 h-24 text-cyan-600" /> },
+    { type: "dual", label: "PO STATUS", done: kpi.poDone, pending: kpi.pendingPO, bgIcon: <FileText className="w-24 h-24 text-teal-600" /> },
+    { type: "dual", label: "PAYMENT STATUS", done: kpi.paymentDone, pending: kpi.pendingPayment, bgIcon: <Activity className="w-24 h-24 text-purple-600" /> },
+    { type: "dual", label: "MATERIAL STATUS", done: kpi.materialDone, pending: kpi.pendingDispatch, bgIcon: <Truck className="w-24 h-24 text-amber-600" /> },
+    { type: "single", label: "WORK COMPLETED", value: kpi.completed, bgIcon: <CheckCircle2 className="w-24 h-24 text-emerald-600" /> },
   ];
 
   return (
@@ -110,46 +110,43 @@ export function ManagerDashboardClient({ data, userName }: Props) {
           return (
             <div
               key={idx}
-              className="bg-white border border-slate-200/80 rounded-2xl flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 shadow-sm group relative"
+              className="bg-white border border-slate-200/80 rounded-2xl flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 shadow-sm group relative min-h-[120px]"
             >
-              {/* Background Icon Watermark Element */}
-              <div className="absolute -right-3 -bottom-3 opacity-[0.08] pointer-events-none group-hover:scale-110 group-hover:opacity-[0.14] transition-all duration-300">
+              {/* Centered Background Icon Watermark Element */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-[0.08] pointer-events-none group-hover:scale-110 group-hover:opacity-[0.14] transition-all duration-300">
                 {card.bgIcon}
               </div>
 
-              <div className="flex flex-col flex-1 p-3.5 gap-3 relative z-10">
+              <div className="flex flex-col flex-1 p-4 sm:p-5 gap-3.5 relative z-10 justify-between">
                 {/* Header: label */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold tracking-wider uppercase text-slate-500 leading-tight">
+                  <span className="text-[11px] font-extrabold tracking-wider uppercase text-slate-500 leading-tight">
                     {card.label}
                   </span>
                 </div>
 
-                {/* Divider */}
-                <div className="w-full h-px bg-slate-100" />
-
                 {/* Values */}
                 {card.type === "single" ? (
                   <div>
-                    <p className="text-3xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
+                    <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
                       {card.value}
                     </p>
-                    <p className="text-[9px] text-slate-400 font-medium mt-1.5">total records</p>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-2">total records</p>
                   </div>
                 ) : (
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <div className="flex items-end justify-between">
                       <div>
-                        <p className="text-xl font-bold text-slate-900 leading-none tabular-nums">{card.done}</p>
-                        <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">Done</p>
+                        <p className="text-xl font-black text-slate-900 leading-none tabular-nums">{card.done}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Done</p>
                       </div>
-                      <span className="text-[9px] font-bold text-indigo-600 tabular-nums pb-2">{pct ?? 0}%</span>
+                      <span className="text-[10px] font-extrabold text-indigo-600 tabular-nums pb-2">{pct ?? 0}%</span>
                       <div className="text-right">
-                        <p className="text-xl font-bold text-amber-600 leading-none tabular-nums">{card.pending}</p>
-                        <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">Pending</p>
+                        <p className="text-xl font-black text-amber-600 leading-none tabular-nums">{card.pending}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Pending</p>
                       </div>
                     </div>
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-indigo-500 rounded-full transition-all duration-700"
                         style={{ width: `${pct ?? 0}%` }}
