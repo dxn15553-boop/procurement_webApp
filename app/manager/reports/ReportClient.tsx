@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { FileText, Download, Printer, RefreshCw, Upload } from "lucide-react";
+import { FileText, Download, Printer, RefreshCw, Upload, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
@@ -53,6 +53,16 @@ export function ReportClient({ departments, vendors }: Props) {
   };
 
   const handleExport = async (format: "csv" | "excel" | "pdf") => {
+    if (!from || !to) {
+      toast.error("Please select both From Date and To Date before exporting.");
+      return;
+    }
+
+    if (new Date(from) > new Date(to)) {
+      toast.error("The 'From Date' must be before or equal to the 'To Date'.");
+      return;
+    }
+    
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -60,6 +70,7 @@ export function ReportClient({ departments, vendors }: Props) {
       if (vendorId) params.set("vendorId", vendorId);
       if (from) params.set("from", from);
       if (to) params.set("to", to);
+      params.set("limit", "999999");
 
       const res = await fetch(`/api/requests?${params}`);
       const data = await res.json();
@@ -71,11 +82,54 @@ export function ReportClient({ departments, vendors }: Props) {
       }
 
       if (format === "csv") {
+        const headers = [
+          "Source No", "Source Date", "Description", "Department", "Vendor",
+          "Comparative Date", "Days for CS", "CS Status", "PR Number", "PR Date",
+          "Days for PR", "PR Status", "PO Number", "PO Date", "Days for PO", "PO Status",
+          "PRL No", "PRL Date", "Material Dispatch Date", "Material Received Date",
+          "Work Completion Date", "Source Cancellation Date", "Payment Approval Date",
+          "Payment Done Date", "Payment Status", "Days for Payment", "Current Status by Handler",
+          "Handler", "No of Days", "Stage", "Pending From", "Pending Days",
+          "SLA Status", "Date"
+        ];
+        
         const rows = [
-          ["Source No", "Description", "Department", "Vendor", "Stage", "SLA", "Handler", "Pending Days", "Date"],
+          headers,
           ...requests.map((r: any) => [
-            r.sourceNo, r.sourceDescription, r.department?.name ?? "", r.vendor?.name ?? "",
-            r.currentStage, r.slaStatus, r.nameOfHandler, String(r.pendingDays ?? ""), new Date(r.createdAt).toLocaleDateString(),
+            r.sourceNo ?? "",
+            r.sourceDate ? new Date(r.sourceDate).toLocaleDateString() : "",
+            r.sourceDescription ?? "",
+            r.department?.name ?? "",
+            r.vendor?.name ?? "",
+            r.comparativeDate ? new Date(r.comparativeDate).toLocaleDateString() : "",
+            r.daysForCS ?? "",
+            r.csStatus ?? "",
+            r.prNumber ?? "",
+            r.prDate ? new Date(r.prDate).toLocaleDateString() : "",
+            r.daysForPR ?? "",
+            r.prStatus ?? "",
+            r.poNumber ?? "",
+            r.poDate ? new Date(r.poDate).toLocaleDateString() : "",
+            r.daysForPO ?? "",
+            r.poStatus ?? "",
+            r.prlNo ?? "",
+            r.prlDate ? new Date(r.prlDate).toLocaleDateString() : "",
+            r.materialDispatchDate ? new Date(r.materialDispatchDate).toLocaleDateString() : "",
+            r.materialReceivedDate ? new Date(r.materialReceivedDate).toLocaleDateString() : "",
+            r.workCompletionDate ? new Date(r.workCompletionDate).toLocaleDateString() : "",
+            r.sourceCancellationDate ? new Date(r.sourceCancellationDate).toLocaleDateString() : "",
+            r.paymentApprovalDate ? new Date(r.paymentApprovalDate).toLocaleDateString() : "",
+            r.paymentDoneDate ? new Date(r.paymentDoneDate).toLocaleDateString() : "",
+            r.paymentStatus ?? "",
+            r.daysForPayment ?? "",
+            r.currentStatusByHandler ?? "",
+            r.nameOfHandler ?? "",
+            r.noOfDays ?? "",
+            r.currentStage ?? "",
+            r.pendingFrom ? new Date(r.pendingFrom).toLocaleDateString() : "",
+            r.pendingDays ?? "",
+            r.slaStatus ?? "",
+            r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "",
           ]),
         ];
         const csv = rows.map((r: string[]) => r.map((c: string) => `"${c}"`).join(",")).join("\n");
@@ -142,6 +196,15 @@ export function ReportClient({ departments, vendors }: Props) {
         </div>
       </div>
 
+      {(!from || !to || new Date(from) > new Date(to)) && (
+        <div className="bg-amber-50 text-amber-600 border border-amber-200 rounded-xl p-4 text-sm font-medium flex items-center gap-3 relative z-10">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          {(!from || !to) 
+            ? "Please select a From Date and To Date to enable report export."
+            : "The 'From Date' must be before or equal to the 'To Date'."}
+        </div>
+      )}
+
       <div className="flex gap-3 justify-end pt-6 border-t border-slate-100 relative z-10">
         <input 
           type="file" 
@@ -159,7 +222,7 @@ export function ReportClient({ departments, vendors }: Props) {
           Import Data
         </button>
         <button
-          disabled={loading || importing}
+          disabled={loading || importing || !from || !to || new Date(from) > new Date(to)}
           onClick={() => handleExport("csv")}
           className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-sm bg-white disabled:opacity-50"
         >
@@ -167,7 +230,7 @@ export function ReportClient({ departments, vendors }: Props) {
           Export CSV
         </button>
         <button
-          disabled={loading || importing}
+          disabled={loading || importing || !from || !to || new Date(from) > new Date(to)}
           onClick={() => handleExport("pdf")}
           className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200 disabled:opacity-50"
         >

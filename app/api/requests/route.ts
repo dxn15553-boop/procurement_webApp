@@ -55,13 +55,15 @@ export async function GET(req: Request) {
   if (search) {
     const searchFilter = {
       OR: [
-        { sourceNo: { contains: search } },
-        { sourceDescription: { contains: search } },
-        { prNumber: { contains: search } },
-        { poNumber: { contains: search } },
-        { nameOfHandler: { contains: search } },
-        { vendor: { name: { contains: search } } },
-        { department: { name: { contains: search } } },
+        { sourceNo: { contains: search, mode: "insensitive" } },
+        { sourceDescription: { contains: search, mode: "insensitive" } },
+        { prNumber: { contains: search, mode: "insensitive" } },
+        { poNumber: { contains: search, mode: "insensitive" } },
+        { prlNo: { contains: search, mode: "insensitive" } },
+        { currentStatusByHandler: { contains: search, mode: "insensitive" } },
+        { nameOfHandler: { contains: search, mode: "insensitive" } },
+        { vendor: { name: { contains: search, mode: "insensitive" } } },
+        { department: { name: { contains: search, mode: "insensitive" } } },
       ],
     };
 

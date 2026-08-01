@@ -57,7 +57,14 @@ export function TopNav({ title }: TopNavProps) {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchQuery(val);
+              if (val.trim() === "") {
+                const base = role === "MANAGER" ? "/manager/requests" : "/team/requests";
+                router.push(base);
+              }
+            }}
             placeholder="Search requests, vendors, departments..."
             className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400 shadow-sm text-slate-900"
           />

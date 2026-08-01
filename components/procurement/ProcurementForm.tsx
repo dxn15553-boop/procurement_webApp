@@ -299,7 +299,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>Source No *</label>
-            <input {...register("sourceNo")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} placeholder="ENTER SOURCE NO..." />
+            <input {...register("sourceNo")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, ''))} placeholder="ENTER SOURCE NO..." />
             {errors.sourceNo && <p className="text-xs text-destructive mt-1">{errors.sourceNo.message}</p>}
           </div>
           <div>

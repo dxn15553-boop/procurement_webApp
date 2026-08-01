@@ -6,7 +6,7 @@ export const loginSchema = z.object({
 });
 
 export const procurementSchema = z.object({
-  sourceNo: z.string().min(1, "Source number is required"),
+  sourceNo: z.string().min(1, "Source number is required").regex(/^\d+$/, "Source number must contain only numbers"),
   sourceDate: z.string().min(1, "Source date is required"),
   sourceDescription: z.string().min(1, "Description is required"),
   departmentId: z.string().min(1, "Department is required"),
