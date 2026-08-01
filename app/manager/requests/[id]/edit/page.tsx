@@ -23,7 +23,7 @@ export default async function EditRequestPage({
 
   const request = await prisma.procurementRequest.findUnique({
     where: { id },
-    include: { vendor: true }
+    include: { vendor: true, department: true }
   });
   if (!request) notFound();
 
@@ -31,7 +31,7 @@ export default async function EditRequestPage({
     sourceNo: request.sourceNo,
     sourceDate: fmtDateInput(request.sourceDate),
     sourceDescription: request.sourceDescription,
-    departmentId: request.departmentId,
+    departmentId: request.department?.name ?? request.departmentId,
     vendorId: request.vendor?.name ?? undefined,
     comparativeDate: fmtDateInput(request.comparativeDate),
     csStatus: request.csStatus as "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED",

@@ -179,7 +179,7 @@ export async function POST(req: Request) {
   }
 
   let vendorId = data.vendorId || null;
-  if (vendorId && vendorId.trim().length > 0) {
+  if (vendorId && vendorId.trim().length > 0 && (!vendorId.startsWith("c") || vendorId.length !== 25)) {
     const code = cleanCode(vendorId);
     const vend = await prisma.vendor.upsert({
       where: { code },

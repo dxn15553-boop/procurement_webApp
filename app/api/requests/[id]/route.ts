@@ -130,7 +130,7 @@ export async function PUT(
   const data = parsed.data;
 
   let departmentId = data.departmentId;
-  if (departmentId && departmentId.length < 15) {
+  if (departmentId && departmentId.trim().length > 0 && (!departmentId.startsWith("c") || departmentId.length !== 25)) {
     const code = cleanCode(departmentId);
     const dept = await prisma.department.upsert({
       where: { code },
@@ -141,7 +141,7 @@ export async function PUT(
   }
 
   let vendorId = data.vendorId || null;
-  if (vendorId && vendorId.trim().length > 0) {
+  if (vendorId && vendorId.trim().length > 0 && (!vendorId.startsWith("c") || vendorId.length !== 25)) {
     const code = cleanCode(vendorId);
     const vend = await prisma.vendor.upsert({
       where: { code },
