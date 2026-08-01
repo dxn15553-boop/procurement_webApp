@@ -468,7 +468,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
   };
 
   const cellInputClass = "uppercase w-full h-full min-h-[38px] px-3 py-1.5 text-[12px] font-medium text-slate-800 bg-transparent border border-transparent hover:bg-white hover:border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg outline-none transition-all placeholder:text-slate-300";
-  const headerCellClass = "px-3.5 py-3.5 text-[10px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/60 bg-gradient-to-b from-slate-900 to-slate-800 text-left sticky top-0 z-20 select-none whitespace-nowrap";
+  const headerCellClass = "px-3.5 py-3.5 text-[11px] font-extrabold text-white uppercase tracking-wider border-r border-indigo-400/20 bg-gradient-to-r from-indigo-700 via-indigo-600 to-blue-700 text-left sticky top-0 z-20 select-none whitespace-nowrap shadow-sm";
   const bodyCellClass = "p-1 border-r border-b border-slate-100 align-middle relative";
   const readonlyCellClass = "px-3 py-2 border-r border-b border-slate-100 align-middle text-center text-[12px] font-semibold text-slate-600 bg-slate-50/50";
 
@@ -516,7 +516,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
           <table className="w-full text-sm table-fixed min-w-[5000px] border-collapse">
             <thead>
               <tr>
-                <th className="px-3 py-3.5 text-[10px] font-bold text-indigo-300 uppercase tracking-wider border-r border-slate-700/60 bg-gradient-to-b from-slate-900 to-slate-800 sticky top-0 left-0 z-30 text-center w-28 select-none shadow-[4px_0_10px_rgba(0,0,0,0.2)]">
+                <th className="px-3 py-3.5 text-[11px] font-extrabold text-white uppercase tracking-wider border-r border-indigo-400/30 bg-indigo-800 sticky top-0 left-0 z-30 text-center w-28 select-none shadow-[4px_0_10px_rgba(0,0,0,0.15)]">
                   Actions
                 </th>
                 <th className={headerCellClass} style={{ width: "150px" }}>{isManager ? "Employee Name" : "Created By"}</th>
