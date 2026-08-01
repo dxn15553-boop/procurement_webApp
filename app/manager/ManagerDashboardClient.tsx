@@ -48,15 +48,15 @@ export function ManagerDashboardClient({ data, userName }: Props) {
   const { kpi, recentRequests, departmentData, stageData, monthlyData, slaChartData } = data;
 
   const kpiCards = [
-    { type: "single", label: "TOTAL SOURCE", value: kpi.total, icon: <BarChart3 className="w-5 h-5 text-slate-700" />, iconBg: "bg-slate-100" },
-    { type: "single", label: "CANCELLED", value: kpi.cancelled, icon: <XCircle className="w-5 h-5 text-red-500" />, iconBg: "bg-red-50" },
-    { type: "single", label: "ACTIVE SOURCE", value: kpi.activeSource, icon: <Activity className="w-5 h-5 text-indigo-600" />, iconBg: "bg-indigo-50" },
-    { type: "dual", label: "CS STATUS", done: kpi.csDone, pending: kpi.pendingCS, icon: <FileText className="w-5 h-5 text-blue-500" />, iconBg: "bg-blue-50" },
-    { type: "dual", label: "PR STATUS", done: kpi.prDone, pending: kpi.pendingPR, icon: <ShoppingCart className="w-5 h-5 text-cyan-500" />, iconBg: "bg-cyan-50" },
-    { type: "dual", label: "PO STATUS", done: kpi.poDone, pending: kpi.pendingPO, icon: <FileText className="w-5 h-5 text-emerald-500" />, iconBg: "bg-emerald-50" },
-    { type: "dual", label: "PAYMENT STATUS", done: kpi.paymentDone, pending: kpi.pendingPayment, icon: <Activity className="w-5 h-5 text-purple-500" />, iconBg: "bg-purple-50" },
-    { type: "dual", label: "MATERIAL STATUS", done: kpi.materialDone, pending: kpi.pendingDispatch, icon: <Truck className="w-5 h-5 text-orange-500" />, iconBg: "bg-orange-50" },
-    { type: "single", label: "WORK COMPLETED", value: kpi.completed, icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" />, iconBg: "bg-emerald-50" },
+    { type: "single", label: "TOTAL SOURCE", value: kpi.total, icon: <BarChart3 className="w-5 h-5 text-slate-700" />, iconBg: "bg-slate-100 text-slate-700 border-slate-200" },
+    { type: "single", label: "CANCELLED", value: kpi.cancelled, icon: <XCircle className="w-5 h-5 text-rose-600" />, iconBg: "bg-rose-50 text-rose-600 border-rose-100" },
+    { type: "single", label: "ACTIVE SOURCE", value: kpi.activeSource, icon: <Activity className="w-5 h-5 text-indigo-600" />, iconBg: "bg-indigo-50 text-indigo-600 border-indigo-100" },
+    { type: "dual", label: "CS STATUS", done: kpi.csDone, pending: kpi.pendingCS, icon: <FileText className="w-5 h-5 text-blue-600" />, iconBg: "bg-blue-50 text-blue-600 border-blue-100" },
+    { type: "dual", label: "PR STATUS", done: kpi.prDone, pending: kpi.pendingPR, icon: <ShoppingCart className="w-5 h-5 text-cyan-600" />, iconBg: "bg-cyan-50 text-cyan-600 border-cyan-100" },
+    { type: "dual", label: "PO STATUS", done: kpi.poDone, pending: kpi.pendingPO, icon: <FileText className="w-5 h-5 text-teal-600" />, iconBg: "bg-teal-50 text-teal-600 border-teal-100" },
+    { type: "dual", label: "PAYMENT STATUS", done: kpi.paymentDone, pending: kpi.pendingPayment, icon: <Activity className="w-5 h-5 text-purple-600" />, iconBg: "bg-purple-50 text-purple-600 border-purple-100" },
+    { type: "dual", label: "MATERIAL STATUS", done: kpi.materialDone, pending: kpi.pendingDispatch, icon: <Truck className="w-5 h-5 text-amber-600" />, iconBg: "bg-amber-50 text-amber-600 border-amber-100" },
+    { type: "single", label: "WORK COMPLETED", value: kpi.completed, icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" />, iconBg: "bg-emerald-50 text-emerald-600 border-emerald-100" },
   ];
 
   return (
@@ -110,21 +110,18 @@ export function ManagerDashboardClient({ data, userName }: Props) {
           return (
             <div
               key={idx}
-              className={cn(
-                "bg-white border border-slate-200 border-l-[3px] rounded-xl flex flex-col overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group",
-                accentColor
-              )}
+              className="bg-white border border-slate-200/80 rounded-2xl flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 shadow-sm group"
             >
               <div className="flex flex-col flex-1 p-3.5 gap-3">
                 {/* Header: icon + label */}
                 <div className="flex items-center gap-2">
                   <div className={cn(
-                    "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0",
+                    "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border",
                     card.iconBg
                   )}>
                     {card.icon}
                   </div>
-                  <span className="text-[9px] font-bold tracking-[0.1em] uppercase text-slate-500 leading-tight">
+                  <span className="text-[9px] font-bold tracking-wider uppercase text-slate-500 leading-tight">
                     {card.label}
                   </span>
                 </div>
@@ -135,27 +132,27 @@ export function ManagerDashboardClient({ data, userName }: Props) {
                 {/* Values */}
                 {card.type === "single" ? (
                   <div>
-                    <p className="text-3xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
+                    <p className="text-2xl font-bold text-slate-900 tracking-tight leading-none tabular-nums">
                       {card.value}
                     </p>
-                    <p className="text-[9px] text-slate-400 font-medium mt-1.5">total records</p>
+                    <p className="text-[9px] text-slate-400 font-medium mt-1">total records</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <div className="flex items-end justify-between">
                       <div>
-                        <p className="text-xl font-black text-slate-900 leading-none tabular-nums">{card.done}</p>
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Done</p>
+                        <p className="text-lg font-bold text-slate-900 leading-none tabular-nums">{card.done}</p>
+                        <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">Done</p>
                       </div>
-                      <span className="text-[9px] font-bold text-indigo-500 tabular-nums pb-3">{pct ?? 0}%</span>
+                      <span className="text-[9px] font-bold text-indigo-600 tabular-nums pb-2">{pct ?? 0}%</span>
                       <div className="text-right">
-                        <p className="text-xl font-black text-amber-500 leading-none tabular-nums">{card.pending}</p>
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Pending</p>
+                        <p className="text-lg font-bold text-amber-600 leading-none tabular-nums">{card.pending}</p>
+                        <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">Pending</p>
                       </div>
                     </div>
                     <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-indigo-400 rounded-full transition-all duration-700"
+                        className="h-full bg-indigo-500 rounded-full transition-all duration-700"
                         style={{ width: `${pct ?? 0}%` }}
                       />
                     </div>
