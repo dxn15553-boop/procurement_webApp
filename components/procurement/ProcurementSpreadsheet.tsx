@@ -346,13 +346,15 @@ export function ProcurementSpreadsheet({ session }: Props) {
       return;
     }
     
-    // Validate Handler Name
-    const isValidHandler = handlers.some(
-      (h) => h.name.toLowerCase() === row.nameOfHandler.trim().toLowerCase()
-    );
-    if (!isValidHandler) {
-      toast.error("Handler Name not found. Please enter the correct account name.");
-      return;
+    // Validate Handler Name — only for managers (team members save their own requests)
+    if (isManager && handlers.length > 0) {
+      const isValidHandler = handlers.some(
+        (h) => h.name.toLowerCase() === row.nameOfHandler.trim().toLowerCase()
+      );
+      if (!isValidHandler) {
+        toast.error("Handler Name not found. Please enter the correct account name.");
+        return;
+      }
     }
 
     setSavingId(row.id);
