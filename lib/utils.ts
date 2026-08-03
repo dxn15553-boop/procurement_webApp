@@ -89,5 +89,5 @@ export function generateSourceNo(): string {
   const random = Math.floor(Math.random() * 10000)
     .toString()
     .padStart(4, "0");
-  return `SRC-${year}${month}-${random}`;
+  return `${year}${month}${random}`;
 }

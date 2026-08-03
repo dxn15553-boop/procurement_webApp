@@ -627,7 +627,13 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     {/* Source No */}
                     <td className={bodyCellClass}>
                       <input type="text" value={row.sourceNo} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
-                        onChange={(e) => handleCellChange(row.id, "sourceNo", e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (/[^0-9]/.test(val)) {
+                            toast.error("Source No. can only contain numbers");
+                          }
+                          handleCellChange(row.id, "sourceNo", val.replace(/[^0-9]/g, ''));
+                        }}
                         className={cellInputClass}
                       />
                     </td>
