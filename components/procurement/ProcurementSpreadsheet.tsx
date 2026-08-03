@@ -390,7 +390,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to save row");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const errMsg = errData?.error?.message || errData?.error || `Server error (${res.status})`;
+        console.error("[Save Row] API error:", res.status, errData, "\nPayload:", payload);
+        throw new Error(String(errMsg));
+      }
 
       const resData = await res.json();
       const savedItem = resData.request;
@@ -404,8 +409,8 @@ export function ProcurementSpreadsheet({ session }: Props) {
       );
 
       toast.success(`Row ${row.sourceNo} saved successfully!`);
-    } catch {
-      toast.error("Failed to save spreadsheet row. Check inputs.");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save spreadsheet row. Check inputs.");
     } finally {
       setSavingId(null);
     }
