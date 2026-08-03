@@ -54,12 +54,7 @@ export function ReportClient({ departments, vendors }: Props) {
   };
 
   const handleExport = async (format: "csv" | "excel" | "pdf") => {
-    if (!from || !to) {
-      toast.error("Please select both From Date and To Date before exporting.");
-      return;
-    }
-
-    if (new Date(from) > new Date(to)) {
+    if (from && to && new Date(from) > new Date(to)) {
       toast.error("The 'From Date' must be before or equal to the 'To Date'.");
       return;
     }
@@ -150,12 +145,15 @@ export function ReportClient({ departments, vendors }: Props) {
         </div>
       </div>
 
-      {(!from || !to || new Date(from) > new Date(to)) && (
+      {from && to && new Date(from) > new Date(to) ? (
         <div className="bg-amber-50 text-amber-600 border border-amber-200 rounded-xl p-4 text-sm font-medium flex items-center gap-3 relative z-10">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          {(!from || !to) 
-            ? "Please select a From Date and To Date to enable report export."
-            : "The 'From Date' must be before or equal to the 'To Date'."}
+          The &apos;From Date&apos; must be before or equal to the &apos;To Date&apos;.
+        </div>
+      ) : (
+        <div className="bg-slate-50 text-slate-500 border border-slate-200/80 rounded-xl p-4 text-xs font-medium flex items-center gap-2.5 relative z-10">
+          <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
+          <span><strong className="text-slate-700">Tip:</strong> Date range is optional. Leaving dates blank will export all data from the beginning to today.</span>
         </div>
       )}
 
@@ -176,7 +174,7 @@ export function ReportClient({ departments, vendors }: Props) {
           Import Data
         </button>
         <button
-          disabled={loading || importing || !from || !to || new Date(from) > new Date(to)}
+          disabled={loading || importing || Boolean(from && to && new Date(from) > new Date(to))}
           onClick={() => handleExport("excel")}
           className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl border border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition-colors shadow-sm bg-white disabled:opacity-50"
         >
@@ -184,7 +182,7 @@ export function ReportClient({ departments, vendors }: Props) {
           Export Excel (.xlsx)
         </button>
         <button
-          disabled={loading || importing || !from || !to || new Date(from) > new Date(to)}
+          disabled={loading || importing || Boolean(from && to && new Date(from) > new Date(to))}
           onClick={() => handleExport("csv")}
           className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-sm bg-white disabled:opacity-50"
         >
@@ -192,7 +190,7 @@ export function ReportClient({ departments, vendors }: Props) {
           Export CSV
         </button>
         <button
-          disabled={loading || importing || !from || !to || new Date(from) > new Date(to)}
+          disabled={loading || importing || Boolean(from && to && new Date(from) > new Date(to))}
           onClick={() => handleExport("pdf")}
           className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200 disabled:opacity-50"
         >
