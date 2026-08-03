@@ -4,5 +4,5 @@ import { authConfig } from "./lib/auth.config";
 export default NextAuth(authConfig).auth;
 
 export const config = {
-  matcher: ["/team/:path*", "/manager/:path*", "/login"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon\\.ico).*)"],
 };

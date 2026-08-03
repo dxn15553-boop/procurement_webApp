@@ -46,11 +46,11 @@ export function TeamDashboardClient({ data, userName }: Props) {
   const { kpi, recentRequests, departmentData, stageData, monthlyData, slaChartData } = data;
 
   const kpiCards = [
-    { type: "single", label: "MY TOTAL REQUESTS", value: kpi.total, icon: <BarChart3 className="w-5 h-5 text-slate-700" />, iconBg: "bg-slate-100" },
-    { type: "single", label: "ACTIVE", value: kpi.active, icon: <Activity className="w-5 h-5 text-indigo-600" />, iconBg: "bg-indigo-50" },
-    { type: "single", label: "COMPLETED", value: kpi.completed, icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" />, iconBg: "bg-emerald-50" },
-    { type: "single", label: "OVERDUE", value: kpi.overdue, icon: <AlertTriangle className="w-5 h-5 text-orange-500" />, iconBg: "bg-orange-50" },
-    { type: "single", label: "CANCELLED", value: kpi.cancelled, icon: <XCircle className="w-5 h-5 text-red-500" />, iconBg: "bg-red-50" },
+    { label: "MY TOTAL REQUESTS", value: kpi.total,     bgIcon: <BarChart3     className="w-24 h-24 text-slate-800"   /> },
+    { label: "ACTIVE",            value: kpi.active,    bgIcon: <Activity      className="w-24 h-24 text-indigo-600"  /> },
+    { label: "COMPLETED",         value: kpi.completed, bgIcon: <CheckCircle2  className="w-24 h-24 text-emerald-600" /> },
+    { label: "OVERDUE",           value: kpi.overdue,   bgIcon: <AlertTriangle className="w-24 h-24 text-orange-500"  /> },
+    { label: "CANCELLED",         value: kpi.cancelled, bgIcon: <XCircle       className="w-24 h-24 text-rose-600"    /> },
   ];
 
   return (
@@ -84,16 +84,27 @@ export function TeamDashboardClient({ data, userName }: Props) {
       </div>
 
       {/* KPI Summary Overview */}
-      <div className="flex overflow-x-auto gap-4 pb-4 custom-scrollbar w-full">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 w-full">
         {kpiCards.map((card, idx) => (
-          <div key={idx} className="flex-shrink-0 flex-1 min-w-[140px] bg-white border border-slate-100 rounded-[1.5rem] p-4 xl:p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col justify-between h-[140px] xl:h-[150px] transition-transform hover:-translate-y-1">
-            <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center mb-2", card.iconBg)}>
-              {card.icon}
+          <div
+            key={idx}
+            className="bg-white border border-slate-200/80 rounded-2xl flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 shadow-sm group relative min-h-[120px]"
+          >
+            {/* Centered Background Icon Watermark */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-[0.08] pointer-events-none group-hover:scale-110 group-hover:opacity-[0.14] transition-all duration-300">
+              {card.bgIcon}
             </div>
-            
-            <div className="mt-auto">
-              <p className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-1">{card.value}</p>
-              <p className="text-[9px] font-bold tracking-widest uppercase text-slate-400">{card.label}</p>
+
+            <div className="flex flex-col flex-1 p-4 sm:p-5 gap-3.5 relative z-10 justify-between">
+              <span className="text-[11px] font-extrabold tracking-wider uppercase text-slate-500 leading-tight">
+                {card.label}
+              </span>
+              <div>
+                <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
+                  {card.value}
+                </p>
+                <p className="text-[10px] text-slate-400 font-semibold mt-2">total records</p>
+              </div>
             </div>
           </div>
         ))}
