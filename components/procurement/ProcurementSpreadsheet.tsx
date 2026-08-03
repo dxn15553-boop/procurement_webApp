@@ -8,6 +8,7 @@ import { SLA_THRESHOLDS } from "@/lib/calculations";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { exportUniformCsv, exportUniformExcel } from "@/lib/exportHelper";
 
 interface RowData {
   id: string; // "new-xxx" or real database id
@@ -422,48 +423,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
   const exportToCSV = () => {
     if (filteredRows.length === 0) return toast.error("No data to export");
-    const headers = [
-      "Source No", "Source Date", "Source Description", "Department", "Vendor", 
-      "Created By", "Current Stage", "SLA Status", "Handler", "Handler Status", 
-      "Pending From", "Pending Days", "Total Days",
-      "CS Status", "Days for CS", "Comparative Date",
-      "PR Status", "PR Number", "PR Date", "Days for PR",
-      "PO Status", "PO Number", "PO Date", "Days for PO",
-      "Payment Status", "Payment Approval Date", "Payment Done Date", "Days for Payment",
-      "PRL No", "PRL Date",
-      "Material Dispatch Date", "Material Received Date", "Work Completion Date", "Cancellation Date",
-      "CS (SLA)", "PR (SLA)", "PO (SLA)", "PAR (SLA)", "PDD (SLA)", "MDD (SLA)", "MRD (SLA)", "WCD (SLA)"
-    ];
-
-    const escapeCsv = (val: string | number | null | undefined) => {
-      if (val === null || val === undefined) return '""';
-      const str = String(val);
-      return `"${str.replace(/"/g, '""')}"`;
-    };
-
-    const csvContent = [
-      headers.join(","),
-      ...filteredRows.map(r => [
-        escapeCsv(r.sourceNo), escapeCsv(r.sourceDate), escapeCsv(r.sourceDescription), escapeCsv(r.departmentName), escapeCsv(r.vendorName),
-        escapeCsv(r.createdBy?.name ?? "System"), escapeCsv(r.currentStage), escapeCsv(r.slaStatus.replace("_", " ")), escapeCsv(r.nameOfHandler), escapeCsv(r.currentStatusByHandler),
-        escapeCsv(r.pendingFrom), escapeCsv(r.pendingDays), escapeCsv(r.noOfDays),
-        escapeCsv(r.csStatus), escapeCsv(r.daysForCS), escapeCsv(r.comparativeDate),
-        escapeCsv(r.prStatus), escapeCsv(r.prNumber), escapeCsv(r.prDate), escapeCsv(r.daysForPR),
-        escapeCsv(r.poStatus), escapeCsv(r.poNumber), escapeCsv(r.poDate), escapeCsv(r.daysForPO),
-        escapeCsv(r.paymentStatus), escapeCsv(r.paymentApprovalDate), escapeCsv(r.paymentDoneDate), escapeCsv(r.daysForPayment),
-        escapeCsv(r.prlNo), escapeCsv(r.prlDate),
-        escapeCsv(r.materialDispatchDate), escapeCsv(r.materialReceivedDate), escapeCsv(r.workCompletionDate), escapeCsv(r.sourceCancellationDate),
-        escapeCsv(r.slaCS), escapeCsv(r.slaPR), escapeCsv(r.slaPO), escapeCsv(r.slaPAR), escapeCsv(r.slaPDD), escapeCsv(r.slaMDD), escapeCsv(r.slaMRD), escapeCsv(r.slaWCD)
-      ].join(","))
-    ].join("\n");
-    
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `procurement_export_${format(new Date(), "yyyy-MM-dd")}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportUniformCsv(filteredRows, "procurement_database");
     toast.success("CSV Exported successfully!");
   };
 

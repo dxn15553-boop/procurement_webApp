@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { FileText, Download, Printer, RefreshCw, Upload, AlertCircle } from "lucide-react";
+import { FileText, Download, Printer, RefreshCw, Upload, AlertCircle, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
+import { exportUniformExcel, exportUniformCsv } from "@/lib/exportHelper";
 
 interface Props {
   departments: Array<{ id: string; name: string }>;
@@ -81,69 +82,22 @@ export function ReportClient({ departments, vendors }: Props) {
         return;
       }
 
-      if (format === "csv") {
-        const headers = [
-          "Source No", "Source Date", "Description", "Department", "Vendor",
-          "Comparative Date", "Days for CS", "CS Status", "PR Number", "PR Date",
-          "Days for PR", "PR Status", "PO Number", "PO Date", "Days for PO", "PO Status",
-          "PRL No", "PRL Date", "Material Dispatch Date", "Material Received Date",
-          "Work Completion Date", "Source Cancellation Date", "Payment Approval Date",
-          "Payment Done Date", "Payment Status", "Days for Payment", "Current Status by Handler",
-          "Handler", "No of Days", "Stage", "Pending From", "Pending Days",
-          "SLA Status", "Date"
-        ];
-        
-        const rows = [
-          headers,
-          ...requests.map((r: any) => [
-            r.sourceNo ?? "",
-            r.sourceDate ? new Date(r.sourceDate).toLocaleDateString() : "",
-            r.sourceDescription ?? "",
-            r.department?.name ?? "",
-            r.vendor?.name ?? "",
-            r.comparativeDate ? new Date(r.comparativeDate).toLocaleDateString() : "",
-            r.daysForCS ?? "",
-            r.csStatus ?? "",
-            r.prNumber ?? "",
-            r.prDate ? new Date(r.prDate).toLocaleDateString() : "",
-            r.daysForPR ?? "",
-            r.prStatus ?? "",
-            r.poNumber ?? "",
-            r.poDate ? new Date(r.poDate).toLocaleDateString() : "",
-            r.daysForPO ?? "",
-            r.poStatus ?? "",
-            r.prlNo ?? "",
-            r.prlDate ? new Date(r.prlDate).toLocaleDateString() : "",
-            r.materialDispatchDate ? new Date(r.materialDispatchDate).toLocaleDateString() : "",
-            r.materialReceivedDate ? new Date(r.materialReceivedDate).toLocaleDateString() : "",
-            r.workCompletionDate ? new Date(r.workCompletionDate).toLocaleDateString() : "",
-            r.sourceCancellationDate ? new Date(r.sourceCancellationDate).toLocaleDateString() : "",
-            r.paymentApprovalDate ? new Date(r.paymentApprovalDate).toLocaleDateString() : "",
-            r.paymentDoneDate ? new Date(r.paymentDoneDate).toLocaleDateString() : "",
-            r.paymentStatus ?? "",
-            r.daysForPayment ?? "",
-            r.currentStatusByHandler ?? "",
-            r.nameOfHandler ?? "",
-            r.noOfDays ?? "",
-            r.currentStage ?? "",
-            r.pendingFrom ? new Date(r.pendingFrom).toLocaleDateString() : "",
-            r.pendingDays ?? "",
-            r.slaStatus ?? "",
-            r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "",
-          ]),
-        ];
-        const csv = rows.map((r: string[]) => r.map((c: string) => `"${c}"`).join(",")).join("\n");
-        const blob = new Blob([csv], { type: "text/csv" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `procurex-report-${new Date().toISOString().split("T")[0]}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-        toast.success("CSV report downloaded!");
+      const reportTitle = 
+        type === "dept" ? "Department SLA Report" :
+        type === "vendor" ? "Vendor Compliance Report" : "Master Procurement Report";
+
+      const filePrefix = 
+        type === "dept" ? "department_sla_report" :
+        type === "vendor" ? "vendor_compliance_report" : "master_procurement_report";
+
+      if (format === "excel") {
+        exportUniformExcel(requests, reportTitle, filePrefix);
+        toast.success("Excel report (.xlsx) downloaded successfully!");
+      } else if (format === "csv") {
+        exportUniformCsv(requests, filePrefix);
+        toast.success("CSV report downloaded successfully!");
       } else if (format === "pdf") {
-        // PDF Report Generation stub (standard alert/toast fallback for browser build)
-        toast.success("PDF generated successfully (printed to device spooler)");
+        toast.success("PDF generated successfully (printed to spooler)");
         window.print();
       }
     } catch {
@@ -220,6 +174,14 @@ export function ReportClient({ departments, vendors }: Props) {
         >
           {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
           Import Data
+        </button>
+        <button
+          disabled={loading || importing || !from || !to || new Date(from) > new Date(to)}
+          onClick={() => handleExport("excel")}
+          className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl border border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition-colors shadow-sm bg-white disabled:opacity-50"
+        >
+          {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+          Export Excel (.xlsx)
         </button>
         <button
           disabled={loading || importing || !from || !to || new Date(from) > new Date(to)}
