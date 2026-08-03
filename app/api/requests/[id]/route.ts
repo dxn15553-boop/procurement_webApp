@@ -123,7 +123,9 @@ export async function PUT(
     const existing = await prisma.procurementRequest.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (session.user.role !== "MANAGER" && existing.createdById !== session.user.id) {
+  if (session.user.role !== "MANAGER" && 
+      existing.createdById !== session.user.id &&
+      existing.nameOfHandler?.toLowerCase() !== (session.user.name ?? "").toLowerCase()) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
