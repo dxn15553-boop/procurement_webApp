@@ -16,7 +16,7 @@ export const procurementSchema = z.object({
   prNumber: z.string().optional().nullable().refine((val) => !val || /^[A-Za-z]{3}\d{8}$/.test(val), { message: "PR Number must be 3 letters followed by 8 digits" }),
   prDate: z.string().optional().nullable(),
   prStatus: z.string().optional().nullable(),
-  poNumber: z.string().optional().nullable(),
+  poNumber: z.string().optional().nullable().refine((val) => !val || /^[A-Za-z]{2}\d{8}$/.test(val), { message: "PO Number must be 2 letters followed by 8 digits" }),
   poDate: z.string().optional().nullable(),
   prlNo: z.string().optional().nullable(),
   prlDate: z.string().optional().nullable(),

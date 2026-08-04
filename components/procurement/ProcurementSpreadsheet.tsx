@@ -705,9 +705,20 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     {/* PO Number */}
                     <td className={bodyCellClass}>
                       <input type="text" value={row.poNumber} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
-                        onChange={(e) => handleCellChange(row.id, "poNumber", e.target.value)}
-                        className={cellInputClass}
-                        placeholder="PO-..."
+                        onChange={(e) => {
+                          let val = e.target.value.toUpperCase();
+                          let cleanVal = "";
+                          for (let i = 0; i < val.length; i++) {
+                            if (i < 2) {
+                              if (/[A-Z]/.test(val[i])) cleanVal += val[i];
+                            } else if (i < 10) {
+                              if (/[0-9]/.test(val[i])) cleanVal += val[i];
+                            }
+                          }
+                          handleCellChange(row.id, "poNumber", cleanVal);
+                        }}
+                        className={`${cellInputClass} uppercase`}
+                        placeholder="DF26040022"
                       />
                     </td>
 

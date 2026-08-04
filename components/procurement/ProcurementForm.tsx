@@ -409,7 +409,27 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className={labelClass}>PO Number</label>
-            <input {...register("poNumber")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="PO-YYYY-XXXX" />
+            <input
+              {...register("poNumber")}
+              disabled={readOnly || isCancelled}
+              className={`${inputClass} uppercase ${errors.poNumber ? "border-red-500" : ""}`}
+              onInput={(e) => {
+                let val = e.currentTarget.value.toUpperCase();
+                let cleanVal = "";
+                for (let i = 0; i < val.length; i++) {
+                  if (i < 2) {
+                    if (/[A-Z]/.test(val[i])) cleanVal += val[i];
+                  } else if (i < 10) {
+                    if (/[0-9]/.test(val[i])) cleanVal += val[i];
+                  }
+                }
+                e.currentTarget.value = cleanVal;
+                setValue("poNumber", cleanVal);
+                trigger("poNumber");
+              }}
+              placeholder="DF26040022"
+            />
+            {errors.poNumber && <p className="text-red-500 text-xs mt-1">{errors.poNumber.message}</p>}
           </div>
           <div>
             <label className={labelClass}>PO Date</label>
