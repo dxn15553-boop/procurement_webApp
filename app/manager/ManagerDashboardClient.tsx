@@ -194,14 +194,14 @@ export function ManagerDashboardClient({ data, userName }: Props) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/80">
-                <th className="text-left px-6 lg:px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Source No</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Description</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Department</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Stage</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">SLA</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Handler</th>
+              <tr className="border-b border-indigo-100 bg-indigo-50">
+                <th className="text-left px-6 lg:px-8 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Source No</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Description</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Department</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Stage</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">SLA</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Date</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Handler</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 uppercase">

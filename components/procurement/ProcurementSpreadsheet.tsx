@@ -435,7 +435,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
   };
 
   const cellInputClass = "uppercase w-full h-full min-h-[38px] px-3 py-1.5 text-[12px] font-medium text-slate-800 bg-transparent border border-transparent hover:bg-white hover:border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg outline-none transition-all placeholder:text-slate-300";
-  const headerCellClass = "px-3.5 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-r border-slate-200 border-b border-slate-200 bg-slate-50 text-left sticky top-0 z-20 select-none whitespace-nowrap";
+  const headerCellClass = "px-3.5 py-3 text-xs font-bold text-indigo-600 uppercase tracking-wider border-r border-indigo-100 border-b border-indigo-100 bg-indigo-50 text-left sticky top-0 z-20 select-none whitespace-nowrap";
   const bodyCellClass = "p-1 border-r border-b border-slate-100 align-middle relative";
   const readonlyCellClass = "px-3 py-2 border-r border-b border-slate-100 align-middle text-center text-[12px] font-semibold text-slate-600 bg-slate-50/50";
 
@@ -483,7 +483,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
           <table className="w-full text-sm table-fixed min-w-[5000px] border-collapse">
             <thead>
               <tr>
-                <th className="px-3 py-3 text-[10px] font-bold text-slate-700 uppercase tracking-wider border-r border-slate-200 border-b border-slate-200 bg-slate-100 sticky top-0 left-0 z-30 text-center w-28 select-none shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
+                <th className="px-3 py-3 text-xs font-bold text-indigo-700 uppercase tracking-wider border-r border-indigo-200 border-b border-indigo-200 bg-indigo-100 sticky top-0 left-0 z-30 text-center w-28 select-none shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
                   Actions
                 </th>
                 <th className={headerCellClass} style={{ width: "150px" }}>{isManager ? "Employee Name" : "Created By"}</th>

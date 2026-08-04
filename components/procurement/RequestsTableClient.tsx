@@ -155,19 +155,19 @@ export function RequestsTableClient({ role }: { role: "TEAM" | "MANAGER" }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/80">
+              <tr className="border-b border-indigo-100 bg-indigo-50">
                 {role === "MANAGER" && <th className="px-6 py-4 w-8"><input type="checkbox" className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" /></th>}
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">Source No</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Description</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Department</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Vendor</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Stage</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">SLA Status</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">Pending Days</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Handler</th>
-                {role === "MANAGER" && <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Created By</th>}
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</th>
-                <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600 whitespace-nowrap">Source No</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Description</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Department</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Vendor</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Stage</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600 whitespace-nowrap">SLA Status</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600 whitespace-nowrap">Pending Days</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Handler</th>
+                {role === "MANAGER" && <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Created By</th>}
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Date</th>
+                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest text-indigo-600">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
