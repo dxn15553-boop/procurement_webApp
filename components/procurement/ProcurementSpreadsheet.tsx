@@ -393,7 +393,9 @@ export function ProcurementSpreadsheet({ session }: Props) {
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         const errMsg = errData?.error?.message || errData?.error || `Server error (${res.status})`;
-        console.error("[Save Row] API error:", res.status, errData, "\nPayload:", payload);
+        if (res.status !== 400) {
+          console.error("[Save Row] API error:", res.status, errData, "\nPayload:", payload);
+        }
         throw new Error(String(errMsg));
       }
 
@@ -675,9 +677,20 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     {/* PR Number */}
                     <td className={bodyCellClass}>
                       <input type="text" value={row.prNumber} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
-                        onChange={(e) => handleCellChange(row.id, "prNumber", e.target.value)}
-                        className={cellInputClass}
-                        placeholder="PR-..."
+                        onChange={(e) => {
+                          let val = e.target.value.toUpperCase();
+                          let cleanVal = "";
+                          for (let i = 0; i < val.length; i++) {
+                            if (i < 3) {
+                              if (/[A-Z]/.test(val[i])) cleanVal += val[i];
+                            } else if (i < 11) {
+                              if (/[0-9]/.test(val[i])) cleanVal += val[i];
+                            }
+                          }
+                          handleCellChange(row.id, "prNumber", cleanVal);
+                        }}
+                        className={`${cellInputClass} uppercase`}
+                        placeholder="PIF26070088"
                       />
                     </td>
 

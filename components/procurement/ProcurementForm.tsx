@@ -46,8 +46,10 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
   const {
     register,
     handleSubmit,
+    reset,
     watch,
     setValue,
+    trigger,
     formState: { errors, isDirty },
   } = useForm<ProcurementInput>({
     resolver: zodResolver(procurementSchema),
@@ -361,7 +363,27 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>PR Number</label>
-            <input {...register("prNumber")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="PR-YYYY-XXXX" />
+            <input
+              {...register("prNumber")}
+              disabled={readOnly || isCancelled}
+              className={`${inputClass} uppercase ${errors.prNumber ? "border-red-500" : ""}`}
+              onInput={(e) => {
+                let val = e.currentTarget.value.toUpperCase();
+                let cleanVal = "";
+                for (let i = 0; i < val.length; i++) {
+                  if (i < 3) {
+                    if (/[A-Z]/.test(val[i])) cleanVal += val[i];
+                  } else if (i < 11) {
+                    if (/[0-9]/.test(val[i])) cleanVal += val[i];
+                  }
+                }
+                e.currentTarget.value = cleanVal;
+                setValue("prNumber", cleanVal);
+                trigger("prNumber");
+              }}
+              placeholder="PIF26070088"
+            />
+            {errors.prNumber && <p className="text-red-500 text-xs mt-1">{errors.prNumber.message}</p>}
           </div>
           <div>
             <label className={labelClass}>PR Date</label>

@@ -163,7 +163,7 @@ export async function POST(req: Request) {
   const body = await req.json();
   const parsed = procurementSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: { message: "Validation failed" } }, { status: 400 });
+    return NextResponse.json({ error: { message: parsed.error.issues[0]?.message || "Validation failed" } }, { status: 400 });
   }
 
   try {
