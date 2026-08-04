@@ -290,8 +290,13 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
   const labelClass = "block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider";
   const calcClass = "w-full px-4 py-3 text-sm border border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-slate-500 cursor-default font-medium";
 
+  const onSubmitError = (errors: any) => {
+    const firstError = Object.values(errors)[0] as any;
+    toast.error(firstError?.message || "Please fix form errors before saving.");
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit, onSubmitError)} className="space-y-6">
       {/* Section: Source Info */}
       <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
         <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
@@ -341,7 +346,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>Comparative Date</label>
-            <input type="date" {...register("comparativeDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input type="date" min={watch("sourceDate") || undefined} {...register("comparativeDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Days for CS <span className="text-blue-500">(Auto)</span></label>
@@ -387,7 +392,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>PR Date</label>
-            <input type="date" {...register("prDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input type="date" min={watch("sourceDate") || undefined} {...register("prDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Days for PR <span className="text-blue-500">(Auto)</span></label>
@@ -433,7 +438,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>PO Date</label>
-            <input type="date" {...register("poDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input type="date" min={watch("sourceDate") || undefined} {...register("poDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Days for PO <span className="text-blue-500">(Auto)</span></label>
@@ -459,15 +464,15 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>PRL Date</label>
-            <input type="date" {...register("prlDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input type="date" min={watch("sourceDate") || undefined} {...register("prlDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Payment Approval Date</label>
-            <input type="date" {...register("paymentApprovalDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input type="date" min={watch("sourceDate") || undefined} {...register("paymentApprovalDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Payment Done Date</label>
-            <input type="date" {...register("paymentDoneDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input type="date" min={watch("sourceDate") || undefined} {...register("paymentDoneDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Days for Payment <span className="text-blue-500">(Auto)</span></label>
@@ -489,19 +494,19 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>Material Dispatch Date</label>
-            <input type="date" {...register("materialDispatchDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input type="date" min={watch("sourceDate") || undefined} {...register("materialDispatchDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Material Received Date</label>
-            <input type="date" {...register("materialReceivedDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input type="date" min={watch("sourceDate") || undefined} {...register("materialReceivedDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Work Completion Date</label>
-            <input type="date" {...register("workCompletionDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input type="date" min={watch("sourceDate") || undefined} {...register("workCompletionDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Source Cancellation Date</label>
-            <input type="date" {...register("sourceCancellationDate")} disabled={readOnly} className={inputClass} />
+            <input type="date" min={watch("sourceDate") || undefined} {...register("sourceCancellationDate")} disabled={readOnly} className={inputClass} />
           </div>
         </div>
       </div>

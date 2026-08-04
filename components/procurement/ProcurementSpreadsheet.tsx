@@ -668,7 +668,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Comparative Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" value={row.comparativeDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input type="date" min={row.sourceDate || undefined} value={row.comparativeDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "comparativeDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -696,7 +696,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PR Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" value={row.prDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input type="date" min={row.sourceDate || undefined} value={row.prDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "prDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -724,7 +724,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PO Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" value={row.poDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input type="date" min={row.sourceDate || undefined} value={row.poDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "poDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -748,7 +748,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Payment Approval Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" value={row.paymentApprovalDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input type="date" min={row.sourceDate || undefined} value={row.paymentApprovalDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "paymentApprovalDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -756,7 +756,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Payment Done Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" value={row.paymentDoneDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input type="date" min={row.sourceDate || undefined} value={row.paymentDoneDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "paymentDoneDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -797,7 +797,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PRL DATE (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" value={row.prlDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input type="date" min={row.sourceDate || undefined} value={row.prlDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "prlDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -805,7 +805,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Material Dispatch Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" value={row.materialDispatchDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input type="date" min={row.sourceDate || undefined} value={row.materialDispatchDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "materialDispatchDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -813,7 +813,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Material Received Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" value={row.materialReceivedDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input type="date" min={row.sourceDate || undefined} value={row.materialReceivedDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "materialReceivedDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -821,7 +821,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Work Completion Date */}
                     <td className={bodyCellClass}>
-                      <input type="date" value={row.workCompletionDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input type="date" min={row.sourceDate || undefined} value={row.workCompletionDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "workCompletionDate", e.target.value)}
                         className={cellInputClass}
                         title="Work Completion Date"

@@ -42,6 +42,35 @@ export const procurementSchema = z.object({
   daysForPO: z.number().optional().nullable(),
   paymentStatus: z.string().optional().nullable(),
   daysForPayment: z.number().optional().nullable(),
+}).superRefine((data, ctx) => {
+  if (!data.sourceDate) return;
+  const sDate = new Date(data.sourceDate);
+  if (isNaN(sDate.getTime())) return;
+
+  const checkDate = (field: keyof typeof data, label: string) => {
+    const val = data[field];
+    if (val && typeof val === "string") {
+      const d = new Date(val);
+      if (!isNaN(d.getTime()) && d < sDate) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${label} cannot be earlier than Source Date`,
+          path: [field],
+        });
+      }
+    }
+  };
+
+  checkDate("comparativeDate", "Comparative Date");
+  checkDate("prDate", "PR Date");
+  checkDate("poDate", "PO Date");
+  checkDate("prlDate", "PRL Date");
+  checkDate("materialDispatchDate", "Material Dispatch Date");
+  checkDate("materialReceivedDate", "Material Received Date");
+  checkDate("workCompletionDate", "Work Completion Date");
+  checkDate("paymentApprovalDate", "Payment Approval Date");
+  checkDate("paymentDoneDate", "Payment Done Date");
+  checkDate("sourceCancellationDate", "Cancellation Date");
 });
 
 export const departmentSchema = z.object({
