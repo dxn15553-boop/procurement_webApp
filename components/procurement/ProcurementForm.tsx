@@ -331,8 +331,9 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
             {errors.sourceDescription && <p className="text-xs text-destructive mt-1">{errors.sourceDescription.message}</p>}
           </div>
           <div>
-            <label className={labelClass}>Vendor</label>
-            <input type="text" {...register("vendorId")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="Enter vendor name..." />
+            <label className={labelClass}>Name of Handler *</label>
+            <input type="text" {...register("nameOfHandler")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} placeholder="Enter handler name..." onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
+            {errors.nameOfHandler && <p className="text-xs text-destructive mt-1">{errors.nameOfHandler.message}</p>}
           </div>
         </div>
       </div>
@@ -511,21 +512,20 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         </div>
       </div>
 
-      {/* Section: Status & Handler */}
+      {/* Section: Status & Vendor */}
       <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
         <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
           <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">6</span>
-          Status & Handler
+          Status & Vendor
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className={labelClass}>Name of Handler *</label>
-            <input type="text" {...register("nameOfHandler")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} placeholder="Enter handler name..." onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
-            {errors.nameOfHandler && <p className="text-xs text-destructive mt-1">{errors.nameOfHandler.message}</p>}
+            <label className={labelClass}>Vendor</label>
+            <input type="text" {...register("vendorId")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="Enter vendor name..." />
           </div>
           <div>
             <label className={labelClass}>Current Status by Handler</label>
-            <input {...register("currentStatusByHandler")} disabled={readOnly || isCancelled} className={`\${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  />
+            <input {...register("currentStatusByHandler")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  />
           </div>
           <div>
             <label className={labelClass}>Current Stage</label>

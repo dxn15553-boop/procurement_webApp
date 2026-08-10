@@ -7,6 +7,7 @@ import { cn, formatDate, getSLAColor, getStageColor, getStageName } from "@/lib/
 import { Search, Filter, Download, Trash2, Eye, Edit, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import type { CurrentStage, SLAStatus } from "@/types";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface Request {
   id: string;
@@ -40,11 +41,13 @@ export function RequestsTableClient({ role }: { role: "TEAM" | "MANAGER" }) {
   const [slaStatus, setSlaStatus] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  const debouncedSearch = useDebounce(search, 500);
+
   const fetchRequests = useCallback(async (page = 1) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: "20" });
-      if (search) params.set("search", search);
+      if (debouncedSearch) params.set("search", debouncedSearch);
       if (stage) params.set("stage", stage);
       if (slaStatus) params.set("status", slaStatus);
 
@@ -57,12 +60,31 @@ export function RequestsTableClient({ role }: { role: "TEAM" | "MANAGER" }) {
     } finally {
       setLoading(false);
     }
-  }, [search, stage, slaStatus]);
+  }, [debouncedSearch, stage, slaStatus]);
 
   useEffect(() => {
-    const timeout = setTimeout(() => fetchRequests(1), 300);
-    return () => clearTimeout(timeout);
+    fetchRequests(1);
   }, [fetchRequests]);
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Are you sure you want to delete ${selectedIds.size} requests?`)) return;
+    try {
+      const res = await fetch(`/api/requests/bulk`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      if (res.ok) {
+        toast.success(`Deleted ${selectedIds.size} requests`);
+        setSelectedIds(new Set());
+        fetchRequests(pagination.page);
+      } else {
+        toast.error("Failed to delete requests");
+      }
+    } catch {
+      toast.error("Failed to delete requests");
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this request?")) return;
@@ -148,6 +170,19 @@ export function RequestsTableClient({ role }: { role: "TEAM" | "MANAGER" }) {
             Export CSV
           </button>
         )}
+        
+        {role === "MANAGER" && selectedIds.size > 0 && (
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-sm font-medium text-slate-500 mr-2">{selectedIds.size} selected</span>
+            <button
+              onClick={handleBulkDelete}
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors font-bold shadow-sm"
+            >
+              <Trash2 className="w-4 h-4" />
+              Bulk Delete
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -183,10 +218,18 @@ export function RequestsTableClient({ role }: { role: "TEAM" | "MANAGER" }) {
                 ))
               ) : requests.length === 0 ? (
                 <tr>
-                  <td colSpan={role === "MANAGER" ? 12 : 10} className="px-6 py-12 text-center text-slate-500 font-medium text-sm bg-slate-50/30">
-                    No requests found. {role === "TEAM" && (
-                      <Link href="/team/requests/new" className="text-indigo-600 hover:underline font-bold ml-1">Create one →</Link>
-                    )}
+                  <td colSpan={role === "MANAGER" ? 12 : 10} className="px-6 py-16 text-center bg-slate-50/30">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-2">
+                        <Search className="w-6 h-6 text-slate-400" />
+                      </div>
+                      <p className="text-slate-600 font-medium text-sm">No procurement requests found.</p>
+                      {role === "TEAM" && (
+                        <Link href="/team/requests/new" className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm">
+                          Create New Request
+                        </Link>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -272,25 +315,25 @@ export function RequestsTableClient({ role }: { role: "TEAM" | "MANAGER" }) {
 
         {/* Pagination */}
         {pagination.pages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-            <p className="text-xs text-muted-foreground">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+            <p className="text-xs text-slate-500 font-medium">
               Showing {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
             </p>
             <div className="flex items-center gap-1">
               <button
                 disabled={pagination.page <= 1}
                 onClick={() => fetchRequests(pagination.page - 1)}
-                className="p-1.5 rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="px-3 py-1 text-xs font-medium">
+              <span className="px-3 py-1 text-xs font-bold text-slate-700">
                 {pagination.page} / {pagination.pages}
               </span>
               <button
                 disabled={pagination.page >= pagination.pages}
                 onClick={() => fetchRequests(pagination.page + 1)}
-                className="p-1.5 rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
