@@ -12,16 +12,28 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Find all incomplete requests that have exceeded their SLA (OVERDUE) and have a handler linked
+    // Find incomplete requests based on the new total days rules:
+    // - Non-PR stages: > 21 days
+    // - PR stage: > 23 days
     const overdueRequests = await prisma.procurementRequest.findMany({
       where: {
-        slaStatus: "OVERDUE",
         currentStage: {
           notIn: ["COMPLETED", "CANCELLED"],
         },
+        OR: [
+          {
+            currentStage: { not: "PR" },
+            noOfDays: { gt: 21 },
+          },
+          {
+            currentStage: "PR",
+            noOfDays: { gt: 23 },
+          },
+        ],
       },
       include: {
         createdBy: true,
+        handler: true,
       },
     });
 
@@ -33,13 +45,15 @@ export async function GET(req: Request) {
     const errors: any[] = [];
 
     for (const request of overdueRequests) {
-      if (!request.createdBy?.email) continue;
+      const targetUser = request.handler || request.createdBy;
+      
+      if (!targetUser?.email) continue;
 
       const success = await sendReminderEmail({
-        to: request.createdBy.email,
-        handlerName: request.createdBy.name,
+        to: targetUser.email,
+        handlerName: targetUser.name,
         sourceNo: request.sourceNo,
-        pendingDays: request.pendingDays || 21,
+        pendingDays: request.pendingDays || request.noOfDays || 21,
         currentStage: request.currentStage,
       });
 
@@ -52,11 +66,11 @@ export async function GET(req: Request) {
       // Create an in-app notification for the handler
       await prisma.notification.create({
         data: {
-          userId: request.createdBy.id,
+          userId: targetUser.id,
           requestId: request.id,
           type: "REMINDER",
           title: "SLA Overdue Reminder",
-          message: `Source Request ${request.sourceNo} is overdue (Pending for ${request.pendingDays || 21} days in stage ${request.currentStage}). Please take action.`,
+          message: `Source Request ${request.sourceNo} is overdue (Pending for ${request.pendingDays || request.noOfDays || 21} days in stage ${request.currentStage}). Please take action.`,
         }
       });
     }

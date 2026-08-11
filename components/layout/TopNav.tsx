@@ -113,11 +113,11 @@ export function TopNav({ title }: TopNavProps) {
           className="relative w-9 h-9 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
         >
           <Bell className="w-4 h-4 text-muted-foreground" />
-          {unreadCount > 0 && (
+          {unreadCount > 0 ? (
             <span className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-red-500 flex items-center justify-center px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
-          )}
+          ) : null}
         </Link>
 
         {/* Divider */}

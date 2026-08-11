@@ -6,6 +6,7 @@ import { cn, formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useLayoutStore } from "@/lib/store";
+import { useSession } from "next-auth/react";
 
 interface Notification {
   id: string;
@@ -20,6 +21,8 @@ interface Notification {
 export function NotificationsClient({ initialNotifications }: { initialNotifications: Notification[] }) {
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const decrementUnreadCount = useLayoutStore((s) => s.decrementUnreadNotificationCount);
+  const { data: session } = useSession();
+  const basePath = session?.user?.role === "MANAGER" ? "/manager" : "/team";
 
   const markAsRead = async (id: string) => {
     try {
@@ -88,7 +91,7 @@ export function NotificationsClient({ initialNotifications }: { initialNotificat
                 {n.requestId && (
                   <div className="mt-4 flex items-center gap-4">
                     <Link
-                      href={`/manager/requests/${n.requestId}`}
+                      href={`${basePath}/requests/${n.requestId}`}
                       className="text-xs text-indigo-600 font-bold hover:text-indigo-700 hover:underline transition-colors"
                     >
                       View Request →
