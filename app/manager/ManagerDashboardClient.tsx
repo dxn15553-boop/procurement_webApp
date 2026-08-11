@@ -27,7 +27,7 @@ interface DashboardData {
   };
   recentRequests: Array<{
     id: string; sourceNo: string; sourceDescription: string; currentStage: CurrentStage;
-    slaStatus: SLAStatus; createdAt: Date; nameOfHandler: string;
+    slaStatus: SLAStatus; createdAt: Date; nameOfHandler: string | null;
     department?: { name: string } | null;
     vendor?: { name: string } | null;
     createdBy?: { name: string } | null;
