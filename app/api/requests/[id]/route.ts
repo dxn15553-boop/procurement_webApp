@@ -125,6 +125,7 @@ export async function PUT(
 
   if (session.user.role !== "MANAGER" && 
       existing.createdById !== session.user.id &&
+      existing.handlerId !== session.user.id &&
       existing.nameOfHandler?.toLowerCase() !== (session.user.name ?? "").toLowerCase()) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -212,6 +213,7 @@ export async function PUT(
       daysForPayment: calc.daysForPayment,
       currentStatusByHandler: data.currentStatusByHandler ?? null,
       nameOfHandler: data.nameOfHandler,
+      handlerId: data.handlerId ?? null,
       noOfDays: calc.noOfDays,
       currentStage: currentStage,
       pendingFrom,

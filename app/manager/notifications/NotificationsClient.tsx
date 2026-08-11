@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Bell, BellOff, Calendar, AlertTriangle, CheckCircle, RefreshCw } from "lucide-react";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useLayoutStore } from "@/lib/store";
 
 interface Notification {
   id: string;
@@ -18,6 +19,7 @@ interface Notification {
 
 export function NotificationsClient({ initialNotifications }: { initialNotifications: Notification[] }) {
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const decrementUnreadCount = useLayoutStore((s) => s.decrementUnreadNotificationCount);
 
   const markAsRead = async (id: string) => {
     try {
@@ -31,6 +33,7 @@ export function NotificationsClient({ initialNotifications }: { initialNotificat
         setNotifications((prev) =>
           prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
         );
+        decrementUnreadCount();
         toast.success("Notification marked as read");
       }
     } catch {
@@ -78,7 +81,7 @@ export function NotificationsClient({ initialNotifications }: { initialNotificat
                   <h4 className="font-bold text-slate-900 truncate tracking-tight">{n.title}</h4>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5" />
-                    {formatDate(n.createdAt)}
+                    {formatDateTime(n.createdAt)}
                   </span>
                 </div>
                 <p className="text-sm font-medium text-slate-500 mt-2 leading-relaxed">{n.message}</p>

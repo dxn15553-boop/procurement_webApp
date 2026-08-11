@@ -46,6 +46,7 @@ export async function GET(req: Request) {
       {
         OR: [
           { createdById: session.user.id },
+          { handlerId: session.user.id },
           { nameOfHandler: { equals: session.user.name ?? "", mode: "insensitive" } },
         ],
       },
@@ -249,6 +250,7 @@ export async function POST(req: Request) {
       daysForPayment: calc.daysForPayment,
       currentStatusByHandler: data.currentStatusByHandler ?? null,
       nameOfHandler: data.nameOfHandler,
+      handlerId: data.handlerId ?? null,
       noOfDays: calc.noOfDays,
       currentStage: currentStage,
       pendingFrom,
@@ -281,9 +283,9 @@ export async function POST(req: Request) {
     console.error("POST Error:", error);
     
     // Prisma Unique Constraint Violation
-    if (error.code === 'P2002' && error.meta?.target?.includes('sourceNo')) {
+    if (error.code === 'P2002') {
       return NextResponse.json(
-        { error: { message: "This Source No already exists. Please change it and try again." } },
+        { error: { message: "This Source No already exists. Please change it to a unique number and try again." } },
         { status: 409 }
       );
     }

@@ -65,7 +65,8 @@ export interface ProcurementRequest {
   paymentApprovalDate?: Date | null;
   paymentDoneDate?: Date | null;
   currentStatusByHandler?: string | null;
-  nameOfHandler: string;
+  nameOfHandler?: string | null;
+  handlerId?: string | null;
   noOfDays?: number | null;
   currentStage: CurrentStage;
   pendingFrom?: Date | null;
@@ -85,6 +86,7 @@ export interface ProcurementRequest {
   department?: Department;
   vendor?: Vendor | null;
   createdBy?: User;
+  handler?: User | null;
 }
 
 export interface ActivityLog {

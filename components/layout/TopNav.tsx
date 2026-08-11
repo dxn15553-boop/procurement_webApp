@@ -3,7 +3,7 @@
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { Bell, Search, Sun, Moon, LogOut, User, Settings, ChevronDown, Menu } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useLayoutStore } from "@/lib/store";
@@ -20,7 +20,29 @@ export function TopNav({ title }: TopNavProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const role = session?.user?.role as string;
   const toggleMobileMenu = useLayoutStore((s) => s.toggleMobileMenu);
+  const unreadCount = useLayoutStore((s) => s.unreadNotificationCount);
+  const setUnreadCount = useLayoutStore((s) => s.setUnreadNotificationCount);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!session?.user) return;
+    
+    const fetchUnreadCount = async () => {
+      try {
+        const res = await fetch("/api/notifications/unread-count");
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadCount(data.count);
+        }
+      } catch (error) {
+        console.error("Failed to fetch unread count", error);
+      }
+    };
+
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 60000); // poll every 60s
+    return () => clearInterval(interval);
+  }, [session?.user, setUnreadCount]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +113,11 @@ export function TopNav({ title }: TopNavProps) {
           className="relative w-9 h-9 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
         >
           <Bell className="w-4 h-4 text-muted-foreground" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-red-500 flex items-center justify-center px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
         </Link>
 
         {/* Divider */}

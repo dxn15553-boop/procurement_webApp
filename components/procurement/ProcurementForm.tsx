@@ -230,14 +230,15 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
   const onSubmit = async (data: ProcurementInput) => {
     setIsLoading(true);
     
-    // Validate Handler Name
-    const isValidHandler = handlers.some(
-      (h) => h.name.toLowerCase() === data.nameOfHandler.trim().toLowerCase()
-    );
-    if (!isValidHandler) {
-      toast.error("Handler Name not found. Please enter the correct account name.");
+    // Validate Handler
+    if (!data.handlerId) {
+      toast.error("Please select a handler.");
       setIsLoading(false);
       return;
+    }
+    const selectedHandler = handlers.find(h => h.id === data.handlerId);
+    if (selectedHandler) {
+      data.nameOfHandler = selectedHandler.name; // Keep backward compatibility
     }
 
     try {
@@ -331,9 +332,18 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
             {errors.sourceDescription && <p className="text-xs text-destructive mt-1">{errors.sourceDescription.message}</p>}
           </div>
           <div>
-            <label className={labelClass}>Name of Handler *</label>
-            <input type="text" {...register("nameOfHandler")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} placeholder="Enter handler name..." onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
-            {errors.nameOfHandler && <p className="text-xs text-destructive mt-1">{errors.nameOfHandler.message}</p>}
+            <label className={labelClass}>Handler *</label>
+            <select 
+              {...register("handlerId")} 
+              disabled={readOnly || isCancelled} 
+              className={inputClass}
+            >
+              <option value="">Select handler...</option>
+              {handlers.map(h => (
+                <option key={h.id} value={h.id}>{h.name}</option>
+              ))}
+            </select>
+            {errors.handlerId && <p className="text-xs text-destructive mt-1">{errors.handlerId.message}</p>}
           </div>
         </div>
       </div>
@@ -563,6 +573,18 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       {/* Submit */}
       {!readOnly && (
         <div className="flex items-center gap-3 justify-end">
+          {mode === "create" && (
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.removeItem("procurementFormDraft");
+                window.location.reload();
+              }}
+              className="px-4 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+            >
+              Clear Draft
+            </button>
+          )}
           <button
             type="button"
             onClick={() => router.back()}
