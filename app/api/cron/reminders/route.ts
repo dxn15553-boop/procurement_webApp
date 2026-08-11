@@ -6,9 +6,14 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const secret = searchParams.get("secret");
+    const authHeader = req.headers.get("authorization");
+    
+    const isAuthorized = 
+      secret === process.env.CRON_SECRET || 
+      authHeader === `Bearer ${process.env.CRON_SECRET}`;
 
     // Check for cron secret to prevent unauthorized execution
-    if (secret !== process.env.CRON_SECRET) {
+    if (!isAuthorized) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
