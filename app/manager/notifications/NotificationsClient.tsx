@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, BellOff, Calendar, AlertTriangle, CheckCircle, RefreshCw } from "lucide-react";
+import { Bell, BellOff, Calendar, AlertTriangle, CheckCircle, RefreshCw, Trash2 } from "lucide-react";
 import { cn, formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -44,6 +44,26 @@ export function NotificationsClient({ initialNotifications }: { initialNotificat
     }
   };
 
+  const deleteNotification = async (id: string, isRead: boolean) => {
+    try {
+      const res = await fetch(`/api/notifications?id=${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+        if (!isRead) {
+          decrementUnreadCount();
+        }
+        toast.success("Notification deleted");
+      } else {
+        toast.error("Failed to delete notification");
+      }
+    } catch {
+      toast.error("Failed to delete notification");
+    }
+  };
+
   const getIcon = (type: string) => {
     switch (type) {
       case "SLA_BREACH":
@@ -78,16 +98,31 @@ export function NotificationsClient({ initialNotifications }: { initialNotificat
               )}
             >
               {!n.isRead && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>}
-              <div className="flex-shrink-0 mt-0.5 p-3 rounded-xl bg-slate-50 border border-slate-100 shadow-sm">{getIcon(n.type)}</div>
+              
+              <div className="flex-shrink-0 mt-0.5 p-3 rounded-xl bg-slate-50 border border-slate-100 shadow-sm">
+                {getIcon(n.type)}
+              </div>
+              
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-4">
                   <h4 className="font-bold text-slate-900 truncate tracking-tight">{n.title}</h4>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {formatDateTime(n.createdAt)}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {formatDateTime(n.createdAt)}
+                    </span>
+                    <button
+                      onClick={() => deleteNotification(n.id, n.isRead)}
+                      className="text-slate-300 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50"
+                      title="Delete notification"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
+                
                 <p className="text-sm font-medium text-slate-500 mt-2 leading-relaxed">{n.message}</p>
+                
                 {n.requestId && (
                   <div className="mt-4 flex items-center gap-4">
                     <Link

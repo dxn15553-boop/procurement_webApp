@@ -28,4 +28,22 @@ export async function PATCH(req: Request) {
   return NextResponse.json({ success: true });
 }
 
+export async function DELETE(req: Request) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json({ error: "Missing notification ID" }, { status: 400 });
+  }
+
+  await prisma.notification.delete({
+    where: { id, userId: session.user.id },
+  });
+
+  return NextResponse.json({ success: true });
+}
+
 export const runtime = "nodejs";
