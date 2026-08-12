@@ -90,7 +90,7 @@ export function ManagerDashboardClient({ data, userName }: Props) {
       </div>
 
       {/* KPI Summary Overview */}
-      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-3 w-full">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-2 xl:gap-3 w-full">
         {kpiCards.map((card, idx) => {
           const pct = card.type === "dual" && card.done !== undefined && card.pending !== undefined && (card.done + card.pending) > 0
             ? Math.round((card.done / (card.done + card.pending)) * 100)
@@ -117,10 +117,10 @@ export function ManagerDashboardClient({ data, userName }: Props) {
                 {card.bgIcon}
               </div>
 
-              <div className="flex flex-col flex-1 p-4 sm:p-5 gap-3.5 relative z-10 justify-between">
+              <div className="flex flex-col flex-1 p-3 xl:p-2.5 gap-3 relative z-10 justify-between">
                 {/* Header: label */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm font-extrabold tracking-wider uppercase text-slate-500 leading-tight">
+                  <span className="text-xs sm:text-sm xl:text-xs font-extrabold tracking-wider uppercase text-slate-500 leading-tight">
                     {card.label}
                   </span>
                 </div>
@@ -128,22 +128,22 @@ export function ManagerDashboardClient({ data, userName }: Props) {
                 {/* Values */}
                 {card.type === "single" ? (
                   <div>
-                    <p className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
+                    <p className="text-4xl sm:text-5xl xl:text-4xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
                       {card.value}
                     </p>
-                    <p className="text-sm text-slate-400 font-semibold mt-2">total records</p>
+                    <p className="text-sm xl:text-xs text-slate-400 font-semibold mt-1">total records</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <div className="flex items-end justify-between">
                       <div>
-                        <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-none tabular-nums">{card.done}</p>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5">Done</p>
+                        <p className="text-2xl sm:text-3xl xl:text-2xl font-black text-slate-900 leading-none tabular-nums">{card.done}</p>
+                        <p className="text-xs xl:text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Done</p>
                       </div>
-                      <span className="text-xs sm:text-sm font-extrabold text-indigo-600 tabular-nums pb-2">{pct ?? 0}%</span>
+                      <span className="text-xs sm:text-sm xl:text-xs font-extrabold text-indigo-600 tabular-nums pb-2">{pct ?? 0}%</span>
                       <div className="text-right">
-                        <p className="text-2xl sm:text-3xl font-black text-amber-600 leading-none tabular-nums">{card.pending}</p>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5">Pending</p>
+                        <p className="text-2xl sm:text-3xl xl:text-2xl font-black text-amber-600 leading-none tabular-nums">{card.pending}</p>
+                        <p className="text-xs xl:text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Pending</p>
                       </div>
                     </div>
                     <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
