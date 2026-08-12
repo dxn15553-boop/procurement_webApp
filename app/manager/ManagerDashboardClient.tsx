@@ -131,7 +131,7 @@ export function ManagerDashboardClient({ data, userName }: Props) {
                     <p className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
                       {card.value}
                     </p>
-                    <p className="text-xs text-slate-400 font-semibold mt-2">total records</p>
+                    <p className="text-sm text-slate-400 font-semibold mt-2">total records</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
