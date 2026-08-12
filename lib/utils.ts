@@ -18,7 +18,7 @@ export function formatDate(
 }
 
 export function formatDateTime(date: Date | string | null | undefined): string {
-  return formatDate(date, "dd MMM yyyy, HH:mm");
+  return formatDate(date, "dd MMM yyyy, hh:mm a");
 }
 
 export function getSLAColor(status: SLAStatus): string {
