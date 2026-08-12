@@ -123,24 +123,24 @@ export function NotificationsClient({ initialNotifications }: { initialNotificat
                 
                 <p className="text-sm font-medium text-slate-500 mt-2 leading-relaxed">{n.message}</p>
                 
-                {n.requestId && (
-                  <div className="mt-4 flex items-center gap-4">
+                <div className="mt-4 flex items-center gap-4">
+                  {n.requestId && (
                     <Link
                       href={`${basePath}/requests/${n.requestId}`}
                       className="text-xs text-indigo-600 font-bold hover:text-indigo-700 hover:underline transition-colors"
                     >
                       View Request →
                     </Link>
-                    {!n.isRead && (
-                      <button
-                        onClick={() => markAsRead(n.id)}
-                        className="text-xs text-slate-400 hover:text-slate-700 font-bold transition-colors"
-                      >
-                        Mark as read
-                      </button>
-                    )}
-                  </div>
-                )}
+                  )}
+                  {!n.isRead && (
+                    <button
+                      onClick={() => markAsRead(n.id)}
+                      className="text-xs text-slate-400 hover:text-slate-700 font-bold transition-colors"
+                    >
+                      Mark as read
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

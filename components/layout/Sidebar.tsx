@@ -89,7 +89,7 @@ interface SidebarProps {
 export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const { isMobileMenuOpen, closeMobileMenu } = useLayoutStore();
+  const { isMobileMenuOpen, closeMobileMenu, unreadNotificationCount } = useLayoutStore();
 
   const resolveHref = (item: NavItem): string => {
     if (item.href === "ROLE_BASED") return role === "MANAGER" ? "/manager" : "/team";
@@ -141,6 +141,7 @@ export function Sidebar({ role }: SidebarProps) {
           const href = resolveHref(item);
           const isActive = pathname === href || (href !== "/manager" && href !== "/team" && pathname.startsWith(href));
           const Icon = item.icon;
+          const displayBadge = item.label === "Notifications" ? unreadNotificationCount : item.badge;
 
           return (
             <Link
@@ -160,9 +161,9 @@ export function Sidebar({ role }: SidebarProps) {
               {!collapsed && (
                 <span className="truncate">{item.label}</span>
               )}
-              {!collapsed && item.badge && item.badge > 0 && (
-                <span className="ml-auto bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
-                  {item.badge > 99 ? "99+" : item.badge}
+              {!collapsed && displayBadge !== undefined && displayBadge > 0 && (
+                <span className="ml-auto bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-[10px] font-bold min-w-5 px-1.5 h-5 rounded-full flex items-center justify-center shadow-sm">
+                  {displayBadge > 99 ? "99+" : displayBadge}
                 </span>
               )}
               {/* Tooltip for collapsed state */}
