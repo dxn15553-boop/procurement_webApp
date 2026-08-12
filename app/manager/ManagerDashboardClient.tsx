@@ -120,7 +120,7 @@ export function ManagerDashboardClient({ data, userName }: Props) {
               <div className="flex flex-col flex-1 p-4 sm:p-5 gap-3.5 relative z-10 justify-between">
                 {/* Header: label */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold tracking-wider uppercase text-slate-500 leading-tight">
+                  <span className="text-xs sm:text-sm font-extrabold tracking-wider uppercase text-slate-500 leading-tight">
                     {card.label}
                   </span>
                 </div>
@@ -131,19 +131,19 @@ export function ManagerDashboardClient({ data, userName }: Props) {
                     <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
                       {card.value}
                     </p>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-2">total records</p>
+                    <p className="text-xs text-slate-400 font-semibold mt-2">total records</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <div className="flex items-end justify-between">
                       <div>
                         <p className="text-xl font-black text-slate-900 leading-none tabular-nums">{card.done}</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Done</p>
+                        <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5">Done</p>
                       </div>
-                      <span className="text-[10px] font-extrabold text-indigo-600 tabular-nums pb-2">{pct ?? 0}%</span>
+                      <span className="text-xs sm:text-sm font-extrabold text-indigo-600 tabular-nums pb-1">{pct ?? 0}%</span>
                       <div className="text-right">
                         <p className="text-xl font-black text-amber-600 leading-none tabular-nums">{card.pending}</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Pending</p>
+                        <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5">Pending</p>
                       </div>
                     </div>
                     <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
