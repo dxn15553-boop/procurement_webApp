@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendReminderEmail } from "@/lib/email";
+import { sendBatchReminderEmail } from "@/lib/email";
 
 export async function GET(req: Request) {
   try {
@@ -49,26 +49,22 @@ export async function GET(req: Request) {
     let emailsSent = 0;
     const errors: any[] = [];
 
+    // Group requests by user email
+    const groupedRequests = new Map<string, {
+      user: any;
+      requests: any[];
+    }>();
+
     for (const request of overdueRequests) {
       const targetUser = request.handler || request.createdBy;
-      
       if (!targetUser?.email) continue;
 
-      const success = await sendReminderEmail({
-        to: targetUser.email,
-        handlerName: targetUser.name,
-        sourceNo: request.sourceNo,
-        pendingDays: request.pendingDays || request.noOfDays || 21,
-        currentStage: request.currentStage,
-      });
-
-      if (success) {
-        emailsSent++;
-      } else {
-        errors.push(`Failed to send email for request ${request.sourceNo}`);
+      if (!groupedRequests.has(targetUser.email)) {
+        groupedRequests.set(targetUser.email, { user: targetUser, requests: [] });
       }
-
-      // Create an in-app notification for the handler
+      groupedRequests.get(targetUser.email)!.requests.push(request);
+      
+      // Create an individual in-app notification for each request
       await prisma.notification.create({
         data: {
           userId: targetUser.id,
@@ -78,6 +74,52 @@ export async function GET(req: Request) {
           message: `Source Request ${request.sourceNo} is overdue (Pending for ${request.pendingDays || request.noOfDays || 21} days in stage ${request.currentStage}). Please take action.`,
         }
       });
+    }
+
+    // Fetch managers for escalation if needed
+    let managerEmails: string[] = [];
+    const hasAnyEscalation = Array.from(groupedRequests.values()).some(({ requests }) => 
+      requests.some(req => (req.pendingDays || req.noOfDays || 21) > 40)
+    );
+
+    if (hasAnyEscalation) {
+      const managers = await prisma.user.findMany({
+        where: { role: "MANAGER", isActive: true },
+        select: { email: true }
+      });
+      managerEmails = managers.map(m => m.email);
+    }
+
+    // Determine the base URL for links
+    const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL 
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : "http://localhost:3000";
+
+    // Send one batch email per user
+    for (const [email, { user, requests }] of groupedRequests) {
+      const isEscalation = requests.some(req => (req.pendingDays || req.noOfDays || 21) > 40);
+      
+      const success = await sendBatchReminderEmail({
+        to: email,
+        cc: isEscalation && managerEmails.length > 0 ? managerEmails : undefined,
+        handlerName: user.name,
+        isEscalation,
+        requests: requests.map(req => ({
+          id: req.id,
+          sourceNo: req.sourceNo,
+          pendingDays: req.pendingDays || req.noOfDays || 21,
+          currentStage: req.currentStage,
+        })),
+        baseUrl
+      });
+
+      if (success) {
+        emailsSent++;
+      } else {
+        errors.push(`Failed to send batch email to ${email}`);
+      }
     }
 
     return NextResponse.json({

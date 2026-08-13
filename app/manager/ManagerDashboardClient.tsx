@@ -72,7 +72,7 @@ export function ManagerDashboardClient({ data, userName }: Props) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => router.refresh()}
             className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors active:scale-95"
           >
@@ -97,15 +97,15 @@ export function ManagerDashboardClient({ data, userName }: Props) {
             : null;
 
           const accentColor =
-            card.label === "CANCELLED"     ? "border-l-rose-400"   :
-            card.label === "WORK COMPLETED"? "border-l-emerald-400" :
-            card.label === "ACTIVE SOURCE" ? "border-l-indigo-400"  :
-            card.label === "TOTAL SOURCE"  ? "border-l-slate-400"   :
-            card.label === "CS STATUS"     ? "border-l-blue-400"    :
-            card.label === "PR STATUS"     ? "border-l-cyan-500"    :
-            card.label === "PO STATUS"     ? "border-l-teal-400"    :
-            card.label === "PAYMENT STATUS"? "border-l-violet-400"  :
-                                             "border-l-amber-400";
+            card.label === "CANCELLED" ? "border-l-rose-400" :
+              card.label === "WORK COMPLETED" ? "border-l-emerald-400" :
+                card.label === "ACTIVE SOURCE" ? "border-l-indigo-400" :
+                  card.label === "TOTAL SOURCE" ? "border-l-slate-400" :
+                    card.label === "CS STATUS" ? "border-l-blue-400" :
+                      card.label === "PR STATUS" ? "border-l-cyan-500" :
+                        card.label === "PO STATUS" ? "border-l-teal-400" :
+                          card.label === "PAYMENT STATUS" ? "border-l-violet-400" :
+                            "border-l-amber-400";
 
           return (
             <div
@@ -213,8 +213,8 @@ export function ManagerDashboardClient({ data, userName }: Props) {
                 </tr>
               ) : (
                 recentRequests.map((r) => (
-                  <tr 
-                    key={r.id} 
+                  <tr
+                    key={r.id}
                     onClick={() => router.push(`/manager/requests/${r.id}`)}
                     className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
                   >

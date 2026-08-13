@@ -87,3 +87,92 @@ export async function sendReminderEmail({ to, handlerName, sourceNo, pendingDays
     return false;
   }
 }
+
+export interface BatchReminderEmailProps {
+  to: string;
+  cc?: string[];
+  handlerName: string;
+  isEscalation: boolean;
+  requests: {
+    sourceNo: string;
+    pendingDays: number;
+    currentStage: string;
+    id: string;
+  }[];
+  baseUrl: string;
+}
+
+export async function sendBatchReminderEmail({ to, cc, handlerName, isEscalation, requests, baseUrl }: BatchReminderEmailProps) {
+  if (!process.env.SMTP_USER && process.env.NODE_ENV === 'production') {
+    console.warn("SMTP credentials not configured. Skipping email.");
+    return false;
+  }
+
+  const subject = isEscalation 
+    ? `[Urgent Action Required] ${requests.length} Overdue Source Request(s)`
+    : `Action Required: ${requests.length} Overdue Source Request(s)`;
+
+  const requestRows = requests.map(req => `
+    <tr>
+      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+        <strong><a href="${baseUrl}/manager/requests/${req.id}" style="color: #4f46e5; text-decoration: none;">${req.sourceNo}</a></strong>
+      </td>
+      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: ${req.pendingDays > 40 ? '#ef4444' : '#64748b'}; font-weight: ${req.pendingDays > 40 ? 'bold' : 'normal'};">
+        ${req.pendingDays} days
+      </td>
+      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+        ${req.currentStage}
+      </td>
+    </tr>
+  `).join('');
+
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <h2 style="color: ${isEscalation ? '#ef4444' : '#4f46e5'};">
+        ${isEscalation ? 'Urgent Action Required: Severely Overdue Requests' : 'Daily Summary: Overdue Source Requests'}
+      </h2>
+      <p>Hello <strong>${handlerName}</strong>,</p>
+      <p>This is an automated reminder that the following Source Requests assigned to you are currently incomplete and have exceeded their SLA threshold.</p>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; text-align: left;">
+        <thead>
+          <tr style="background-color: #f8fafc;">
+            <th style="padding: 10px; border-bottom: 2px solid #e2e8f0;">Source No</th>
+            <th style="padding: 10px; border-bottom: 2px solid #e2e8f0;">Pending Days</th>
+            <th style="padding: 10px; border-bottom: 2px solid #e2e8f0;">Current Stage</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${requestRows}
+        </tbody>
+      </table>
+      
+      <p>Please click on the Source Numbers above or log in to the Procurement System to update the status of these requests as soon as possible.</p>
+      
+      <p style="margin-top: 30px; font-size: 12px; color: #64748b;">
+        This is an automated email. Please do not reply directly to this message.
+      </p>
+    </div>
+  `;
+
+  try {
+    const transporter = await getTransporter();
+    const info = await transporter.sendMail({
+      from: process.env.SMTP_FROM || '"Procurement System" <noreply@procurement.com>',
+      to,
+      cc,
+      subject,
+      html: htmlContent,
+    });
+    
+    console.log("-----------------------------------------");
+    console.log("Batch Email Message sent: %s", info.messageId);
+    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+    console.log("-----------------------------------------");
+    
+    return true;
+  } catch (error) {
+    console.error("Error sending batch email:", error);
+    return false;
+  }
+}
