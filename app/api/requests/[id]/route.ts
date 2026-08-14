@@ -156,7 +156,7 @@ export async function PUT(
     vendorId = null;
   }
 
-  const sourceDate = parseDate(data.sourceDate);
+  const sourceDate = parseDate(data.sourceDate) || new Date();
   const comparativeDate = parseDate(data.comparativeDate);
   const prDate = parseDate(data.prDate);
   const pendingFrom = parseDate(data.pendingFrom);

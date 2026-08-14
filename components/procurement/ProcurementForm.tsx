@@ -317,7 +317,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
             {errors.sourceNo && <p className="text-xs text-destructive mt-1">{errors.sourceNo.message}</p>}
           </div>
           <div>
-            <label className={labelClass}>Source Date *</label>
+            <label className={labelClass}>Source Date</label>
             <input type="date" {...register("sourceDate")} disabled={readOnly || isCancelled} className={inputClass} />
             {errors.sourceDate && <p className="text-xs text-destructive mt-1">{errors.sourceDate.message}</p>}
           </div>
