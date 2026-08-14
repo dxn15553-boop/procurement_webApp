@@ -165,9 +165,8 @@ export async function runReminderCheck() {
         
         let stageOrStatus = r.currentStage as string;
         if (r.currentStage === "PO") {
-          const prDays = r.daysForPR ?? (r.prDate && r.comparativeDate ? differenceInDays(r.prDate, r.comparativeDate) : 0);
           const prStatusStr = r.prStatus ? r.prStatus.replace("_", " ") : "PENDING";
-          stageOrStatus = `PR: ${prStatusStr} (${prDays} days)`;
+          stageOrStatus = `PR: ${prStatusStr}`;
         }
 
         return {
