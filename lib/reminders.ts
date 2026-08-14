@@ -10,7 +10,7 @@ export async function runReminderCheck() {
   const activeRequests = await prisma.procurementRequest.findMany({
     where: {
       isDeleted: false,
-      currentStage: { in: ["CS", "PR"] },
+      currentStage: { notIn: ["COMPLETED", "CANCELLED"] },
     },
     include: {
       createdBy: { select: { id: true, name: true, email: true, role: true } },
