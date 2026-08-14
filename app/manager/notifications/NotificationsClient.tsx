@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, BellOff, Calendar, AlertTriangle, CheckCircle, RefreshCw, Trash2 } from "lucide-react";
 import { cn, formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
@@ -29,9 +29,18 @@ export function NotificationsClient({ initialNotifications }: { initialNotificat
 
   const totalItems = notifications.length;
   const totalPages = Math.ceil(totalItems / pageSize);
+
+  // Automatically adjust page if items are deleted and current page is out of bounds
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [notifications.length, currentPage, totalPages]);
+
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const currentNotifications = notifications.slice(startIndex, endIndex);
+
 
   const markAsRead = async (id: string) => {
     try {
