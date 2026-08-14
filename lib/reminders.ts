@@ -6,11 +6,11 @@ export async function runReminderCheck() {
   const today = new Date();
   const todayStart = startOfDay(today);
 
-  // 1. Fetch all active requests
+  // 1. Fetch all active requests in CS and PR stages only
   const activeRequests = await prisma.procurementRequest.findMany({
     where: {
       isDeleted: false,
-      currentStage: { notIn: ["COMPLETED", "CANCELLED"] },
+      currentStage: { in: ["CS", "PR"] },
     },
     include: {
       createdBy: { select: { id: true, name: true, email: true, role: true } },
