@@ -107,10 +107,23 @@ export function TopNav({ title }: TopNavProps) {
           )}
         </button>
 
-
+        {/* Notifications Bell */}
+        <Link
+          href={role === "MANAGER" ? "/manager/notifications" : "/team/notifications"}
+          className="relative w-9 h-9 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
+          title="Notifications"
+        >
+          <Bell className="w-4 h-4 text-muted-foreground" />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 min-w-[16px] h-4 px-0.5 flex items-center justify-center bg-red-500 text-white text-[9px] font-bold rounded-full leading-none shadow-sm animate-pulse">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Link>
 
         {/* Divider */}
         <div className="w-px h-6 bg-border mx-1" />
+
 
         {/* Profile Dropdown */}
         <div className="relative">

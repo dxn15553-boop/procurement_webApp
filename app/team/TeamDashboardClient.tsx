@@ -95,15 +95,18 @@ export function TeamDashboardClient({ data, userName }: Props) {
               {card.bgIcon}
             </div>
 
-            <div className="flex flex-col flex-1 p-4 sm:p-5 gap-3.5 relative z-10 justify-between">
-              <span className="text-[11px] font-extrabold tracking-wider uppercase text-slate-500 leading-tight">
-                {card.label}
-              </span>
+            <div className="flex flex-col flex-1 p-3 xl:p-2.5 gap-3 relative z-10 justify-between">
+              {/* Header: label */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm xl:text-xs font-extrabold tracking-wider uppercase text-slate-500 leading-tight">
+                  {card.label}
+                </span>
+              </div>
               <div>
-                <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
+                <p className="text-4xl sm:text-5xl xl:text-4xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
                   {card.value}
                 </p>
-                <p className="text-[10px] text-slate-400 font-semibold mt-2">total records</p>
+                <p className="text-sm xl:text-xs text-slate-400 font-semibold mt-1">total records</p>
               </div>
             </div>
           </div>
