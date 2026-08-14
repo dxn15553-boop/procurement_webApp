@@ -98,6 +98,18 @@ export function NotificationsClient({ initialNotifications }: { initialNotificat
 
   return (
     <div className="space-y-4">
+      {notifications.length > 0 && (
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-2 px-1">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            All Notifications ({notifications.length})
+          </span>
+          {notifications.filter((n) => !n.isRead).length > 0 && (
+            <span className="px-2.5 py-0.5 text-[11px] font-extrabold bg-indigo-50 text-indigo-600 rounded-full animate-pulse">
+              {notifications.filter((n) => !n.isRead).length} Unread
+            </span>
+          )}
+        </div>
+      )}
 
       {notifications.length === 0 ? (
         <div className="bg-white border border-slate-100 rounded-[2rem] p-12 text-center text-slate-500 flex flex-col items-center gap-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
