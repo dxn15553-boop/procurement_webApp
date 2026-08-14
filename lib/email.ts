@@ -98,8 +98,7 @@ export interface BatchReminderEmailProps {
     sourceNo: string;
     sourceDate: string; // formatted date string
     noOfDays: number;
-    pendingDays: number;
-    currentStage: string;
+    stageOrStatus: string;
     id: string;
   }[];
   baseUrl: string;
@@ -128,11 +127,8 @@ export async function sendBatchReminderEmail({ to, cc, handlerName, userRole, is
       <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; color: ${req.noOfDays > 40 ? '#ef4444' : req.noOfDays > 21 ? '#f59e0b' : '#64748b'}; font-weight: ${req.noOfDays > 21 ? 'bold' : 'normal'};">
         ${req.noOfDays} days
       </td>
-      <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; color: ${req.pendingDays > 40 ? '#ef4444' : '#64748b'}; font-weight: ${req.pendingDays > 40 ? 'bold' : 'normal'};">
-        ${req.pendingDays} days
-      </td>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0;">
-        <span style="background: #f1f5f9; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: #475569;">${req.currentStage}</span>
+        <span style="background: #f1f5f9; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: #475569;">${req.stageOrStatus}</span>
       </td>
     </tr>
   `).join('');
@@ -162,14 +158,14 @@ export async function sendBatchReminderEmail({ to, cc, handlerName, userRole, is
               <th style="padding: 10px 12px; border-bottom: 2px solid #e2e8f0; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Source No</th>
               <th style="padding: 10px 12px; border-bottom: 2px solid #e2e8f0; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Source Date</th>
               <th style="padding: 10px 12px; border-bottom: 2px solid #e2e8f0; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Total Days</th>
-              <th style="padding: 10px 12px; border-bottom: 2px solid #e2e8f0; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Stage Days</th>
-              <th style="padding: 10px 12px; border-bottom: 2px solid #e2e8f0; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Current Stage</th>
+              <th style="padding: 10px 12px; border-bottom: 2px solid #e2e8f0; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Stage / Status</th>
             </tr>
           </thead>
           <tbody>
             ${requestRows}
           </tbody>
         </table>
+
 
         <p style="color: #475569; margin: 0 0 24px; line-height: 1.6;">
           Please click on the Source Numbers above to open and update each request in the Procurement System.

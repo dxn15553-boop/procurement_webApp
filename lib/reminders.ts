@@ -162,9 +162,14 @@ export async function runReminderCheck() {
       isEscalation,
       requests: requests.map((r) => {
         const noOfDays = differenceInDays(today, r.sourceDate);
-        const pendingDays = r.pendingFrom
-          ? differenceInDays(today, r.pendingFrom)
-          : noOfDays;
+        
+        let stageOrStatus = r.currentStage as string;
+        if (r.currentStage === "PO") {
+          const prDays = r.daysForPR ?? (r.prDate && r.comparativeDate ? differenceInDays(r.prDate, r.comparativeDate) : 0);
+          const prStatusStr = r.prStatus ? r.prStatus.replace("_", " ") : "PENDING";
+          stageOrStatus = `PR: ${prStatusStr} (${prDays} days)`;
+        }
+
         return {
           id: r.id,
           sourceNo: r.sourceNo,
@@ -174,8 +179,7 @@ export async function runReminderCheck() {
             year: "numeric",
           }),
           noOfDays,
-          pendingDays,
-          currentStage: r.currentStage,
+          stageOrStatus,
         };
       }),
       baseUrl,
