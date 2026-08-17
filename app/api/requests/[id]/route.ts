@@ -15,7 +15,7 @@ function parseDate(val: string | null | undefined): Date | null {
     try {
       const parsed = parse(val, fmt, new Date());
       if (isValid(parsed)) return parsed;
-    } catch {}
+    } catch { }
   }
   return null;
 }
@@ -121,131 +121,131 @@ export async function PUT(
 
   try {
     const existing = await prisma.procurementRequest.findUnique({ where: { id } });
-  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (session.user.role !== "MANAGER" && 
+    if (session.user.role !== "MANAGER" &&
       existing.createdById !== session.user.id &&
       existing.handlerId !== session.user.id &&
       existing.nameOfHandler?.toLowerCase() !== (session.user.name ?? "").toLowerCase()) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-  const data = parsed.data;
+    const data = parsed.data;
 
-  let departmentId = data.departmentId;
-  if (departmentId && departmentId.trim().length > 0 && (!departmentId.startsWith("c") || departmentId.length !== 25)) {
-    const code = cleanCode(departmentId);
-    const dept = await prisma.department.upsert({
-      where: { code },
-      update: {},
-      create: { name: departmentId, code },
-    });
-    departmentId = dept.id;
-  }
+    let departmentId = data.departmentId;
+    if (departmentId && departmentId.trim().length > 0 && (!departmentId.startsWith("c") || departmentId.length !== 25)) {
+      const code = cleanCode(departmentId);
+      const dept = await prisma.department.upsert({
+        where: { code },
+        update: {},
+        create: { name: departmentId, code },
+      });
+      departmentId = dept.id;
+    }
 
-  let vendorId = data.vendorId || null;
-  if (vendorId && vendorId.trim().length > 0 && (!vendorId.startsWith("c") || vendorId.length !== 25)) {
-    const code = cleanCode(vendorId);
-    const vend = await prisma.vendor.upsert({
-      where: { code },
-      update: {},
-      create: { name: vendorId, code },
-    });
-    vendorId = vend.id;
-  } else {
-    vendorId = null;
-  }
+    let vendorId = data.vendorId || null;
+    if (vendorId && vendorId.trim().length > 0 && (!vendorId.startsWith("c") || vendorId.length !== 25)) {
+      const code = cleanCode(vendorId);
+      const vend = await prisma.vendor.upsert({
+        where: { code },
+        update: {},
+        create: { name: vendorId, code },
+      });
+      vendorId = vend.id;
+    } else {
+      vendorId = null;
+    }
 
-  const sourceDate = parseDate(data.sourceDate) || new Date();
-  const comparativeDate = parseDate(data.comparativeDate);
-  const prDate = parseDate(data.prDate);
-  const pendingFrom = parseDate(data.pendingFrom);
+    const sourceDate = parseDate(data.sourceDate) || new Date();
+    const comparativeDate = parseDate(data.comparativeDate);
+    const prDate = parseDate(data.prDate);
+    const pendingFrom = parseDate(data.pendingFrom);
 
-  const currentStage = cleanStage(data.currentStage);
-  const csStatus = cleanCSStatus(data.csStatus);
-  const prStatus = cleanPRStatus(data.prStatus);
-  const poStatus = cleanPOStatus(data.poStatus);
-  const paymentStatus = cleanPaymentStatus(data.paymentStatus);
+    const currentStage = cleanStage(data.currentStage);
+    const csStatus = cleanCSStatus(data.csStatus);
+    const prStatus = cleanPRStatus(data.prStatus);
+    const poStatus = cleanPOStatus(data.poStatus);
+    const paymentStatus = cleanPaymentStatus(data.paymentStatus);
 
-  const poDate = parseDate(data.poDate);
-  const prlDate = parseDate(data.prlDate);
-  const paymentDoneDate = parseDate(data.paymentDoneDate);
+    const poDate = parseDate(data.poDate);
+    const prlDate = parseDate(data.prlDate);
+    const paymentDoneDate = parseDate(data.paymentDoneDate);
 
-  const calc = calculateAllFields({ 
-    sourceDate, 
-    comparativeDate, 
-    prDate, 
-    poDate,
-    prlDate,
-    paymentDoneDate,
-    pendingFrom, 
-    currentStage 
-  });
-
-  const updated = await prisma.procurementRequest.update({
-    where: { id },
-    data: {
-      sourceNo: data.sourceNo,
-      sourceDate: sourceDate!,
-      sourceDescription: data.sourceDescription,
-      departmentId: departmentId,
-      vendorId: vendorId,
+    const calc = calculateAllFields({
+      sourceDate,
       comparativeDate,
-      daysForCS: calc.daysForCS,
-      csStatus: csStatus,
-      prNumber: data.prNumber ?? null,
       prDate,
-      daysForPR: calc.daysForPR,
-      prStatus: prStatus,
-      poNumber: data.poNumber ?? null,
       poDate,
-      poStatus,
-      daysForPO: calc.daysForPO,
-      prlNo: data.prlNo ?? null,
       prlDate,
-      materialDispatchDate: parseDate(data.materialDispatchDate),
-      materialReceivedDate: parseDate(data.materialReceivedDate),
-      workCompletionDate: parseDate(data.workCompletionDate),
-      sourceCancellationDate: parseDate(data.sourceCancellationDate),
-      paymentApprovalDate: parseDate(data.paymentApprovalDate),
       paymentDoneDate,
-      paymentStatus,
-      daysForPayment: calc.daysForPayment,
-      currentStatusByHandler: data.currentStatusByHandler ?? null,
-      nameOfHandler: data.nameOfHandler,
-      handlerId: data.handlerId ?? null,
-      noOfDays: calc.noOfDays,
-      currentStage: currentStage,
       pendingFrom,
-      pendingDays: calc.pendingDays,
-      slaStatus: calc.slaStatus,
-      slaCS: data.slaCS ?? null,
-      slaPR: data.slaPR ?? null,
-      slaPO: data.slaPO ?? null,
-      slaPAR: data.slaPAR ?? null,
-      slaPDD: data.slaPDD ?? null,
-      slaMDD: data.slaMDD ?? null,
-      slaMRD: data.slaMRD ?? null,
-      slaWCD: data.slaWCD ?? null,
-    },
-  });
+      currentStage
+    });
 
-  // Log changes
-  const changedFields = Object.keys(data).filter(
-    (key) => (existing as Record<string, unknown>)[key] !== (data as Record<string, unknown>)[key]
-  );
-
-  if (changedFields.length > 0) {
-    await prisma.activityLog.create({
+    const updated = await prisma.procurementRequest.update({
+      where: { id },
       data: {
-        requestId: id,
-        userId: session.user.id!,
-        action: "UPDATED",
-        fieldName: changedFields.join(", "),
-        oldValue: changedFields.map((f) => `${f}: ${(existing as Record<string, unknown>)[f]}`).join("; "),
-        newValue: changedFields.map((f) => `${f}: ${(data as Record<string, unknown>)[f]}`).join("; "),
+        sourceNo: data.sourceNo,
+        sourceDate: sourceDate!,
+        sourceDescription: data.sourceDescription,
+        departmentId: departmentId,
+        vendorId: vendorId,
+        comparativeDate,
+        daysForCS: calc.daysForCS,
+        csStatus: csStatus,
+        prNumber: data.prNumber ?? null,
+        prDate,
+        daysForPR: calc.daysForPR,
+        prStatus: prStatus,
+        poNumber: data.poNumber ?? null,
+        poDate,
+        poStatus,
+        daysForPO: calc.daysForPO,
+        prlNo: data.prlNo ?? null,
+        prlDate,
+        materialDispatchDate: parseDate(data.materialDispatchDate),
+        materialReceivedDate: parseDate(data.materialReceivedDate),
+        workCompletionDate: parseDate(data.workCompletionDate),
+        sourceCancellationDate: parseDate(data.sourceCancellationDate),
+        paymentApprovalDate: parseDate(data.paymentApprovalDate),
+        paymentDoneDate,
+        paymentStatus,
+        daysForPayment: calc.daysForPayment,
+        currentStatusByHandler: data.currentStatusByHandler ?? null,
+        nameOfHandler: data.nameOfHandler,
+        handlerId: data.handlerId ?? null,
+        noOfDays: calc.noOfDays,
+        currentStage: currentStage,
+        pendingFrom,
+        pendingDays: calc.pendingDays,
+        slaStatus: calc.slaStatus,
+        slaCS: data.slaCS ?? null,
+        slaPR: data.slaPR ?? null,
+        slaPO: data.slaPO ?? null,
+        slaPAR: data.slaPAR ?? null,
+        slaPDD: data.slaPDD ?? null,
+        slaMDD: data.slaMDD ?? null,
+        slaMRD: data.slaMRD ?? null,
+        slaWCD: data.slaWCD ?? null,
       },
     });
+
+    // Log changes
+    const changedFields = Object.keys(data).filter(
+      (key) => (existing as Record<string, unknown>)[key] !== (data as Record<string, unknown>)[key]
+    );
+
+    if (changedFields.length > 0) {
+      await prisma.activityLog.create({
+        data: {
+          requestId: id,
+          userId: session.user.id!,
+          action: "UPDATED",
+          fieldName: changedFields.join(", "),
+          oldValue: changedFields.map((f) => `${f}: ${(existing as Record<string, unknown>)[f]}`).join("; "),
+          newValue: changedFields.map((f) => `${f}: ${(data as Record<string, unknown>)[f]}`).join("; "),
+        },
+      });
     }
 
     return NextResponse.json({ request: updated });
@@ -268,22 +268,30 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  
-  await prisma.procurementRequest.update({ 
+
+  // 1. Soft-delete the request (This is working!)
+  await prisma.procurementRequest.update({
     where: { id },
     data: { isDeleted: true }
   });
 
-  await prisma.activityLog.create({
-    data: {
-      requestId: id,
-      userId: session.user.id!,
-      action: "DELETED",
-      newValue: "Record was soft-deleted",
-    },
-  });
+  // 2. Wrap the Activity Log in a try/catch so it doesn't break the deletion if it fails
+  try {
+    await prisma.activityLog.create({
+      data: {
+        requestId: id,
+        userId: session.user.id!,
+        action: "DELETED",
+        newValue: "Record was soft-deleted",
+      },
+    });
+  } catch (logError) {
+    console.error("Failed to save activity log:", logError);
+  }
 
+  // 3. Always return success if the deletion worked
   return NextResponse.json({ success: true });
 }
+
 
 export const runtime = "nodejs";
