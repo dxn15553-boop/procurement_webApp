@@ -5,10 +5,11 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   // Create departments
+  // Create departments
   const departmentNames = [
-    "Quality Control", "Quality Assurance", "Security", "Environment, Health & Safety ", "Ganoderma",
+    "Quality Control", "Quality Assurance", "Security", "Environment, Health & Safety", "Ganoderma",
     "Hospitality", "Administration", "Human Resources", "Information Technology",
-    "Publication ", "Finance ", "Coffee ", "Cosmetics & Toiletries", "Wet Food", "Kombucha", "Agro Food", "Agronomy", " Nutraceutical", " Inventory Warehouse", "Engineering", "Plant Maintenance Department"
+    "Publication", "Finance", "Coffee", "Cosmetics & Toiletries", "Wet Food", "Kombucha", "Agro Food", "Agronomy", "Nutraceutical", "Inventory Warehouse", "Engineering", "Plant Maintenance Department"
   ];
 
   const departments = await Promise.all(
