@@ -29,7 +29,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
   const router = useRouter();
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [handlers, setHandlers] = useState<{id: string, name: string}[]>([]);
+  const [handlers, setHandlers] = useState<{ id: string, name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Auto-calculated display values
@@ -76,12 +76,12 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           Object.keys(parsed).forEach((key) => {
             // Never restore sourceNo from draft so it's always blank by default on new requests
             if (key === "sourceNo") return;
-            
+
             if (parsed[key] !== undefined && parsed[key] !== null && parsed[key] !== "") {
               setValue(key as keyof ProcurementInput, parsed[key], { shouldValidate: false, shouldDirty: true });
             }
           });
-          toast.info("Draft restored", { 
+          toast.info("Draft restored", {
             description: "Your previous unsubmitted changes have been loaded.",
             icon: <RefreshCw className="w-4 h-4" />
           });
@@ -229,7 +229,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
 
   const onSubmit = async (data: ProcurementInput) => {
     setIsLoading(true);
-    
+
     // Validate Handler
     if (!data.handlerId) {
       toast.error("Please select a handler.");
@@ -265,8 +265,8 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
       }
 
       toast.success(
-        mode === "edit" ? "Request Updated" : "Request Created", 
-        { 
+        mode === "edit" ? "Request Updated" : "Request Created",
+        {
           description: `Source No ${data.sourceNo} was saved successfully!`,
           icon: <Save className="w-4 h-4" />
         }
@@ -323,9 +323,17 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>Department *</label>
-            <input type="text" {...register("departmentId")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} placeholder="Enter department..." onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
-            {errors.departmentId && <p className="text-xs text-destructive mt-1">{errors.departmentId.message}</p>}
+            <select {...register("departmentId")} disabled={readOnly || isCancelled} className={inputClass}>
+              <option value="">select department...</option>
+              {departments.map((dept) => (
+                <option key={dept.id} value={dept.id}>{dept.name}</option>
+              )
+              )}
+
+            </select>
+            {errors.departmentId && <p className="text-xs text-destructive mt-1"> {errors.departmentId.message}</p>}
           </div>
+
           <div className="md:col-span-3">
             <label className={labelClass}>Source Description *</label>
             <textarea {...register("sourceDescription")} disabled={readOnly || isCancelled} rows={2} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
@@ -333,9 +341,9 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>Handler *</label>
-            <select 
-              {...register("handlerId")} 
-              disabled={readOnly || isCancelled} 
+            <select
+              {...register("handlerId")}
+              disabled={readOnly || isCancelled}
               className={inputClass}
             >
               <option value="">Select handler...</option>
@@ -471,7 +479,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>PRL No</label>
-            <input {...register("prlNo")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  />
+            <input {...register("prlNo")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
           </div>
           <div>
             <label className={labelClass}>PRL Date</label>
@@ -531,11 +539,11 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>Vendor</label>
-            <input type="text" {...register("vendorId")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  placeholder="Enter vendor name..." />
+            <input type="text" {...register("vendorId")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} placeholder="Enter vendor name..." />
           </div>
           <div>
             <label className={labelClass}>Current Status by Handler</label>
-            <input {...register("currentStatusByHandler")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}  />
+            <input {...register("currentStatusByHandler")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
           </div>
           <div>
             <label className={labelClass}>Current Stage</label>

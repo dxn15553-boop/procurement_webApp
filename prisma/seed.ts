@@ -6,13 +6,13 @@ async function main() {
 
   // Create departments
   const departmentNames = [
-    "Agronomy", "Ganoderma", "PF", "Spirulina", "IWH", 
-    "Maintenance", "PMD", "Wet Processing", "Kombucha", 
-    "QC", "QA", "Hospitality", "Management"
+    "Quality Control", "Quality Assurance", "Security", "Environment, Health & Safety ", "Ganoderma",
+    "Hospitality", "Administration", "Human Resources", "Information Technology",
+    "Publication ", "Finance ", "Coffee ", "Cosmetics & Toiletries", "Wet Food", "Kombucha", "Agro Food", "Agronomy", " Nutraceutical", " Inventory Warehouse", "Engineering", "Plant Maintenance Department"
   ];
-  
+
   const departments = await Promise.all(
-    departmentNames.map((name) => 
+    departmentNames.map((name) =>
       prisma.department.upsert({
         where: { code: name.toUpperCase().replace(/\s+/g, "_") },
         update: { name },
