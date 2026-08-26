@@ -4,12 +4,10 @@ import { redirect } from "next/navigation";
 import { AnalyticsClient, AnalyticsData } from "./AnalyticsClient";
 
 async function getAnalyticsData(): Promise<AnalyticsData> {
-  const [departments, users, vendors, requests] = await Promise.all([
-    prisma.department.findMany({ include: { procurementRequests: { where: { isDeleted: false } } } }),
-    prisma.user.findMany({ where: { role: "TEAM" }, include: { procurementRequests: { where: { isDeleted: false } } } }),
-    prisma.vendor.findMany({ include: { procurementRequests: { where: { isDeleted: false } } } }),
-    prisma.procurementRequest.findMany({ where: { isDeleted: false } }),
-  ]);
+  const departments = await prisma.department.findMany({ include: { procurementRequests: { where: { isDeleted: false } } } });
+  const users = await prisma.user.findMany({ where: { role: "TEAM" }, include: { procurementRequests: { where: { isDeleted: false } } } });
+  const vendors = await prisma.vendor.findMany({ include: { procurementRequests: { where: { isDeleted: false } } } });
+  const requests = await prisma.procurementRequest.findMany({ where: { isDeleted: false } });
 
   // 1. SLA by Department
   const slaDepartmentData = departments.map((dept) => {

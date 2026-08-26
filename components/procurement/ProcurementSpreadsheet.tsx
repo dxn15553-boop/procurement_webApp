@@ -548,29 +548,35 @@ export function ProcurementSpreadsheet({ session }: Props) {
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((row, rowIdx) => (
-                  <tr
-                    key={row.id}
-                    onClick={(e) => {
-                      const target = e.target as HTMLElement;
-                      const isInteractive = target.tagName === "INPUT" || target.tagName === "SELECT" || target.tagName === "BUTTON" || target.tagName === "A" || target.closest("a") || target.closest("button");
-                      if (!isInteractive && !row.isNew) {
-                        router.push(isManager ? `/manager/requests/${row.id}` : `/team/requests/${row.id}`);
-                      }
-                    }}
-                    className={`group cursor-pointer transition-colors duration-150 ${
-                      row.isDirty
-                        ? "bg-amber-50/80 hover:bg-amber-50"
-                        : rowIdx % 2 === 0
-                        ? "bg-white hover:bg-indigo-50/50"
-                        : "bg-slate-50/60 hover:bg-indigo-50/50"
-                    }`}
-                  >
+                filteredRows.map((row, rowIdx) => {
+                  const isAssignedByManager = !isManager && row.createdBy && row.createdBy.id !== session.user.id;
+                  return (
+                    <tr
+                      key={row.id}
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement;
+                        const isInteractive = target.tagName === "INPUT" || target.tagName === "SELECT" || target.tagName === "BUTTON" || target.tagName === "A" || target.closest("a") || target.closest("button");
+                        if (!isInteractive && !row.isNew) {
+                          router.push(isManager ? `/manager/requests/${row.id}` : `/team/requests/${row.id}`);
+                        }
+                      }}
+                      className={`group cursor-pointer transition-colors duration-150 ${
+                        row.isDirty
+                          ? "bg-amber-50/80 hover:bg-amber-50"
+                          : isAssignedByManager
+                          ? "bg-violet-50/80 hover:bg-violet-100/90 border-l-4 border-l-purple-500"
+                          : rowIdx % 2 === 0
+                          ? "bg-white hover:bg-indigo-50/50"
+                          : "bg-slate-50/60 hover:bg-indigo-50/50"
+                      }`}
+                    >
                     {/* Actions sticky Left */}
                     <td 
                       className={`p-2 border-r border-b border-slate-100 sticky left-0 z-10 text-center whitespace-nowrap w-28 transition-colors duration-150 ${
                         row.isDirty
                           ? "bg-amber-50 group-hover:bg-amber-50"
+                          : isAssignedByManager
+                          ? "bg-violet-50/80 group-hover:bg-violet-100/90"
                           : rowIdx % 2 === 0
                           ? "bg-white group-hover:bg-indigo-50/50"
                           : "bg-slate-50 group-hover:bg-indigo-50/50"
@@ -990,7 +996,8 @@ export function ProcurementSpreadsheet({ session }: Props) {
                       />
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

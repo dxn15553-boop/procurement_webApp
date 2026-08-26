@@ -10,37 +10,33 @@ export const revalidate = 0;
 
 
 async function getDashboardData() {
-  const [
-    recentRequests,
-    departmentData,
-    stageData,
-    allRequests,
-  ] = await Promise.all([
-    prisma.procurementRequest.findMany({
-      where: { isDeleted: false },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-      include: {
-        department: { select: { name: true } },
-        vendor: { select: { name: true } },
-        createdBy: { select: { name: true } },
-      },
-    }),
-    prisma.department.findMany({
-      include: { _count: { select: { procurementRequests: { where: { isDeleted: false } } } } },
-      where: { isActive: true },
-      orderBy: { name: 'asc' },
-    }),
-    prisma.procurementRequest.groupBy({
-      by: ["currentStage"],
-      where: { isDeleted: false },
-      _count: { id: true },
-    }),
-    prisma.procurementRequest.findMany({
-      where: { isDeleted: false },
-      select: { createdAt: true, currentStage: true, slaStatus: true, paymentStatus: true, materialReceivedDate: true },
-    }),
-  ]);
+  const recentRequests = await prisma.procurementRequest.findMany({
+    where: { isDeleted: false },
+    orderBy: { createdAt: "desc" },
+    take: 8,
+    include: {
+      department: { select: { name: true } },
+      vendor: { select: { name: true } },
+      createdBy: { select: { name: true } },
+    },
+  });
+
+  const departmentData = await prisma.department.findMany({
+    include: { _count: { select: { procurementRequests: { where: { isDeleted: false } } } } },
+    where: { isActive: true },
+    orderBy: { name: 'asc' },
+  });
+
+  const stageData = await prisma.procurementRequest.groupBy({
+    by: ["currentStage"],
+    where: { isDeleted: false },
+    _count: { id: true },
+  });
+
+  const allRequests = await prisma.procurementRequest.findMany({
+    where: { isDeleted: false },
+    select: { createdAt: true, currentStage: true, slaStatus: true, paymentStatus: true, materialReceivedDate: true },
+  });
 
   const total = allRequests.length;
   const activeSource = total - allRequests.filter(r => r.currentStage === "CANCELLED").length;
