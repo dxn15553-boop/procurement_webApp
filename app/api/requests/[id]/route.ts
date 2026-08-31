@@ -248,6 +248,31 @@ export async function PUT(
       });
     }
 
+    // Notify assigned employee if handlerId changed to a new person
+    if (data.handlerId && data.handlerId !== existing.handlerId) {
+      try {
+        const assignedUser = await prisma.user.findUnique({ where: { id: data.handlerId } });
+        if (assignedUser) {
+          const assignedDate = new Date().toLocaleDateString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            day: "numeric", month: "short", year: "numeric"
+          });
+          await prisma.notification.create({
+            data: {
+              userId: data.handlerId,
+              requestId: id,
+              type: "ASSIGNMENT",
+              title: `New Task Assigned: ${updated.sourceNo}`,
+              message: `You have been assigned a new procurement task.\n\nTask: ${updated.sourceNo}\nDescription: ${updated.sourceDescription}\nDepartment: ${updated.departmentId}\nCurrent Stage: ${updated.currentStage}\nAssigned Date: ${assignedDate}\n\nPlease log in to the Procurement portal to review and begin working on this task.`,
+              isRead: false,
+            },
+          });
+        }
+      } catch (notifyErr) {
+        console.error("Failed to create assignment notification:", notifyErr);
+      }
+    }
+
     return NextResponse.json({ request: updated });
   } catch (error: any) {
     console.error("PUT Error:", error);
