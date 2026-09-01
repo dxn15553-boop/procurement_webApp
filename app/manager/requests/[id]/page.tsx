@@ -91,7 +91,7 @@ export default async function RequestDetailPage({
           <Field label="Source No" value={request.sourceNo} />
           <Field label="Source Date" value={formatDate(request.sourceDate)} />
           <Field label="Department" value={request.department?.name} />
-          <Field label="Vendor" value={request.vendor?.name} />
+          <Field label="Vendor Name" value={request.vendor?.name} />
           <div className="md:col-span-2 lg:col-span-4">
             <Field label="Description" value={request.sourceDescription} />
           </div>

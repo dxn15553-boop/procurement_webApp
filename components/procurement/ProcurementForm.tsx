@@ -333,11 +333,17 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
             </select>
             {errors.departmentId && <p className="text-xs text-destructive mt-1"> {errors.departmentId.message}</p>}
           </div>
-
-          <div className="md:col-span-3">
-            <label className={labelClass}>Source Description *</label>
-            <textarea {...register("sourceDescription")} disabled={readOnly || isCancelled} rows={2} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
-            {errors.sourceDescription && <p className="text-xs text-destructive mt-1">{errors.sourceDescription.message}</p>}
+          <div>
+            <label className={labelClass}>Vendor Name</label>
+            <input
+              type="text"
+              {...register("vendorId")}
+              disabled={readOnly || isCancelled}
+              className={`${inputClass} uppercase`}
+              onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}
+              placeholder="ENTER VENDOR NAME..."
+            />
+            {errors.vendorId && <p className="text-xs text-destructive mt-1">{errors.vendorId.message}</p>}
           </div>
           <div>
             <label className={labelClass}>Handler *</label>
@@ -352,6 +358,12 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
               ))}
             </select>
             {errors.handlerId && <p className="text-xs text-destructive mt-1">{errors.handlerId.message}</p>}
+          </div>
+
+          <div className="md:col-span-3">
+            <label className={labelClass}>Source Description *</label>
+            <textarea {...register("sourceDescription")} disabled={readOnly || isCancelled} rows={2} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
+            {errors.sourceDescription && <p className="text-xs text-destructive mt-1">{errors.sourceDescription.message}</p>}
           </div>
         </div>
       </div>
@@ -530,17 +542,13 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         </div>
       </div>
 
-      {/* Section: Status & Vendor */}
+      {/* Section: Status Information */}
       <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
         <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
           <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">6</span>
-          Status & Vendor
+          Status Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className={labelClass}>Vendor</label>
-            <input type="text" {...register("vendorId")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} placeholder="Enter vendor name..." />
-          </div>
           <div>
             <label className={labelClass}>Current Status by Handler</label>
             <input {...register("currentStatusByHandler")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
