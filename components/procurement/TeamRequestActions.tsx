@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CheckCircle2, Play, Table, Loader2, Clock, Check } from "lucide-react";
+import { CheckCircle2, Table, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 interface TeamRequestActionsProps {
@@ -22,42 +22,8 @@ export function TeamRequestActions({
   currentStage,
 }: TeamRequestActionsProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
   const [statusText, setStatusText] = useState(currentStatusByHandler || "");
   const [savingStatus, setSavingStatus] = useState(false);
-
-  const isPending = csStatus === "PENDING";
-
-  const handleAccept = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/requests/${requestId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          csStatus: "IN_PROGRESS",
-          currentStatusByHandler: statusText.trim() || "Accepted and started working",
-          pendingFrom: new Date().toISOString(),
-          action: "ACCEPTED",
-          actionDetails: "Task accepted and marked as In Progress",
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error?.message || "Failed to accept task");
-      }
-
-      toast.success("Task accepted successfully!", {
-        description: `Source #${sourceNo} is now IN PROGRESS. You can begin procurement milestones.`,
-      });
-      router.refresh();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to accept task");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSaveStatus = async () => {
     if (!statusText.trim()) return;
@@ -97,45 +63,22 @@ export function TeamRequestActions({
             <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
               Task Workflow
             </span>
-            {isPending ? (
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                <Clock className="w-3 h-3" /> Awaiting Acceptance
-              </span>
-            ) : (
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                <Check className="w-3 h-3" /> Active / In Progress
-              </span>
-            )}
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> Active Assignment
+            </span>
           </div>
           <h2 className="text-xl font-bold tracking-tight text-white">
-            {isPending ? "Task Assigned to You" : "Currently Working on Task"}
+            Task Assigned to You
           </h2>
           <p className="text-sm text-indigo-200/80 mt-1 max-w-2xl">
-            {isPending
-              ? "This task was assigned by Section Management. Click below to accept and start working on CS & PR milestones."
-              : `Current Stage is ${currentStage}. Keep your handler notes and spreadsheet dates updated as you make progress.`}
+            Current Stage is <span className="font-bold text-white">{currentStage}</span>. Keep your handler notes and spreadsheet dates updated as you make progress on sourcing milestones.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-          {isPending && (
-            <button
-              onClick={handleAccept}
-              disabled={loading}
-              className="flex-1 lg:flex-initial inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Play className="w-4 h-4 fill-white" />
-              )}
-              Accept & Start Task
-            </button>
-          )}
-
           <Link
             href={`/team/requests?search=${sourceNo}`}
-            className="flex-1 lg:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-sm border border-white/10 backdrop-blur transition-all active:scale-95"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-sm border border-white/10 backdrop-blur transition-all active:scale-95"
           >
             <Table className="w-4 h-4 text-indigo-300" />
             Open in Spreadsheet
