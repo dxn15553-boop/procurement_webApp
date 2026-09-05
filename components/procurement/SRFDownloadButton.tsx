@@ -5,7 +5,7 @@ import { Download, FileText, Printer, CheckCircle2, ShieldCheck, Loader2, Sparkl
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
-import { formatDate } from "@/lib/utils";
+import { formatDate, parseItemDescription } from "@/lib/utils";
 
 interface SRFDownloadButtonProps {
   requestId: string;
@@ -19,61 +19,6 @@ interface SRFDownloadButtonProps {
   csStatus?: string | null;
   role?: "TEAM" | "MANAGER";
   variant?: "primary" | "outline" | "card" | "compact";
-}
-
-export function parseItemDescription(raw?: string | null) {
-  if (!raw) return [];
-  const items: Array<{
-    itemNum: string;
-    itemName: string;
-    itemType: string;
-    make: string;
-    model: string;
-    qty: string;
-    details: string;
-  }> = [];
-
-  // Match items structured with "Item X:" or "ITEM X:"
-  const itemBlocks = raw.split(/(?=(?:ITEM|Item)\s+\d+:)/g);
-
-  for (const block of itemBlocks) {
-    const trimmed = block.trim();
-    if (!trimmed) continue;
-
-    const titleMatch = trimmed.match(/^(?:ITEM|Item)\s+(\d+):?\s*([^\n•]+)/i);
-    const typeMatch = trimmed.match(/(?:ITEM TYPE|Item Type|TYPE|Type):\s*([^\n•]+)/i);
-    const makeMatch = trimmed.match(/(?:MAKE|Make):\s*([^\n•]+)/i);
-    const modelMatch = trimmed.match(/(?:MODEL|Model):\s*([^\n•]+)/i);
-    const qtyMatch = trimmed.match(/(?:QUANTITY|Quantity|QTY|Qty):\s*([^\n•]+)/i);
-    const descMatch = trimmed.match(/(?:DESCRIPTION|Description):\s*([^\n•]+)/i);
-
-    if (titleMatch || typeMatch || makeMatch || modelMatch || qtyMatch) {
-      items.push({
-        itemNum: titleMatch ? `Item ${titleMatch[1]}` : "Item 1",
-        itemName: titleMatch ? titleMatch[2].trim() : "Procurement Item",
-        itemType: typeMatch ? typeMatch[1].trim() : "—",
-        make: makeMatch ? makeMatch[1].trim() : "—",
-        model: modelMatch ? modelMatch[1].trim() : "—",
-        qty: qtyMatch ? qtyMatch[1].trim() : "—",
-        details: descMatch ? descMatch[1].trim() : trimmed.replace(/^[\s\S]*?(?:Description:|DESCRIPTION:)/i, "").trim() || trimmed,
-      });
-    }
-  }
-
-  // Fallback if not matching standard item block pattern
-  if (items.length === 0) {
-    items.push({
-      itemNum: "Item 1",
-      itemName: "Requisition Item",
-      itemType: "General Procurement",
-      make: "—",
-      model: "—",
-      qty: "As per requirement",
-      details: raw.trim(),
-    });
-  }
-
-  return items;
 }
 
 export function SRFDownloadButton({

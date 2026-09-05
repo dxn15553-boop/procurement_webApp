@@ -4,8 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Printer, ShieldCheck, CheckCircle2, Building2, User, Calendar, FileText } from "lucide-react";
-import { formatDate } from "@/lib/utils";
-import { parseItemDescription } from "@/components/procurement/SRFDownloadButton";
+import { formatDate, parseItemDescription } from "@/lib/utils";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;

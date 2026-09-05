@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { Metadata } from "next";
-import { formatDate, getSLAColor, getStageColor, getStageName, cn } from "@/lib/utils";
+import { formatDate, getSLAColor, getStageColor, getStageName, cn, parseItemDescription } from "@/lib/utils";
 import { 
   ArrowLeft, Calendar, User, Building2, Clock, FileText, CheckCircle2, 
   ExternalLink, Layers, Truck, ShieldCheck, Tag, Sparkles, AlertCircle, 
@@ -11,7 +11,7 @@ import {
 import Link from "next/link";
 import type { CurrentStage, SLAStatus } from "@/types";
 import { TeamRequestActions } from "@/components/procurement/TeamRequestActions";
-import { SRFDownloadButton, parseItemDescription } from "@/components/procurement/SRFDownloadButton";
+import { SRFDownloadButton } from "@/components/procurement/SRFDownloadButton";
 import { RequestStageStepper } from "@/components/procurement/RequestStageStepper";
 
 export const metadata: Metadata = { title: "Request Details - ProcureX" };
