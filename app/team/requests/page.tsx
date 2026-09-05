@@ -11,7 +11,14 @@ export default async function TeamRequestsPage() {
   if (!session?.user || session.user.role !== "TEAM") redirect("/login");
 
   const totalCount = await prisma.procurementRequest.count({
-    where: { createdById: session.user.id, isDeleted: false }
+    where: {
+      isDeleted: false,
+      OR: [
+        { createdById: session.user.id },
+        { handlerId: session.user.id },
+        ...(session.user.name ? [{ nameOfHandler: { equals: session.user.name, mode: "insensitive" as const } }] : []),
+      ],
+    }
   });
 
   return (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, BellOff, Calendar, AlertTriangle, CheckCircle, RefreshCw, Trash2 } from "lucide-react";
+import { Bell, BellOff, FileText, Calendar, AlertTriangle, CheckCircle, RefreshCw, Trash2 } from "lucide-react";
 import { cn, formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -163,6 +163,17 @@ export function NotificationsClient({ initialNotifications }: { initialNotificat
                       >
                         View Request →
                       </Link>
+                    )}
+                    {n.requestId && (n.type === "ASSIGNMENT" || n.title?.toLowerCase().includes("srf") || n.message?.includes("SRF")) && (
+                      <a
+                        href={`${basePath}/requests/${n.requestId}/srf?download=1`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-1 rounded-lg font-bold border border-sky-200 transition-colors shadow-sm"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-sky-600" />
+                        <span>Download SRF PDF 📥</span>
+                      </a>
                     )}
                     {!n.isRead && (
                       <button

@@ -220,6 +220,16 @@ export async function POST(req: Request) {
     currentStage,
   });
 
+  let handlerId = data.handlerId || null;
+  if (!handlerId && data.nameOfHandler?.trim()) {
+    const handlerUser = await prisma.user.findFirst({
+      where: { name: { equals: data.nameOfHandler.trim(), mode: "insensitive" } }
+    });
+    if (handlerUser) {
+      handlerId = handlerUser.id;
+    }
+  }
+
   const request = await prisma.procurementRequest.create({
     data: {
       sourceNo: data.sourceNo,
@@ -249,8 +259,8 @@ export async function POST(req: Request) {
       paymentStatus,
       daysForPayment: calc.daysForPayment,
       currentStatusByHandler: data.currentStatusByHandler ?? null,
-      nameOfHandler: data.nameOfHandler,
-      handlerId: data.handlerId ?? null,
+      nameOfHandler: data.nameOfHandler ?? null,
+      handlerId: handlerId ?? null,
       noOfDays: calc.noOfDays,
       currentStage: currentStage,
       pendingFrom,
@@ -278,7 +288,29 @@ export async function POST(req: Request) {
     },
   });
 
-    return NextResponse.json({ request }, { status: 201 });
+  // Notify assigned employee if assigned on creation
+  if (handlerId && handlerId !== session.user.id) {
+    try {
+      const assignedDate = new Date().toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "numeric", month: "short", year: "numeric"
+      });
+      await prisma.notification.create({
+        data: {
+          userId: handlerId,
+          requestId: request.id,
+          type: "ASSIGNMENT",
+          title: `New Task Assigned: ${request.sourceNo}`,
+          message: `You have been assigned a new procurement task.\n\nTask: ${request.sourceNo}\nDescription: ${request.sourceDescription}\nCurrent Stage: ${request.currentStage}\nAssigned Date: ${assignedDate}\n\nPlease log in to the Procurement portal to review and begin working on this task.`,
+          isRead: false,
+        },
+      });
+    } catch (notifyErr) {
+      console.error("Failed to create assignment notification:", notifyErr);
+    }
+  }
+
+  return NextResponse.json({ request }, { status: 201 });
   } catch (error: any) {
     console.error("POST Error:", error);
     

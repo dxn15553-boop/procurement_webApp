@@ -45,8 +45,13 @@ export async function GET(
 
   if (!request) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Team can only see their own
-  if (session.user.role !== "MANAGER" && request.createdById !== session.user.id) {
+  const isAuthorized =
+    session.user.role === "MANAGER" ||
+    request.createdById === session.user.id ||
+    request.handlerId === session.user.id ||
+    Boolean(session.user.name && request.nameOfHandler?.toLowerCase() === session.user.name.toLowerCase());
+
+  if (!isAuthorized) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -182,6 +187,18 @@ export async function PUT(
       currentStage
     });
 
+    let handlerId = data.handlerId !== undefined ? (data.handlerId || null) : existing.handlerId;
+    const nameOfHandler = data.nameOfHandler !== undefined ? data.nameOfHandler : existing.nameOfHandler;
+
+    if (!handlerId && nameOfHandler?.trim()) {
+      const handlerUser = await prisma.user.findFirst({
+        where: { name: { equals: nameOfHandler.trim(), mode: "insensitive" } }
+      });
+      if (handlerUser) {
+        handlerId = handlerUser.id;
+      }
+    }
+
     const updated = await prisma.procurementRequest.update({
       where: { id },
       data: {
@@ -212,8 +229,8 @@ export async function PUT(
         paymentStatus,
         daysForPayment: calc.daysForPayment,
         currentStatusByHandler: data.currentStatusByHandler ?? null,
-        nameOfHandler: data.nameOfHandler,
-        handlerId: data.handlerId ?? null,
+        nameOfHandler: nameOfHandler ?? null,
+        handlerId: handlerId ?? null,
         noOfDays: calc.noOfDays,
         currentStage: currentStage,
         pendingFrom,
@@ -249,9 +266,9 @@ export async function PUT(
     }
 
     // Notify assigned employee if handlerId changed to a new person
-    if (data.handlerId && data.handlerId !== existing.handlerId) {
+    if (handlerId && handlerId !== existing.handlerId) {
       try {
-        const assignedUser = await prisma.user.findUnique({ where: { id: data.handlerId } });
+        const assignedUser = await prisma.user.findUnique({ where: { id: handlerId } });
         if (assignedUser) {
           const assignedDate = new Date().toLocaleDateString("en-IN", {
             timeZone: "Asia/Kolkata",
@@ -259,7 +276,7 @@ export async function PUT(
           });
           await prisma.notification.create({
             data: {
-              userId: data.handlerId,
+              userId: handlerId,
               requestId: id,
               type: "ASSIGNMENT",
               title: `New Task Assigned: ${updated.sourceNo}`,
@@ -276,6 +293,107 @@ export async function PUT(
     return NextResponse.json({ request: updated });
   } catch (error: any) {
     console.error("PUT Error:", error);
+    return NextResponse.json(
+      { error: { message: error.message || "Internal server error" } },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const existing = await prisma.procurementRequest.findUnique({ where: { id } });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const isAuthorized =
+    session.user.role === "MANAGER" ||
+    existing.createdById === session.user.id ||
+    existing.handlerId === session.user.id ||
+    Boolean(session.user.name && existing.nameOfHandler?.toLowerCase() === session.user.name.toLowerCase());
+
+  if (!isAuthorized) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  try {
+    const body = await req.json();
+    const updateData: Record<string, any> = {};
+
+    if (body.csStatus) updateData.csStatus = cleanCSStatus(body.csStatus);
+    if (body.currentStatusByHandler !== undefined) updateData.currentStatusByHandler = body.currentStatusByHandler;
+    if (body.currentStage) updateData.currentStage = cleanStage(body.currentStage);
+    if (body.pendingFrom !== undefined) updateData.pendingFrom = parseDate(body.pendingFrom);
+    if (body.comparativeDate !== undefined) updateData.comparativeDate = parseDate(body.comparativeDate);
+    if (body.prNumber !== undefined) updateData.prNumber = body.prNumber;
+    if (body.prDate !== undefined) updateData.prDate = parseDate(body.prDate);
+    if (body.prStatus) updateData.prStatus = cleanPRStatus(body.prStatus);
+    if (body.poNumber !== undefined) updateData.poNumber = body.poNumber;
+    if (body.poDate !== undefined) updateData.poDate = parseDate(body.poDate);
+    if (body.poStatus) updateData.poStatus = cleanPOStatus(body.poStatus);
+
+    // Auto-recalculate metrics
+    const calc = calculateAllFields({
+      sourceDate: existing.sourceDate,
+      comparativeDate: updateData.comparativeDate !== undefined ? updateData.comparativeDate : existing.comparativeDate,
+      prDate: updateData.prDate !== undefined ? updateData.prDate : existing.prDate,
+      poDate: updateData.poDate !== undefined ? updateData.poDate : existing.poDate,
+      prlDate: existing.prlDate,
+      paymentDoneDate: existing.paymentDoneDate,
+      pendingFrom: updateData.pendingFrom !== undefined ? updateData.pendingFrom : existing.pendingFrom,
+      currentStage: updateData.currentStage || existing.currentStage,
+    });
+
+    Object.assign(updateData, {
+      daysForCS: calc.daysForCS,
+      daysForPR: calc.daysForPR,
+      daysForPO: calc.daysForPO,
+      daysForPayment: calc.daysForPayment,
+      noOfDays: calc.noOfDays,
+      pendingDays: calc.pendingDays,
+      slaStatus: calc.slaStatus,
+    });
+
+    const updated = await prisma.procurementRequest.update({
+      where: { id },
+      data: updateData,
+    });
+
+    // Log activity
+    await prisma.activityLog.create({
+      data: {
+        requestId: id,
+        userId: session.user.id!,
+        action: body.action || "UPDATED",
+        fieldName: Object.keys(body).filter((k) => k !== "action" && k !== "actionDetails").join(", ") || "status",
+        newValue: body.actionDetails || `Updated: ${Object.keys(body).join(", ")}`,
+      },
+    });
+
+    // Notify creator if accepted
+    if (body.action === "ACCEPTED" && existing.createdById !== session.user.id) {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: existing.createdById,
+            requestId: id,
+            type: "TASK_ACCEPTED",
+            title: `Task Accepted: ${existing.sourceNo}`,
+            message: `${session.user.name || "Assigned employee"} has accepted task ${existing.sourceNo} and started working on it.`,
+            isRead: false,
+          },
+        });
+      } catch (notifyErr) {
+        console.error("Failed to create acceptance notification:", notifyErr);
+      }
+    }
+
+    return NextResponse.json({ request: updated });
+  } catch (error: any) {
+    console.error("PATCH Error:", error);
     return NextResponse.json(
       { error: { message: error.message || "Internal server error" } },
       { status: 500 }
@@ -317,6 +435,5 @@ export async function DELETE(
   // 3. Always return success if the deletion worked
   return NextResponse.json({ success: true });
 }
-
 
 export const runtime = "nodejs";

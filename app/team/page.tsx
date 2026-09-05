@@ -15,14 +15,23 @@ export default async function TeamDashboard() {
 
   const userId = session.user.id!;
 
+  const userCondition = {
+    isDeleted: false,
+    OR: [
+      { createdById: userId },
+      { handlerId: userId },
+      ...(session.user.name ? [{ nameOfHandler: { equals: session.user.name, mode: "insensitive" as const } }] : []),
+    ],
+  };
+
   const [total, active, completed, overdue, cancelled, recent, deptRaw, stageRaw, allReqs] = await Promise.all([
-    prisma.procurementRequest.count({ where: { createdById: userId } }),
-    prisma.procurementRequest.count({ where: { createdById: userId, NOT: { currentStage: { in: ["COMPLETED", "CANCELLED"] } } } }),
-    prisma.procurementRequest.count({ where: { createdById: userId, currentStage: "COMPLETED" } }),
-    prisma.procurementRequest.count({ where: { createdById: userId, slaStatus: "OVERDUE" } }),
-    prisma.procurementRequest.count({ where: { createdById: userId, currentStage: "CANCELLED" } }),
+    prisma.procurementRequest.count({ where: userCondition }),
+    prisma.procurementRequest.count({ where: { ...userCondition, NOT: { currentStage: { in: ["COMPLETED", "CANCELLED"] } } } }),
+    prisma.procurementRequest.count({ where: { ...userCondition, currentStage: "COMPLETED" } }),
+    prisma.procurementRequest.count({ where: { ...userCondition, slaStatus: "OVERDUE" } }),
+    prisma.procurementRequest.count({ where: { ...userCondition, currentStage: "CANCELLED" } }),
     prisma.procurementRequest.findMany({
-      where: { createdById: userId },
+      where: userCondition,
       orderBy: { createdAt: "desc" },
       take: 10,
       include: {
@@ -31,17 +40,17 @@ export default async function TeamDashboard() {
       },
     }),
     prisma.department.findMany({
-      include: { _count: { select: { procurementRequests: { where: { createdById: userId, isDeleted: false } } } } },
+      include: { _count: { select: { procurementRequests: { where: userCondition } } } },
       where: { isActive: true },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     }),
     prisma.procurementRequest.groupBy({
       by: ["currentStage"],
-      where: { createdById: userId, isDeleted: false },
+      where: userCondition,
       _count: { id: true },
     }),
     prisma.procurementRequest.findMany({
-      where: { createdById: userId, isDeleted: false },
+      where: userCondition,
       select: { createdAt: true, currentStage: true, slaStatus: true },
     }),
   ]);
