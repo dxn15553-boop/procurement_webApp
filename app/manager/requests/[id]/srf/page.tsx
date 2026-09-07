@@ -222,14 +222,14 @@ export default async function RequestSRFPage({
                 </tr>
                 <tr>
                   <td className="py-2.5 px-3 font-semibold text-slate-800">Head of Department (HOD)</td>
-                  <td className="py-2.5 px-3 text-slate-600">Departmental Review & Approval</td>
-                  <td className="py-2.5 px-3 font-bold text-emerald-600">APPROVED</td>
+                  <td className="py-2.5 px-3 text-slate-600">Departmental Review & Acceptance</td>
+                  <td className="py-2.5 px-3 font-bold text-emerald-600">ACCEPTED</td>
                   <td className="py-2.5 px-3 text-slate-500 font-mono">{srfDateFormatted}</td>
                 </tr>
                 <tr>
                   <td className="py-2.5 px-3 font-semibold text-slate-800">Regional Coordinator</td>
                   <td className="py-2.5 px-3 text-slate-600">Regional Budget & Sourcing Endorsement</td>
-                  <td className="py-2.5 px-3 font-bold text-emerald-600">APPROVED</td>
+                  <td className="py-2.5 px-3 font-bold text-emerald-600">ACCEPTED</td>
                   <td className="py-2.5 px-3 text-slate-500 font-mono">{srfDateFormatted}</td>
                 </tr>
                 <tr>
