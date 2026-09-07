@@ -1,10 +1,11 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Printer, ShieldCheck, CheckCircle2, Building2, User, Calendar, FileText } from "lucide-react";
+import { ArrowLeft, ShieldCheck, CheckCircle2, Building2, User, Calendar, FileText, AlertTriangle } from "lucide-react";
 import { formatDate, parseItemDescription } from "@/lib/utils";
+import SRFPrintClient from "./SRFPrintClient";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -22,41 +23,57 @@ export default async function RequestSRFPage({
   if (!session?.user) redirect("/login");
 
   const { id } = await params;
-  const { download, print } = await searchParams;
+  const { download, print } = (await searchParams) || {};
   const autoPrint = download === "1" || print === "1";
 
+  // Resilient lookup: supports both internal UUID and Source Request No (e.g. SRC-2026-0014)
   const request = await prisma.procurementRequest.findFirst({
     where: {
-      id,
       isDeleted: false,
-      
+      OR: [
+        { id },
+        { sourceNo: id },
+      ],
     },
     include: {
       department: true,
       vendor: true,
-      createdBy: { select: { name: true, email: true } },
+      createdBy: { select: { id: true, name: true, email: true } },
     },
   });
 
-  if (!request) notFound();
+  if (!request) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-md max-w-md w-full text-center">
+          <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-800">Source Request Not Found</h2>
+          <p className="text-xs text-slate-500 mt-2 mb-6">
+            The requested SRF record (ID: <span className="font-mono font-bold text-slate-700">{id}</span>) could not be located in the procurement database.
+          </p>
+          <Link
+            href="/manager/requests"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Manager Requests</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
-  const srfNo = request.sourceNo.replace("SRC-", "SRF-");
-  const srfDateFormatted = formatDate(request.sourceDate, "dd MMM yyyy");
-  const parsedItems = parseItemDescription(request.sourceDescription);
+  const rawSourceNo = request.sourceNo || id;
+  const srfNo = rawSourceNo.startsWith("SRC-") ? rawSourceNo.replace("SRC-", "SRF-") : `SRF-${rawSourceNo}`;
+  const srfDateFormatted = request.sourceDate ? formatDate(request.sourceDate, "dd MMM yyyy") : formatDate(new Date(), "dd MMM yyyy");
+  const parsedItems = parseItemDescription(request.sourceDescription || "");
 
   return (
     <div className="min-h-screen bg-slate-100 py-8 px-4 text-slate-800 font-sans print:p-0 print:bg-white print:min-h-0">
       {/* Printable styles */}
       <style>{"\n        @media print {\n          body {\n            background: #ffffff !important;\n            color: #0f172a !important;\n            font-size: 11pt !important;\n            margin: 0 !important;\n            padding: 0 !important;\n          }\n          .no-print {\n            display: none !important;\n          }\n          .srf-sheet {\n            max-width: 100% !important;\n            width: 100% !important;\n            margin: 0 !important;\n            padding: 20px 24px !important;\n            background: #ffffff !important;\n            border: none !important;\n            box-shadow: none !important;\n            border-radius: 0 !important;\n          }\n          .srf-section {\n            page-break-inside: avoid;\n            margin-bottom: 16px !important;\n          }\n        }\n      "}</style>
-
-      {/* Auto print trigger if query param download=1 */}
-      {autoPrint && (
-        <script
-          dangerouslySetInnerHTML={{
-            __html: "window.addEventListener('load', () => setTimeout(() => window.print(), 450));",
-          }}
-        />
-      )}
 
       {/* Screen-only top action bar */}
       <div className="no-print max-w-4xl mx-auto mb-6 flex items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
@@ -71,19 +88,7 @@ export default async function RequestSRFPage({
           <span className="text-xs text-slate-400 font-medium hidden sm:inline">
             Official Source Request Form (SRF)
           </span>
-          <button
-            onClick={() => {}}
-            id="print-btn"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 active:scale-95 transition-all cursor-pointer"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Print / Save as PDF</span>
-          </button>
-          <script
-            dangerouslySetInnerHTML={{
-              __html: "document.getElementById('print-btn').onclick = () => window.print();",
-            }}
-          />
+          <SRFPrintClient autoPrint={autoPrint} />
         </div>
       </div>
 
@@ -123,7 +128,7 @@ export default async function RequestSRFPage({
           </div>
           <div>
             <span className="block text-[10px] font-bold uppercase text-slate-400">Source Req ID</span>
-            <span className="font-bold text-slate-800 font-mono">{request.sourceNo}</span>
+            <span className="font-bold text-slate-800 font-mono">{rawSourceNo}</span>
           </div>
           <div>
             <span className="block text-[10px] font-bold uppercase text-slate-400">Originating Dept</span>
@@ -236,7 +241,7 @@ export default async function RequestSRFPage({
                 <tr className="bg-indigo-50/40">
                   <td className="py-2.5 px-3 font-bold text-indigo-900">Procurement Section Manager</td>
                   <td className="py-2.5 px-3 text-slate-700 font-medium">
-                    SRF Released & Assigned to <span className="font-bold text-indigo-700">{request.nameOfHandler || "Laya"}</span>
+                    SRF Released & Assigned to <span className="font-bold text-indigo-700">{request.nameOfHandler || "Team Member"}</span>
                   </td>
                   <td className="py-2.5 px-3 font-extrabold text-indigo-600">ASSIGNED</td>
                   <td className="py-2.5 px-3 text-slate-700 font-mono">{srfDateFormatted}</td>
@@ -251,7 +256,7 @@ export default async function RequestSRFPage({
           <div>
             Official Electronic Requisition Form • DXN Enterprise Procurement System
           </div>
-          <div className="font-mono">
+          <div className="font-mono font-bold text-slate-600">
             {srfNo}
           </div>
         </div>
