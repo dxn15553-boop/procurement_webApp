@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { Metadata } from "next";
 import Link from "next/link";
+import fs from "fs";
+import path from "path";
 import { ArrowLeft, ShieldCheck, CheckCircle2, Building2, User, Calendar, FileText, AlertTriangle } from "lucide-react";
 import { formatDate, parseItemDescription } from "@/lib/utils";
 import SRFPrintClient from "./SRFPrintClient";
@@ -68,6 +70,16 @@ export default async function RequestSRFPage({
   const rawSourceNo = request.sourceNo || id;
   const srfNo = rawSourceNo.startsWith("SRC-") ? rawSourceNo.replace("SRC-", "SRF-") : `SRF-${rawSourceNo}`;
   const srfDateFormatted = request.sourceDate ? formatDate(request.sourceDate, "dd MMM yyyy") : formatDate(new Date(), "dd MMM yyyy");
+
+  // Load official DXN logo as base64 for print rendering
+  let dxnLogoDataUri = "/dxnLogo.png";
+  try {
+    const logoPath = path.join(process.cwd(), "public", "dxnLogo.png");
+    if (fs.existsSync(logoPath)) {
+      const logoBuffer = fs.readFileSync(logoPath);
+      dxnLogoDataUri = `data:image/png;base64,${logoBuffer.toString("base64")}`;
+    }
+  } catch (e) {}
   const parsedItems = parseItemDescription(request.sourceDescription || "");
 
   return (
@@ -94,29 +106,53 @@ export default async function RequestSRFPage({
 
       {/* Main SRF Document Sheet */}
       <div className="srf-sheet max-w-4xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-xl p-8 lg:p-12 text-slate-900">
-        {/* Document Header */}
-        <div className="srf-section border-b-2 border-slate-900 pb-5 mb-6 flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-indigo-600 inline-block" />
-              <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">
-                DXN Enterprise Procurement
-              </h2>
+        {/* Official DXN Manufacturing Plant Document Header Box */}
+        <div className="srf-section border-2 border-slate-900 rounded-md overflow-hidden mb-6 bg-white">
+          <div className="flex items-stretch min-h-[90px]">
+            {/* Left: DXN Logo */}
+            <div className="w-[115px] min-w-[115px] flex items-center justify-center p-2.5 border-r-2 border-slate-900 bg-white">
+              <img
+                src={dxnLogoDataUri}
+                alt="DXN Logo"
+                className="max-h-[76px] max-w-full object-contain"
+              />
             </div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 mt-1 uppercase">
-              Source Request Form (SRF)
-            </h1>
-            <p className="text-xs text-slate-500 font-medium tracking-wide">
-              Official Material & Service Sourcing Authorization Form
-            </p>
+
+            {/* Center: Company Name & Plant Address */}
+            <div className="flex-1 flex flex-col justify-center items-center p-3 text-center">
+              <h2 className="text-lg font-black text-slate-900 tracking-wide uppercase font-sans">
+                DXN MANUFACTURING (INDIA) PVT. LTD.,
+              </h2>
+              <div className="text-[11px] font-semibold text-slate-700 mt-1.5 leading-relaxed">
+                <div>
+                  Sy. No: 392 &amp; 206 |Siddipet Industrial Park, Rajagopalpet (V) &amp; Mandapally (V)
+                </div>
+                <div>
+                  | Nangunoor (M) &amp; Siddipet Urban (M) |Siddipet Dist. -Telangana - 502267
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Document Reference Block */}
+            <div className="w-[195px] min-w-[195px] border-l-2 border-slate-900 p-3 flex flex-col justify-center bg-slate-50 text-[11px] leading-relaxed">
+              <div className="flex justify-between gap-1">
+                <span className="font-bold text-slate-500">SRF NO:</span>
+                <span className="font-extrabold text-sky-700 font-mono">{srfNo}</span>
+              </div>
+              <div className="flex justify-between gap-1 mt-1">
+                <span className="font-bold text-slate-500">DOC DATE:</span>
+                <span className="font-bold text-slate-900">{srfDateFormatted}</span>
+              </div>
+              <div className="flex justify-between gap-1 mt-1">
+                <span className="font-bold text-slate-500">SOURCE ID:</span>
+                <span className="font-bold text-slate-900 font-mono">{request.sourceNo}</span>
+              </div>
+            </div>
           </div>
-          <div className="text-right">
-            <span className="inline-block px-3 py-1 rounded-lg bg-sky-50 border border-sky-200 text-sky-700 font-black text-sm tracking-wide font-mono">
-              {srfNo}
-            </span>
-            <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-1">
-              Doc Date: {srfDateFormatted}
-            </p>
+
+          {/* Form Title Banner */}
+          <div className="border-t-2 border-slate-900 bg-slate-900 text-white text-center py-1.5 text-sm font-extrabold tracking-widest uppercase">
+            SOURCE REQUEST FORM (SRF)
           </div>
         </div>
 
