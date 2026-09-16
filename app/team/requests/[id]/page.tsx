@@ -87,6 +87,7 @@ export default async function TeamRequestDetailPage({
     include: {
       department: true,
       vendor: true,
+      handler: { select: { name: true, email: true } },
       createdBy: { select: { name: true, email: true } },
       activityLogs: {
         include: { user: { select: { name: true } } },
@@ -263,9 +264,9 @@ export default async function TeamRequestDetailPage({
             icon={<Building2 className="w-3.5 h-3.5 text-slate-400" />}
           />
           <DataField
-            label="Vendor Name"
-            value={request.vendor?.name}
-            icon={<Tag className="w-3.5 h-3.5 text-slate-400" />}
+            label="Handler"
+            value={request.nameOfHandler || request.handler?.name || "Unassigned"}
+            icon={<User className="w-3.5 h-3.5 text-slate-400" />}
           />
         </div>
 
@@ -353,14 +354,18 @@ export default async function TeamRequestDetailPage({
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <DataField
+                label="Vendor Name"
+                value={request.vendor?.name}
+                icon={<Tag className="w-3.5 h-3.5 text-slate-400" />}
+                highlight={Boolean(request.vendor?.name)}
+              />
               <DataField label="Comparative Date" value={formatDate(request.comparativeDate)} />
               <DataField
                 label="Days for CS"
                 value={request.daysForCS != null ? `${request.daysForCS} Days` : "0 Days"}
               />
-              <div className="sm:col-span-2">
-                <DataField label="CS Workflow Status" value={request.csStatus} highlight />
-              </div>
+              <DataField label="CS Workflow Status" value={request.csStatus} highlight />
             </div>
           </div>
         </div>

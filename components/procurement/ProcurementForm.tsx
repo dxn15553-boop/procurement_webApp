@@ -304,7 +304,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">1</span>
           Source Information
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className={labelClass}>Source No *</label>
             <input {...register("sourceNo")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => {
@@ -334,18 +334,6 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
             {errors.departmentId && <p className="text-xs text-destructive mt-1"> {errors.departmentId.message}</p>}
           </div>
           <div>
-            <label className={labelClass}>Vendor Name</label>
-            <input
-              type="text"
-              {...register("vendorId")}
-              disabled={readOnly || isCancelled}
-              className={`${inputClass} uppercase`}
-              onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}
-              placeholder="ENTER VENDOR NAME..."
-            />
-            {errors.vendorId && <p className="text-xs text-destructive mt-1">{errors.vendorId.message}</p>}
-          </div>
-          <div>
             <label className={labelClass}>Handler *</label>
             <select
               {...register("handlerId")}
@@ -360,7 +348,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
             {errors.handlerId && <p className="text-xs text-destructive mt-1">{errors.handlerId.message}</p>}
           </div>
 
-          <div className="md:col-span-3">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-4">
             <label className={labelClass}>Source Description *</label>
             <textarea {...register("sourceDescription")} disabled={readOnly || isCancelled} rows={2} className={`${inputClass} uppercase`} onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
             {errors.sourceDescription && <p className="text-xs text-destructive mt-1">{errors.sourceDescription.message}</p>}
@@ -374,7 +362,8 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">2</span>
           Comparative Statement (CS)
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
           <div>
             <label className={labelClass}>Comparative Date</label>
             <input type="date" min={watch("sourceDate") || undefined} {...register("comparativeDate")} disabled={readOnly || isCancelled} className={inputClass} />
@@ -387,6 +376,18 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
             <label className={labelClass}>CS Status</label>
             <input type="text" {...register("csStatus")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} placeholder="e.g. PENDING, IN PROGRESS" onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())} />
           </div>
+          <div>
+            <label className={labelClass}>Vendor Name</label>
+            <input
+              type="text"
+              {...register("vendorId")}
+              disabled={readOnly || isCancelled}
+              className={`${inputClass} uppercase`}
+              onInput={(e) => (e.currentTarget.value = e.currentTarget.value.toUpperCase())}
+              placeholder="ENTER VENDOR NAME..."
+            />
+            {errors.vendorId && <p className="text-xs text-destructive mt-1">{errors.vendorId.message}</p>}
+          </div>
         </div>
       </div>
 
@@ -396,7 +397,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">3</span>
           Purchase Requisition (PR)
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className={labelClass}>PR Number</label>
             <input
