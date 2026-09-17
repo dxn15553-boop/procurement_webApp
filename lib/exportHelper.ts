@@ -154,3 +154,68 @@ export function exportUniformCsv(requests: any[], fileName: string = "procuremen
   a.click();
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Generates and downloads a clean Excel template with UNIFORM_REPORT_HEADERS and sample row.
+ */
+export function generateImportTemplate() {
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const sampleRow1 = [
+    "PR-SAMPLE-001",                 // Source No
+    todayStr,                        // Source Date
+    "Standard Office Laptop & Dock", // Source Description
+    "IT Department",                 // Department
+    "Dell Technologies",             // Vendor Name
+    "System",                        // Created By
+    "CS",                            // Current Stage
+    "ON TRACK",                      // Overall SLA Status
+    "John Doe",                      // Name of Handler
+    "Waiting for vendor quotes",     // Handler Status
+    todayStr,                        // Pending From Date
+    0,                               // Pending Days
+    0,                               // Total Days
+    "PENDING",                       // CS Status
+    0,                               // Days for CS
+    "",                              // Comparative Date
+    "PENDING",                       // PR Status
+    "",                              // PR Number
+    "",                              // PR Date
+    0,                               // Days for PR
+    "PENDING",                       // PO Status
+    "",                              // PO Number
+    "",                              // PO Date
+    0,                               // Days for PO
+    "PENDING",                       // Payment Status
+    "",                              // Payment Approval Date
+    "",                              // Payment Done Date
+    0,                               // Days for Payment
+    "",                              // PRL No
+    "",                              // PRL Date
+    "",                              // Material Dispatch Date
+    "",                              // Material Received Date
+    "",                              // Work Completion Date
+    "",                              // Cancellation Date
+    2,                               // CS (SLA Target)
+    2,                               // PR (SLA Target)
+    3,                               // PO (SLA Target)
+    2,                               // PAR (SLA Target)
+    3,                               // PDD (SLA Target)
+    5,                               // MDD (SLA Target)
+    2,                               // MRD (SLA Target)
+    5,                               // WCD (SLA Target)
+  ];
+
+  const dataTable = [UNIFORM_REPORT_HEADERS, sampleRow1];
+  const ws = XLSX.utils.aoa_to_sheet(dataTable);
+
+  // Auto-calculate column widths
+  const colWidths = UNIFORM_REPORT_HEADERS.map((header) => ({
+    wch: Math.min(Math.max(header.length + 3, 14), 35),
+  }));
+  ws["!cols"] = colWidths;
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Import Template");
+  XLSX.writeFile(wb, `procurement_import_template.xlsx`);
+}
+

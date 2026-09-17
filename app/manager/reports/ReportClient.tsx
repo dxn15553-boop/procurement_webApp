@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { FileText, Download, Printer, RefreshCw, Upload, AlertCircle, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
-import { exportUniformExcel, exportUniformCsv } from "@/lib/exportHelper";
+import { exportUniformExcel, exportUniformCsv, generateImportTemplate } from "@/lib/exportHelper";
 
 interface Props {
   departments: Array<{ id: string; name: string }>;
@@ -39,9 +39,18 @@ export function ReportClient({ departments, vendors }: Props) {
         throw new Error(data.error?.message || "Failed to import file");
       }
 
-      toast.success(`Successfully imported ${data.importedCount} records!`);
+      let msg = "";
+      if (data.createdCount > 0 && data.updatedCount > 0) {
+        msg = `Successfully processed: ${data.createdCount} created, ${data.updatedCount} updated in database!`;
+      } else if (data.updatedCount > 0) {
+        msg = `Successfully updated ${data.updatedCount} existing records in database!`;
+      } else {
+        msg = `Successfully imported ${data.createdCount || data.importedCount} records into database!`;
+      }
+      toast.success(msg);
+
       if (data.skippedCount > 0) {
-        toast.warning(`Skipped ${data.skippedCount} records (duplicates/invalid)`);
+        toast.warning(`Skipped ${data.skippedCount} invalid rows (missing Source No)`);
       }
     } catch (err: any) {
       toast.error(err.message || "An error occurred during import");
@@ -165,6 +174,15 @@ export function ReportClient({ departments, vendors }: Props) {
           ref={fileInputRef} 
           onChange={handleImportFile}
         />
+        <button
+          type="button"
+          onClick={() => generateImportTemplate()}
+          className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl border border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition-colors shadow-sm bg-white"
+          title="Download an Excel template matching the export format"
+        >
+          <FileText className="w-4 h-4" />
+          Template (.xlsx)
+        </button>
         <button
           disabled={loading || importing}
           onClick={() => fileInputRef.current?.click()}
