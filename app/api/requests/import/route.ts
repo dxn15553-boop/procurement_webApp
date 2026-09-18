@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import * as xlsx from "xlsx";
 import { parse, isValid } from "date-fns";
 import { calculateAllFields } from "@/lib/calculations";
+import { generateSourceNo } from "@/lib/utils";
 import type { CurrentStage } from "@/types";
 
 function parseDate(val: any): Date | null {
@@ -142,8 +143,26 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
   const firstSheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[firstSheetName];
   
-  // Parse to JSON array
-  const rows = xlsx.utils.sheet_to_json<Record<string, any>>(worksheet);
+  // 1. Raw 2D array to inspect where the header row actually begins (handles title rows/banners)
+  const rawData = xlsx.utils.sheet_to_json<any[]>(worksheet, { header: 1, blankrows: false });
+  if (rawData.length === 0) {
+    throw new Error("No data rows found in uploaded file");
+  }
+
+  // Find the header row: scan first 10 rows for procurement-related column keywords
+  let headerRowIndex = 0;
+  const headerKeywords = ["source", "desc", "dept", "department", "vendor", "date", "stage", "handler", "pr", "po", "item", "status"];
+  for (let i = 0; i < Math.min(10, rawData.length); i++) {
+    const rowValues = (rawData[i] || []).map((c: any) => String(c).toLowerCase().replace(/[^a-z0-9]/g, ""));
+    const matchCount = rowValues.filter((v: string) => headerKeywords.some(kw => v.includes(kw))).length;
+    if (matchCount >= 2) {
+      headerRowIndex = i;
+      break;
+    }
+  }
+
+  // Parse rows using the detected header row offset
+  const rows = xlsx.utils.sheet_to_json<Record<string, any>>(worksheet, { range: headerRowIndex });
   
   if (rows.length === 0) {
     throw new Error("No data rows found in uploaded file");
@@ -151,22 +170,36 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
 
   let createdCount = 0;
   let updatedCount = 0;
+  let skippedCount = 0;
 
-    let skippedCount = 0;
+  // Cache departments, vendors and users to reduce repetitive queries
+  const deptCache = new Map<string, string>();
+  const vendorCache = new Map<string, string>();
+  const userCache = new Map<string, string | null>();
 
-    // Cache departments, vendors and users to reduce repetitive queries
-    const deptCache = new Map<string, string>();
-    const vendorCache = new Map<string, string>();
-    const userCache = new Map<string, string | null>();
+  for (const row of rows) {
+    // 1. Extract Source No with extensive alias support
+    const rawSourceNo = getValue(row, [
+      "Source No", "Source Number", "source_no", "sourceno", "source no", "source#",
+      "request_no", "pr_no", "pr no", "pr number", "pr_number", "pr#",
+      "indent no", "indent_no", "req no", "req_no", "requisition no", "requisition_no",
+      "sl no", "sl_no", "sno", "s no", "sr no", "sr_no", "serial no", "serial_no",
+      "item no", "item_no", "ref no", "ref_no", "reference no"
+    ]);
 
-    for (const row of rows) {
-      // 1. Extract Source No (Mandatory)
-      const rawSourceNo = getValue(row, ["Source No", "Source Number", "source_no", "sourceno", "source no", "source#", "request_no", "pr_no"]);
-      const sourceNo = rawSourceNo ? String(rawSourceNo).trim() : "";
-      if (!sourceNo) {
+    let sourceNo = rawSourceNo ? String(rawSourceNo).trim() : "";
+    if (!sourceNo) {
+      // If row has some real content (description/dept/vendor), auto-generate a Source No rather than dropping it
+      const hasContent = getValue(row, ["Source Description", "Description", "Item", "item_description"]) ||
+                        getValue(row, ["Department", "Dept"]) ||
+                        getValue(row, ["Vendor Name", "Vendor"]);
+      if (hasContent) {
+        sourceNo = generateSourceNo();
+      } else {
         skippedCount++;
         continue;
       }
+    }
 
       // Check if record exists in the main Procurement Database
       const existing = await prisma.procurementRequest.findUnique({

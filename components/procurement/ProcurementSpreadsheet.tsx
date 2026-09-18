@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Plus, Save, RefreshCw, Trash2, ArrowRight, ChevronLeft, ChevronRight, Upload, FileSpreadsheet, FileText } from "lucide-react";
-import { generateSourceNo } from "@/lib/utils";
+import { generateSourceNo, formatDate } from "@/lib/utils";
 import { differenceInDays, parseISO, format } from "date-fns";
 import { SLA_THRESHOLDS } from "@/lib/calculations";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ interface RowData {
   id: string; // "new-xxx" or real database id
   isNew?: boolean;
   isDirty?: boolean;
+  createdAt?: string;
   sourceNo: string;
   sourceDate: string;
   sourceDescription: string;
@@ -114,13 +115,15 @@ export function ProcurementSpreadsheet({ session }: Props) {
     if (search) qs.set("search", search);
     qs.set("page", page.toString());
     qs.set("limit", limit.toString());
+    qs.set("_t", Date.now().toString());
 
-    fetch(`/api/requests?${qs.toString()}`)
+    fetch(`/api/requests?${qs.toString()}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((reqData) => {
         setTotalPages(reqData.pagination?.pages || 1);
         const initialRows = (reqData.requests ?? []).map((r: any) => ({
           id: r.id,
+          createdAt: r.createdAt ? r.createdAt : "",
           sourceNo: r.sourceNo,
           sourceDate: r.sourceDate ? r.sourceDate.split("T")[0] : "",
           sourceDescription: r.sourceDescription ?? "",
@@ -292,6 +295,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
       id: `new-${Date.now()}`,
       isNew: true,
       isDirty: true,
+      createdAt: new Date().toISOString(),
       sourceNo: generateSourceNo(),
       sourceDate: format(new Date(), "yyyy-MM-dd"),
       sourceDescription: "",
@@ -470,21 +474,24 @@ export function ProcurementSpreadsheet({ session }: Props) {
         throw new Error(data.error?.message || "Failed to import file");
       }
 
-      let msg = "";
       if (data.createdCount > 0 && data.updatedCount > 0) {
-        msg = `Successfully processed: ${data.createdCount} created, ${data.updatedCount} updated in database!`;
+        toast.success(`Processed: ${data.createdCount} new added, ${data.updatedCount} updated in database!`);
+      } else if (data.createdCount > 0) {
+        toast.success(`Successfully added ${data.createdCount} new records to the database!`);
       } else if (data.updatedCount > 0) {
-        msg = `Successfully updated ${data.updatedCount} existing records in database!`;
+        toast.info(`Updated ${data.updatedCount} existing records in database (Source Nos matched existing rows).`);
       } else {
-        msg = `Successfully imported ${data.createdCount || data.importedCount} records into database!`;
-      }
-      toast.success(msg);
-
-      if (data.skippedCount > 0) {
-        toast.warning(`Skipped ${data.skippedCount} invalid rows (missing Source No)`);
+        toast.error(`No records were added or updated. ${data.skippedCount > 0 ? `${data.skippedCount} rows were skipped.` : "File contains no readable rows."}`);
       }
 
+      if (data.skippedCount > 0 && (data.createdCount > 0 || data.updatedCount > 0)) {
+        toast.warning(`Skipped ${data.skippedCount} unparseable rows.`);
+      }
+
+      setPage(1);
+      setActiveTab("All");
       loadData();
+      router.refresh();
     } catch (err: any) {
       toast.error(err.message || "An error occurred during import");
     } finally {
@@ -552,6 +559,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                   Actions
                 </th>
                 <th className={headerCellClass} style={{ width: "150px" }}>{isManager ? "Employee Name" : "Created By"}</th>
+                <th className={headerCellClass} style={{ width: "135px" }}>Added Time</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Source No</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Source Date *</th>
                 <th className={headerCellClass} style={{ width: "260px" }}>Source Description *</th>
@@ -599,14 +607,14 @@ export function ProcurementSpreadsheet({ session }: Props) {
               {loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-slate-50/40"}>
-                    <td className="p-3 border-b border-slate-100" colSpan={43}>
+                    <td className="p-3 border-b border-slate-100" colSpan={44}>
                       <div className="h-5 rounded bg-slate-100 animate-pulse w-full" />
                     </td>
                   </tr>
                 ))
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td className="py-20 text-center text-slate-400 text-sm font-semibold" colSpan={43}>
+                  <td className="py-20 text-center text-slate-400 text-sm font-semibold" colSpan={44}>
                     No requests found in this sheet.
                   </td>
                 </tr>
@@ -693,6 +701,22 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     {/* Employee Reference Name */}
                     <td className="px-3 py-2 border-r border-b border-slate-100 text-[12px] font-semibold text-slate-700 whitespace-nowrap">
                       {row.createdBy?.name ?? "System"}
+                    </td>
+
+                    {/* Added Time */}
+                    <td className="px-3 py-2 border-r border-b border-slate-100 align-middle text-center whitespace-nowrap bg-slate-50/40 select-none" title={row.createdAt ? formatDate(row.createdAt, "dd MMM yyyy, hh:mm:ss a") : ""}>
+                      {row.createdAt ? (
+                        <div className="flex flex-col items-center justify-center leading-tight">
+                          <span className="text-[11px] font-bold text-slate-700">
+                            {formatDate(row.createdAt, "dd-MM-yyyy")}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            {formatDate(row.createdAt, "hh:mm a")}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 text-xs">—</span>
+                      )}
                     </td>
 
                     {/* Source No */}

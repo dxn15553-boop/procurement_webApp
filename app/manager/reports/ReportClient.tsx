@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { FileText, Download, Printer, RefreshCw, Upload, AlertCircle, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { exportUniformExcel, exportUniformCsv, generateImportTemplate } from "@/lib/exportHelper";
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function ReportClient({ departments, vendors }: Props) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -39,19 +41,21 @@ export function ReportClient({ departments, vendors }: Props) {
         throw new Error(data.error?.message || "Failed to import file");
       }
 
-      let msg = "";
       if (data.createdCount > 0 && data.updatedCount > 0) {
-        msg = `Successfully processed: ${data.createdCount} created, ${data.updatedCount} updated in database!`;
+        toast.success(`Processed: ${data.createdCount} new added, ${data.updatedCount} updated in database!`);
+      } else if (data.createdCount > 0) {
+        toast.success(`Successfully added ${data.createdCount} new records to the database!`);
       } else if (data.updatedCount > 0) {
-        msg = `Successfully updated ${data.updatedCount} existing records in database!`;
+        toast.info(`Updated ${data.updatedCount} existing records in database (Source Nos matched existing rows).`);
       } else {
-        msg = `Successfully imported ${data.createdCount || data.importedCount} records into database!`;
+        toast.error(`No records were added or updated. ${data.skippedCount > 0 ? `${data.skippedCount} rows were skipped.` : "File contains no readable rows."}`);
       }
-      toast.success(msg);
 
-      if (data.skippedCount > 0) {
-        toast.warning(`Skipped ${data.skippedCount} invalid rows (missing Source No)`);
+      if (data.skippedCount > 0 && (data.createdCount > 0 || data.updatedCount > 0)) {
+        toast.warning(`Skipped ${data.skippedCount} unparseable rows.`);
       }
+
+      router.refresh();
     } catch (err: any) {
       toast.error(err.message || "An error occurred during import");
     } finally {

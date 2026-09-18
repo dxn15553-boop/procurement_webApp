@@ -5,6 +5,9 @@ import { procurementSchema } from "@/lib/validations";
 import { calculateAllFields } from "@/lib/calculations";
 import { parse, isValid, parseISO } from "date-fns";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function parseDate(val: string | null | undefined): Date | null {
   if (!val) return null;
   const d = new Date(val);
@@ -101,10 +104,17 @@ export async function GET(req: Request) {
     prisma.procurementRequest.count({ where }),
   ]);
 
-  return NextResponse.json({
-    requests,
-    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-  });
+  return NextResponse.json(
+    {
+      requests,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+      },
+    }
+  );
 }
 
 function cleanCode(name: string): string {
