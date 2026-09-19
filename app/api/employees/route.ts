@@ -11,6 +11,17 @@ export async function GET() {
   }
 
   const employees = await prisma.user.findMany({
+    where: {
+      isActive: true,
+      email: {
+        notIn: [
+          "sarah@procurex.com",
+          "john@procurex.com",
+          "team@procurex.com",
+          "team2@procurex.com",
+        ],
+      },
+    },
     include: { department: { select: { name: true } } },
     orderBy: { name: "asc" },
   });

@@ -260,14 +260,52 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
 
       let handlerId = existing?.handlerId || null;
       if (handlerName) {
-        if (userCache.has(handlerName.toLowerCase())) {
-          handlerId = userCache.get(handlerName.toLowerCase()) || null;
+        const cleanHandlerName = handlerName.replace(/^(mr\.|ms\.|mrs\.|dr\.)\s+/i, "").trim();
+        const handlerKey = cleanHandlerName.toLowerCase();
+        if (userCache.has(handlerKey)) {
+          handlerId = userCache.get(handlerKey) || null;
         } else {
+          const firstName = cleanHandlerName.split(/\s+/)[0];
           const handlerUser = await prisma.user.findFirst({
-            where: { name: { equals: handlerName, mode: "insensitive" } }
+            where: {
+              OR: [
+                { name: { equals: handlerName, mode: "insensitive" } },
+                { name: { equals: cleanHandlerName, mode: "insensitive" } },
+                { name: { equals: firstName, mode: "insensitive" } },
+                { name: { contains: cleanHandlerName, mode: "insensitive" } },
+              ]
+            }
           });
           handlerId = handlerUser ? handlerUser.id : null;
-          userCache.set(handlerName.toLowerCase(), handlerId);
+          userCache.set(handlerKey, handlerId);
+        }
+      }
+
+      // Extract Created By / Employee Name
+      const rawCreatedBy = getValue(row, ["Created By", "Employee Name", "CreatedBy", "employee_name", "created_by", "Employee"]);
+      let rowCreatedById = existing?.createdById || userId;
+      if (rawCreatedBy) {
+        const creatorName = String(rawCreatedBy).trim();
+        const cleanCreatorName = creatorName.replace(/^(mr\.|ms\.|mrs\.|dr\.)\s+/i, "").trim();
+        const creatorKey = cleanCreatorName.toLowerCase();
+        if (userCache.has(creatorKey)) {
+          rowCreatedById = userCache.get(creatorKey) || userId;
+        } else {
+          const firstName = cleanCreatorName.split(/\s+/)[0];
+          const creatorUser = await prisma.user.findFirst({
+            where: {
+              OR: [
+                { name: { equals: creatorName, mode: "insensitive" } },
+                { name: { equals: cleanCreatorName, mode: "insensitive" } },
+                { name: { equals: firstName, mode: "insensitive" } },
+                { name: { contains: cleanCreatorName, mode: "insensitive" } },
+              ]
+            }
+          });
+          if (creatorUser) {
+            rowCreatedById = creatorUser.id;
+            userCache.set(creatorKey, creatorUser.id);
+          }
         }
       }
 
@@ -342,14 +380,14 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
       const currentStatusByHandler = rawHandlerStatus !== undefined ? String(rawHandlerStatus).trim() : (existing ? existing.currentStatusByHandler : null);
 
       // 8. Custom SLA thresholds
-      const slaCS = parseNullableInt(getValue(row, ["CS (SLA Target)", "slaCS", "SLA CS", "CS SLA"])) ?? existing?.slaCS ?? null;
-      const slaPR = parseNullableInt(getValue(row, ["PR (SLA Target)", "slaPR", "SLA PR", "PR SLA"])) ?? existing?.slaPR ?? null;
-      const slaPO = parseNullableInt(getValue(row, ["PO (SLA Target)", "slaPO", "SLA PO", "PO SLA"])) ?? existing?.slaPO ?? null;
-      const slaPAR = parseNullableInt(getValue(row, ["PAR (SLA Target)", "slaPAR", "SLA PAR", "PAR SLA"])) ?? existing?.slaPAR ?? null;
-      const slaPDD = parseNullableInt(getValue(row, ["PDD (SLA Target)", "slaPDD", "SLA PDD", "PDD SLA"])) ?? existing?.slaPDD ?? null;
-      const slaMDD = parseNullableInt(getValue(row, ["MDD (SLA Target)", "slaMDD", "SLA MDD", "MDD SLA"])) ?? existing?.slaMDD ?? null;
-      const slaMRD = parseNullableInt(getValue(row, ["MRD (SLA Target)", "slaMRD", "SLA MRD", "MRD SLA"])) ?? existing?.slaMRD ?? null;
-      const slaWCD = parseNullableInt(getValue(row, ["WCD (SLA Target)", "slaWCD", "SLA WCD", "WCD SLA"])) ?? existing?.slaWCD ?? null;
+      const slaCS = parseNullableInt(getValue(row, ["CS (SLA Target)", "slaCS", "SLA CS", "CS SLA", "CS"])) ?? existing?.slaCS ?? null;
+      const slaPR = parseNullableInt(getValue(row, ["PR (SLA Target)", "slaPR", "SLA PR", "PR SLA", "PR"])) ?? existing?.slaPR ?? null;
+      const slaPO = parseNullableInt(getValue(row, ["PO (SLA Target)", "slaPO", "SLA PO", "PO SLA", "PO"])) ?? existing?.slaPO ?? null;
+      const slaPAR = parseNullableInt(getValue(row, ["PAR (SLA Target)", "slaPAR", "SLA PAR", "PAR SLA", "PAR"])) ?? existing?.slaPAR ?? null;
+      const slaPDD = parseNullableInt(getValue(row, ["PDD (SLA Target)", "slaPDD", "SLA PDD", "PDD SLA", "PDD"])) ?? existing?.slaPDD ?? null;
+      const slaMDD = parseNullableInt(getValue(row, ["MDD (SLA Target)", "slaMDD", "SLA MDD", "MDD SLA", "MDD"])) ?? existing?.slaMDD ?? null;
+      const slaMRD = parseNullableInt(getValue(row, ["MRD (SLA Target)", "slaMRD", "SLA MRD", "MRD SLA", "MRD"])) ?? existing?.slaMRD ?? null;
+      const slaWCD = parseNullableInt(getValue(row, ["WCD (SLA Target)", "slaWCD", "SLA WCD", "WCD SLA", "WCD"])) ?? existing?.slaWCD ?? null;
 
       // 9. Calculate dynamic fields and SLA
       const calc = calculateAllFields({
@@ -409,6 +447,7 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
             slaMDD,
             slaMRD,
             slaWCD,
+            ...(rawCreatedBy ? { createdById: rowCreatedById } : {}),
           }
         });
 
@@ -470,7 +509,7 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
             slaMDD,
             slaMRD,
             slaWCD,
-            createdById: userId,
+            createdById: rowCreatedById,
           }
         });
 

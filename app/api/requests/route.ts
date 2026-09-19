@@ -36,6 +36,7 @@ export async function GET(req: Request) {
   const departmentId = searchParams.get("departmentId") ?? "";
   const from = searchParams.get("from") ?? "";
   const to = searchParams.get("to") ?? "";
+  const employee = searchParams.get("employee") ?? "";
 
   const isManager = session.user.role === "MANAGER";
 
@@ -81,6 +82,33 @@ export async function GET(req: Request) {
   if (stage) where.currentStage = stage;
   if (departmentId) where.departmentId = departmentId;
   if (status) where.slaStatus = status;
+
+  if (employee && employee !== "All") {
+    const cleanName = employee.trim();
+    const orConditions: any[] = [
+      { createdBy: { name: { equals: cleanName, mode: "insensitive" } } },
+      { handler: { name: { equals: cleanName, mode: "insensitive" } } },
+      { nameOfHandler: { contains: cleanName, mode: "insensitive" } },
+    ];
+
+    if (cleanName.toLowerCase() === "madhukumar") {
+      orConditions.push({ nameOfHandler: { contains: "Madhu", mode: "insensitive" } });
+    }
+
+    const tokens = cleanName.split(/\s+/).filter((t) => t.length >= 3);
+    for (const token of tokens) {
+      orConditions.push({ nameOfHandler: { contains: token, mode: "insensitive" } });
+    }
+
+    const employeeFilter = { OR: orConditions };
+    if (Array.isArray(where.AND)) {
+      (where.AND as unknown[]).push(employeeFilter);
+    } else if (where.AND) {
+      where.AND = [where.AND, employeeFilter];
+    } else {
+      where.AND = [employeeFilter];
+    }
+  }
   if (from || to) {
     where.sourceDate = {};
     if (from) (where.sourceDate as Record<string, unknown>).gte = parseISO(from);

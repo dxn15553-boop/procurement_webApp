@@ -91,7 +91,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
   // Manager Sheet selection state
   const [activeTab, setActiveTab] = useState<string>("All");
-  const [handlers, setHandlers] = useState<{id: string, name: string}[]>([]);
+  const [handlers, setHandlers] = useState<{id: string, name: string, requestCount?: number}[]>([]);
 
   const isManager = session.user.role === "MANAGER";
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -113,6 +113,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
     const qs = new URLSearchParams();
     if (search) qs.set("search", search);
+    if (activeTab && activeTab !== "All") qs.set("employee", activeTab);
     qs.set("page", page.toString());
     qs.set("limit", limit.toString());
     qs.set("_t", Date.now().toString());
@@ -195,7 +196,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
       .finally(() => {
         if (!silent) setLoading(false);
       });
-  }, [search, page]);
+  }, [search, page, activeTab]);
 
   useEffect(() => {
     loadData();
@@ -206,21 +207,26 @@ export function ProcurementSpreadsheet({ session }: Props) {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  // Extract all unique employee names from the dataset to render Excel tabs at the bottom
+  // Show all active employees in the system, sorted by activity
   const tabs = useMemo(() => {
     if (!isManager) return [];
-    const names = new Set<string>();
-    rows.forEach((r) => {
-      if (r.createdBy?.name) names.add(r.createdBy.name);
-    });
-    return ["All", ...Array.from(names)];
-  }, [rows, isManager]);
+    // Prioritize by requestCount descending so the most active employees appear first, but include ALL employees
+    const sorted = [...handlers].sort(
+      (a, b) => (b.requestCount || 0) - (a.requestCount || 0)
+    );
+    const names = sorted.map((h) => h.name).filter(Boolean);
+    return ["All", ...names];
+  }, [handlers, isManager]);
 
-  // Filter rows based on selected tab at the bottom
-  const filteredRows = useMemo(() => {
-    if (!isManager || activeTab === "All") return rows;
-    return rows.filter((r) => r.createdBy?.name === activeTab);
-  }, [rows, activeTab, isManager]);
+  // Ensure activeTab falls back to "All" if current selection is no longer in active tabs
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.includes(activeTab)) {
+      setActiveTab("All");
+    }
+  }, [tabs, activeTab]);
+
+  // Server handles filtering by employee and pagination
+  const filteredRows = rows;
 
   // Recalculates all reactive cell formulas for a row
   const calcRowFormulas = useCallback((row: RowData): RowData => {
@@ -359,17 +365,6 @@ export function ProcurementSpreadsheet({ session }: Props) {
       return;
     }
     
-    // Validate Handler Name — only for managers (team members save their own requests)
-    if (isManager && handlers.length > 0) {
-      const isValidHandler = handlers.some(
-        (h) => h.name.toLowerCase() === row.nameOfHandler.trim().toLowerCase()
-      );
-      if (!isValidHandler) {
-        toast.error("Handler Name not found. Please enter the correct account name.");
-        return;
-      }
-    }
-
     setSavingId(row.id);
     try {
       const url = row.isNew ? "/api/requests" : `/api/requests/${row.id}`;
@@ -528,19 +523,33 @@ export function ProcurementSpreadsheet({ session }: Props) {
         tabs.length > 1 && (
           <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100/80 rounded-xl border border-slate-200/80">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-2">Employee Filter:</span>
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-3.5 py-1.5 text-xs rounded-lg transition-all font-semibold ${
-                  activeTab === tab
-                    ? "bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white shadow-md shadow-indigo-500/20"
-                    : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/60"
-                }`}
-              >
-                {tab === "All" ? "Master Sheet (Everyone)" : tab}
-              </button>
-            ))}
+            {tabs.map((tab) => {
+              const userObj = handlers.find((h) => h.name === tab);
+              const count = tab === "All" ? null : (userObj?.requestCount ?? null);
+              return (
+                <button
+                  key={tab}
+                  onClick={() => {
+                    setActiveTab(tab);
+                    setPage(1);
+                  }}
+                  className={`px-3.5 py-1.5 text-xs rounded-lg transition-all font-semibold flex items-center gap-1.5 ${
+                    activeTab === tab
+                      ? "bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white shadow-md shadow-indigo-500/20"
+                      : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/60"
+                  }`}
+                >
+                  <span>{tab === "All" ? "Master Sheet (Everyone)" : tab}</span>
+                  {count != null && count > 0 && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                      activeTab === tab ? "bg-white/20 text-white" : "bg-indigo-50 text-indigo-700"
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )
       )}
@@ -552,13 +561,19 @@ export function ProcurementSpreadsheet({ session }: Props) {
           className="overflow-x-auto overflow-y-auto custom-scrollbar flex-1" 
           style={{ maxHeight: "calc(100vh - 315px)", minHeight: "380px" }}
         >
+          <datalist id="handler-suggestions">
+            {handlers.map((h) => (
+              <option key={h.id} value={h.name} />
+            ))}
+          </datalist>
           <table className="w-full text-sm table-fixed min-w-[5000px] border-collapse">
             <thead>
               <tr>
                 <th className="px-3 py-3 text-xs font-bold text-indigo-700 uppercase tracking-wider border-r border-indigo-200 border-b border-indigo-200 bg-indigo-100 sticky top-0 left-0 z-30 text-center w-28 select-none shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
                   Actions
                 </th>
-                <th className={headerCellClass} style={{ width: "150px" }}>{isManager ? "Employee Name" : "Created By"}</th>
+                <th className={headerCellClass} style={{ width: "140px" }}>Created By</th>
+                <th className={headerCellClass} style={{ width: "150px" }}>Handler Name</th>
                 <th className={headerCellClass} style={{ width: "135px" }}>Added Time</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Source No</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Source Date *</th>
@@ -582,7 +597,6 @@ export function ProcurementSpreadsheet({ session }: Props) {
                 <th className={headerCellClass} style={{ width: "150px" }}>Material Received Date</th>
                 <th className={headerCellClass} style={{ width: "150px" }}>Work Completion Date</th>
                 <th className={headerCellClass} style={{ width: "150px" }}>Source Cancellation Date</th>
-                <th className={headerCellClass} style={{ width: "150px" }}>Name of Handler *</th>
                 <th className={headerCellClass} style={{ width: "160px" }}>Current Status by Handler</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Current Stage</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Pending From</th>
@@ -698,9 +712,22 @@ export function ProcurementSpreadsheet({ session }: Props) {
                       </div>
                     </td>
 
-                    {/* Employee Reference Name */}
+                    {/* Created By */}
                     <td className="px-3 py-2 border-r border-b border-slate-100 text-[12px] font-semibold text-slate-700 whitespace-nowrap">
                       {row.createdBy?.name ?? "System"}
+                    </td>
+
+                    {/* Handler Name */}
+                    <td className={bodyCellClass}>
+                      <input
+                        type="text"
+                        list="handler-suggestions"
+                        value={row.nameOfHandler || ""}
+                        disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                        onChange={(e) => handleCellChange(row.id, "nameOfHandler", e.target.value)}
+                        className={cellInputClass}
+                        placeholder="Handler name..."
+                      />
                     </td>
 
                     {/* Added Time */}
@@ -930,17 +957,6 @@ export function ProcurementSpreadsheet({ session }: Props) {
                         className={cellInputClass}
                         title="Source Cancellation Date"
                       />
-                    </td>
-
-                    {/* Name of Handler */}
-                    <td className={bodyCellClass}>
-                      <select value={row.nameOfHandler} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
-                        onChange={(e) => handleCellChange(row.id, "nameOfHandler", e.target.value)}
-                        className={cellInputClass}
-                      >
-                        <option value="">Select handler...</option>
-                        {handlers.map(h => <option key={h.id} value={h.name}>{h.name}</option>)}
-                      </select>
                     </td>
 
                     {/* Current Status by Handler */}

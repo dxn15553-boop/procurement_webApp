@@ -12,7 +12,17 @@ export default async function EmployeesPage() {
 
   const [employees, departments] = await Promise.all([
     prisma.user.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        email: {
+          notIn: [
+            "sarah@procurex.com",
+            "john@procurex.com",
+            "team@procurex.com",
+            "team2@procurex.com",
+          ],
+        },
+      },
       include: {
         department: { select: { name: true } },
       },
