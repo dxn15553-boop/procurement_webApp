@@ -573,12 +573,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
                   Actions
                 </th>
                 <th className={headerCellClass} style={{ width: "140px" }}>Created By</th>
-                <th className={headerCellClass} style={{ width: "150px" }}>Handler Name</th>
                 <th className={headerCellClass} style={{ width: "135px" }}>Added Time</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Source No</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Source Date *</th>
                 <th className={headerCellClass} style={{ width: "260px" }}>Source Description *</th>
                 <th className={headerCellClass} style={{ width: "160px" }}>Department *</th>
+                <th className={headerCellClass} style={{ width: "150px" }}>Name of Handler</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Comparative Date</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>PR Number</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>PR Date</th>
@@ -717,19 +717,6 @@ export function ProcurementSpreadsheet({ session }: Props) {
                       {row.createdBy?.name ?? "System"}
                     </td>
 
-                    {/* Handler Name */}
-                    <td className={bodyCellClass}>
-                      <input
-                        type="text"
-                        list="handler-suggestions"
-                        value={row.nameOfHandler || ""}
-                        disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
-                        onChange={(e) => handleCellChange(row.id, "nameOfHandler", e.target.value)}
-                        className={cellInputClass}
-                        placeholder="Handler name..."
-                      />
-                    </td>
-
                     {/* Added Time */}
                     <td className="px-3 py-2 border-r border-b border-slate-100 align-middle text-center whitespace-nowrap bg-slate-50/40 select-none" title={row.createdAt ? formatDate(row.createdAt, "dd MMM yyyy, hh:mm:ss a") : ""}>
                       {row.createdAt ? (
@@ -783,6 +770,19 @@ export function ProcurementSpreadsheet({ session }: Props) {
                         onChange={(e) => handleCellChange(row.id, "departmentName", e.target.value)}
                         className={cellInputClass}
                         placeholder="e.g. Nutraceutical"
+                      />
+                    </td>
+
+                    {/* Name of Handler */}
+                    <td className={bodyCellClass}>
+                      <input
+                        type="text"
+                        list="handler-suggestions"
+                        value={row.nameOfHandler || ""}
+                        disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                        onChange={(e) => handleCellChange(row.id, "nameOfHandler", e.target.value)}
+                        className={cellInputClass}
+                        placeholder="Handler name..."
                       />
                     </td>
 

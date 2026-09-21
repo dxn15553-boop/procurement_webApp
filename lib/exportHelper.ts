@@ -6,11 +6,11 @@ export const UNIFORM_REPORT_HEADERS = [
   "Source Date",
   "Source Description",
   "Department",
+  "Name of Handler",
   "Vendor Name",
   "Created By",
   "Current Stage",
   "Overall SLA Status",
-  "Name of Handler",
   "Handler Status",
   "Pending From Date",
   "Pending Days",
@@ -61,11 +61,11 @@ export function mapRequestToUniformRow(r: any) {
     formatDateStr(r.sourceDate),
     r.sourceDescription ?? "",
     r.department?.name ?? r.departmentName ?? "",
+    r.nameOfHandler ?? "",
     r.vendor?.name ?? r.vendorName ?? "",
     r.createdBy?.name ?? r.createdByName ?? "System",
     r.currentStage ?? "",
     (r.slaStatus ?? "").replace("_", " "),
-    r.nameOfHandler ?? "",
     r.currentStatusByHandler ?? "",
     formatDateStr(r.pendingFrom),
     r.pendingDays ?? "",
@@ -165,11 +165,11 @@ export function generateImportTemplate() {
     todayStr,                        // Source Date
     "Standard Office Laptop & Dock", // Source Description
     "IT Department",                 // Department
+    "John Doe",                      // Name of Handler
     "Dell Technologies",             // Vendor Name
     "System",                        // Created By
     "CS",                            // Current Stage
     "ON TRACK",                      // Overall SLA Status
-    "John Doe",                      // Name of Handler
     "Waiting for vendor quotes",     // Handler Status
     todayStr,                        // Pending From Date
     0,                               // Pending Days
