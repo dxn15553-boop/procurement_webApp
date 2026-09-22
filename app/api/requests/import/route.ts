@@ -6,6 +6,7 @@ import { parse, isValid } from "date-fns";
 import { calculateAllFields } from "@/lib/calculations";
 import { generateSourceNo } from "@/lib/utils";
 import type { CurrentStage } from "@/types";
+import { resolveDepartmentId, resolveVendorId } from "@/lib/departmentHelper";
 
 function parseDate(val: any): Date | null {
   if (val === undefined || val === null || val === "") return null;
@@ -177,6 +178,24 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
   const vendorCache = new Map<string, string>();
   const userCache = new Map<string, string | null>();
 
+  // Pre-load all existing departments and vendors into cache
+  const [existingDepts, existingVendors] = await Promise.all([
+    prisma.department.findMany({ select: { id: true, name: true, code: true } }),
+    prisma.vendor.findMany({ select: { id: true, name: true, code: true } }),
+  ]);
+
+  for (const d of existingDepts) {
+    deptCache.set(d.id, d.id);
+    deptCache.set(d.name.toLowerCase().trim(), d.id);
+    deptCache.set(d.code.toLowerCase().trim(), d.id);
+  }
+
+  for (const v of existingVendors) {
+    vendorCache.set(v.id, v.id);
+    vendorCache.set(v.name.toLowerCase().trim(), v.id);
+    vendorCache.set(v.code.toLowerCase().trim(), v.id);
+  }
+
   for (const row of rows) {
     // 1. Extract Source No with extensive alias support
     const rawSourceNo = getValue(row, [
@@ -212,28 +231,26 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
 
       let deptId = existing?.departmentId || null;
       if (departmentName) {
-        deptId = deptCache.get(departmentName) || null;
+        const deptKey = departmentName.toLowerCase().trim();
+        deptId = deptCache.get(deptKey) || null;
         if (!deptId) {
-          const code = cleanCode(departmentName) || "DEPT";
-          const dept = await prisma.department.upsert({
-            where: { code },
-            update: { name: departmentName },
-            create: { name: departmentName, code },
-          });
-          deptId = dept.id;
-          deptCache.set(departmentName, deptId);
+          deptId = await resolveDepartmentId(departmentName);
+          if (deptId) {
+            deptCache.set(deptKey, deptId);
+            deptCache.set(departmentName, deptId);
+          }
         }
       }
 
       // Fallback for new records if department wasn't specified
       if (!deptId && !existing) {
-        const defaultCode = "GEN";
-        const defaultDept = await prisma.department.upsert({
-          where: { code: defaultCode },
-          update: {},
-          create: { name: "General", code: defaultCode },
-        });
-        deptId = defaultDept.id;
+        deptId = deptCache.get("general") || null;
+        if (!deptId) {
+          deptId = await resolveDepartmentId("General");
+          if (deptId) {
+            deptCache.set("general", deptId);
+          }
+        }
       }
 
       const rawVendor = getValue(row, ["Vendor Name", "Vendor", "vendor_name", "vendor"]);
@@ -241,16 +258,14 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
 
       let vendId = existing?.vendorId || null;
       if (vendorName) {
-        vendId = vendorCache.get(vendorName) || null;
+        const vendorKey = vendorName.toLowerCase().trim();
+        vendId = vendorCache.get(vendorKey) || null;
         if (!vendId) {
-          const code = cleanCode(vendorName) || "VEND";
-          const vend = await prisma.vendor.upsert({
-            where: { code },
-            update: { name: vendorName },
-            create: { name: vendorName, code },
-          });
-          vendId = vend.id;
-          vendorCache.set(vendorName, vendId);
+          vendId = await resolveVendorId(vendorName);
+          if (vendId) {
+            vendorCache.set(vendorKey, vendId);
+            vendorCache.set(vendorName, vendId);
+          }
         }
       }
 

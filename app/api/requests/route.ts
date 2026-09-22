@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { procurementSchema } from "@/lib/validations";
 import { calculateAllFields } from "@/lib/calculations";
 import { parse, isValid, parseISO } from "date-fns";
+import { resolveDepartmentId, resolveVendorId } from "@/lib/departmentHelper";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -208,29 +209,11 @@ export async function POST(req: Request) {
   try {
     const data = parsed.data;
 
-  let departmentId = data.departmentId;
-  if (departmentId && departmentId.trim().length > 0 && (!departmentId.startsWith("c") || departmentId.length !== 25)) {
-    const code = cleanCode(departmentId);
-    const dept = await prisma.department.upsert({
-      where: { code },
-      update: {},
-      create: { name: departmentId, code },
-    });
-    departmentId = dept.id;
-  }
-
-  let vendorId = data.vendorId || null;
-  if (vendorId && vendorId.trim().length > 0 && (!vendorId.startsWith("c") || vendorId.length !== 25)) {
-    const code = cleanCode(vendorId);
-    const vend = await prisma.vendor.upsert({
-      where: { code },
-      update: {},
-      create: { name: vendorId, code },
-    });
-    vendorId = vend.id;
-  } else {
-    vendorId = null;
-  }
+    const departmentId = await resolveDepartmentId(data.departmentId);
+    if (!departmentId) {
+      return NextResponse.json({ error: { message: "Valid Department is required" } }, { status: 400 });
+    }
+    const vendorId = await resolveVendorId(data.vendorId);
 
   const sourceDate = parseDate(data.sourceDate) || new Date();
   const comparativeDate = parseDate(data.comparativeDate);

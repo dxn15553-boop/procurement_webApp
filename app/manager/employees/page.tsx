@@ -30,11 +30,20 @@ export default async function EmployeesPage() {
     }),
     prisma.department.findMany({
       where: { isActive: true },
+      orderBy: { name: "asc" },
     }),
   ]);
 
   // Strip only the hash — keep tempPassword visible to Manager
   const safeEmployees = employees.map(({ passwordHash: _pw, ...e }) => e);
+
+  const deptSeen = new Set<string>();
+  const uniqueDepartments = departments.filter((d) => {
+    const key = d.name.trim().toLowerCase();
+    if (deptSeen.has(key)) return false;
+    deptSeen.add(key);
+    return true;
+  });
 
   return (
     <div className="space-y-6 fade-in">
@@ -42,7 +51,7 @@ export default async function EmployeesPage() {
         <h1 className="text-xl font-bold text-foreground">Employees</h1>
         <p className="text-xs text-muted-foreground mt-0.5">Manage procurement handlers, roles and access control</p>
       </div>
-      <EmployeeListClient initialEmployees={safeEmployees} departments={departments} />
+      <EmployeeListClient initialEmployees={safeEmployees} departments={uniqueDepartments} />
     </div>
   );
 }

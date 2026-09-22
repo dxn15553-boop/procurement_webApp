@@ -10,10 +10,26 @@ export default async function ReportsPage() {
   const session = await auth();
   if (!session?.user || session.user.role !== "MANAGER") redirect("/login");
 
-  const [departments, vendors] = await Promise.all([
-    prisma.department.findMany({ where: { isActive: true } }),
-    prisma.vendor.findMany({ where: { isActive: true } }),
+  const [departmentsRaw, vendorsRaw] = await Promise.all([
+    prisma.department.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
+    prisma.vendor.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
   ]);
+
+  const deptSeen = new Set<string>();
+  const departments = departmentsRaw.filter((d) => {
+    const key = d.name.trim().toLowerCase();
+    if (deptSeen.has(key)) return false;
+    deptSeen.add(key);
+    return true;
+  });
+
+  const vendSeen = new Set<string>();
+  const vendors = vendorsRaw.filter((v) => {
+    const key = v.name.trim().toLowerCase();
+    if (vendSeen.has(key)) return false;
+    vendSeen.add(key);
+    return true;
+  });
 
   return (
     <div className="space-y-6 fade-in max-w-4xl mx-auto">
