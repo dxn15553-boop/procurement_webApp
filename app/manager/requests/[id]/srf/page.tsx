@@ -215,36 +215,62 @@ export default async function RequestSRFPage({
               </thead>
               <tbody className="divide-y divide-slate-200">
                 <tr>
-                  <td className="py-2.5 px-3 font-semibold text-slate-800">User Department (Initiator)</td>
+                  <td className="py-2.5 px-3 font-semibold text-slate-800">1. Originating Dept (Initiator)</td>
                   <td className="py-2.5 px-3 text-slate-600">Requisition Submission</td>
                   <td className="py-2.5 px-3 font-bold text-emerald-600">SUBMITTED</td>
                   <td className="py-2.5 px-3 text-slate-500 font-mono">{srfDateFormatted}</td>
                 </tr>
                 <tr>
-                  <td className="py-2.5 px-3 font-semibold text-slate-800">Head of Department (HOD)</td>
-                  <td className="py-2.5 px-3 text-slate-600">Departmental Review & Acceptance</td>
+                  <td className="py-2.5 px-3 font-semibold text-slate-800">2. Head of Department (HOD / FPIC)</td>
+                  <td className="py-2.5 px-3 text-slate-600">Departmental Review &amp; Acceptance</td>
                   <td className="py-2.5 px-3 font-bold text-emerald-600">ACCEPTED</td>
                   <td className="py-2.5 px-3 text-slate-500 font-mono">{srfDateFormatted}</td>
                 </tr>
                 <tr>
-                  <td className="py-2.5 px-3 font-semibold text-slate-800">Regional Coordinator</td>
-                  <td className="py-2.5 px-3 text-slate-600">Regional Budget & Sourcing Endorsement</td>
+                  <td className="py-2.5 px-3 font-semibold text-slate-800">3. Regional Coordinator</td>
+                  <td className="py-2.5 px-3 text-slate-600">Initial Review &amp; Technical Routing</td>
                   <td className="py-2.5 px-3 font-bold text-emerald-600">ACCEPTED</td>
                   <td className="py-2.5 px-3 text-slate-500 font-mono">{srfDateFormatted}</td>
                 </tr>
                 <tr>
-                  <td className="py-2.5 px-3 font-semibold text-slate-800">Final Head of Approvals</td>
-                  <td className="py-2.5 px-3 text-slate-600">Final Corporate Sanction</td>
+                  <td className="py-2.5 px-3 font-semibold text-slate-800">4. User Department(s)</td>
+                  <td className="py-2.5 px-3 text-slate-600">Cross-Department Technical Concurrence</td>
+                  <td className="py-2.5 px-3 font-bold text-emerald-600">REVIEWED</td>
+                  <td className="py-2.5 px-3 text-slate-500 font-mono">{srfDateFormatted}</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 font-semibold text-slate-800">5. Regional Coordinator</td>
+                  <td className="py-2.5 px-3 text-slate-600">Budget Verification &amp; Endorsement</td>
+                  <td className="py-2.5 px-3 font-bold text-emerald-600">ENDORSED</td>
+                  <td className="py-2.5 px-3 text-slate-500 font-mono">{srfDateFormatted}</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 font-semibold text-slate-800">6. Regional Head</td>
+                  <td className="py-2.5 px-3 text-slate-600">Corporate Sanction &amp; Approval</td>
+                  <td className="py-2.5 px-3 font-bold text-emerald-600">APPROVED</td>
+                  <td className="py-2.5 px-3 text-slate-500 font-mono">{srfDateFormatted}</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 font-semibold text-slate-800">7. Procurement Manager</td>
+                  <td className="py-2.5 px-3 text-slate-600">Procurement Authorization &amp; Release</td>
                   <td className="py-2.5 px-3 font-bold text-emerald-600">APPROVED</td>
                   <td className="py-2.5 px-3 text-slate-500 font-mono">{srfDateFormatted}</td>
                 </tr>
                 <tr className="bg-indigo-50/40">
-                  <td className="py-2.5 px-3 font-bold text-indigo-900">Procurement Section Manager</td>
+                  <td className="py-2.5 px-3 font-bold text-indigo-900">8. Procurement Section Manager</td>
                   <td className="py-2.5 px-3 text-slate-700 font-medium">
-                    SRF Released & Assigned to <span className="font-bold text-indigo-700">{request.nameOfHandler || "Team Member"}</span>
+                    SRF Released &amp; Assigned to <span className="font-bold text-indigo-700">{request.nameOfHandler || "Team Member"}</span>
                   </td>
                   <td className="py-2.5 px-3 font-extrabold text-indigo-600">ASSIGNED</td>
                   <td className="py-2.5 px-3 text-slate-700 font-mono">{srfDateFormatted}</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 font-semibold text-slate-800">9. Procurement Handler</td>
+                  <td className="py-2.5 px-3 text-slate-600">
+                    Handler Acknowledgment &amp; Sourcing Commencement
+                  </td>
+                  <td className="py-2.5 px-3 font-bold text-indigo-600">IN PROCESS</td>
+                  <td className="py-2.5 px-3 text-slate-500 font-mono">{srfDateFormatted}</td>
                 </tr>
               </tbody>
             </table>
