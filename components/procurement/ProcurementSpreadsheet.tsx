@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Plus, Save, RefreshCw, Trash2, ArrowRight, ChevronLeft, ChevronRight, Upload, FileSpreadsheet, FileText } from "lucide-react";
+import { Plus, Save, RefreshCw, Trash2, ArrowRight, ChevronLeft, ChevronRight, Upload, FileSpreadsheet, FileText, Sparkles, Loader2 } from "lucide-react";
 import { generateSourceNo, formatDate } from "@/lib/utils";
 import { differenceInDays, parseISO, format } from "date-fns";
 import { SLA_THRESHOLDS } from "@/lib/calculations";
@@ -51,11 +51,13 @@ interface RowData {
   slaCS: number;
   slaPR: number;
   slaPO: number;
-  slaPAR: number;
-  slaPDD: number;
   slaMDD: number;
   slaMRD: number;
   slaWCD: number;
+  slaPRL: number;
+  slaPAR: number;
+  slaPDD: number;
+  procurementReceivedDate?: string;
   createdBy?: { id: string; name: string } | null;
 }
 
@@ -79,7 +81,26 @@ export function ProcurementSpreadsheet({ session }: Props) {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const importFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSyncSource = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await fetch("/api/requests/sync-source", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || `Synchronized ${data.count} request(s)`);
+        loadData();
+      } else {
+        toast.error(data.error || "Failed to sync source requests");
+      }
+    } catch {
+      toast.error("Error connecting to Source database");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const [page, setPage] = useState(pageParam);
   const [totalPages, setTotalPages] = useState(1);
@@ -161,11 +182,13 @@ export function ProcurementSpreadsheet({ session }: Props) {
           slaCS: r.slaCS ?? SLA_THRESHOLDS.CS,
           slaPR: r.slaPR ?? SLA_THRESHOLDS.PR,
           slaPO: r.slaPO ?? SLA_THRESHOLDS.PO,
-          slaPAR: r.slaPAR ?? SLA_THRESHOLDS.PAR,
-          slaPDD: r.slaPDD ?? SLA_THRESHOLDS.PDD,
           slaMDD: r.slaMDD ?? SLA_THRESHOLDS.MDD,
           slaMRD: r.slaMRD ?? SLA_THRESHOLDS.MRD,
           slaWCD: r.slaWCD ?? SLA_THRESHOLDS.WCD,
+          slaPRL: r.slaPRL ?? SLA_THRESHOLDS.PRL,
+          slaPAR: r.slaPAR ?? SLA_THRESHOLDS.PAR,
+          slaPDD: r.slaPDD ?? SLA_THRESHOLDS.PDD,
+          procurementReceivedDate: r.procurementReceivedDate ? r.procurementReceivedDate.split("T")[0] : "",
           createdBy: r.createdBy ?? null,
         }));
         
@@ -258,15 +281,36 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
     let currentStage = row.currentStage || "CS";
     if (row.sourceCancellationDate) currentStage = "CANCELLED";
-    else if (row.workCompletionDate) currentStage = "COMPLETED";
+    else if (row.paymentDoneDate) currentStage = "COMPLETED";
+    else if (row.paymentApprovalDate) currentStage = "PDD";
+    else if (row.prlDate) currentStage = "PAR";
+    else if (row.workCompletionDate) currentStage = "PRL";
     else if (row.materialReceivedDate) currentStage = "WCD";
     else if (row.materialDispatchDate) currentStage = "MRD";
-    else if (row.paymentDoneDate) currentStage = "MDD";
-    else if (row.paymentApprovalDate) currentStage = "PDD";
-    else if (row.poDate) currentStage = "PAR";
+    else if (row.poDate) currentStage = "MDD";
     else if (row.prDate) currentStage = "PO";
     else if (row.comparativeDate) currentStage = "PR";
     else currentStage = "CS";
+
+    let prStatus = row.prStatus;
+    if ((row.prDate || row.prNumber) && (!prStatus || prStatus === "PENDING")) {
+      prStatus = "APPROVED";
+    }
+
+    let csStatus = row.csStatus;
+    if (row.comparativeDate && (!csStatus || csStatus === "PENDING")) {
+      csStatus = "COMPLETED";
+    }
+
+    let poStatus = row.poStatus;
+    if ((row.poDate || row.poNumber) && (!poStatus || poStatus === "PENDING")) {
+      poStatus = "COMPLETED";
+    }
+
+    let paymentStatus = row.paymentStatus;
+    if (row.paymentDoneDate && (!paymentStatus || paymentStatus === "PENDING")) {
+      paymentStatus = "COMPLETED";
+    }
 
     let slaStatus = "ON_TRACK";
     if (currentStage && currentStage !== "COMPLETED" && currentStage !== "CANCELLED") {
@@ -281,7 +325,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
       slaStatus = "COMPLETED";
     }
 
-    return { ...row, daysForCS, daysForPR, daysForPO, daysForPayment, noOfDays, pendingDays, currentStage, slaStatus, isDirty: true };
+    return { ...row, daysForCS, daysForPR, daysForPO, daysForPayment, noOfDays, pendingDays, currentStage, slaStatus, prStatus, csStatus, poStatus, paymentStatus, isDirty: true };
   }, []);
 
   // Handle cell edit change
@@ -295,14 +339,36 @@ export function ProcurementSpreadsheet({ session }: Props) {
     );
   };
 
+  // Set of duplicated source numbers in the active rows
+  const duplicateSourceNos = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      const sn = (r.sourceNo || "").trim().toUpperCase();
+      if (!sn) continue;
+      counts.set(sn, (counts.get(sn) || 0) + 1);
+    }
+    const dups = new Set<string>();
+    counts.forEach((count, sn) => {
+      if (count > 1) dups.add(sn);
+    });
+    return dups;
+  }, [rows]);
+
   // Add new empty row at top
   const handleAddRow = () => {
+    let newSourceNo = generateSourceNo();
+    let attempts = 0;
+    while (rows.some(r => (r.sourceNo || "").trim().toUpperCase() === newSourceNo.toUpperCase()) && attempts < 20) {
+      newSourceNo = generateSourceNo();
+      attempts++;
+    }
+
     const newRow: RowData = {
       id: `new-${Date.now()}`,
       isNew: true,
       isDirty: true,
       createdAt: new Date().toISOString(),
-      sourceNo: generateSourceNo(),
+      sourceNo: newSourceNo,
       sourceDate: format(new Date(), "yyyy-MM-dd"),
       sourceDescription: "",
       departmentName: "",
@@ -338,11 +404,13 @@ export function ProcurementSpreadsheet({ session }: Props) {
       slaCS: SLA_THRESHOLDS.CS,
       slaPR: SLA_THRESHOLDS.PR,
       slaPO: SLA_THRESHOLDS.PO,
-      slaPAR: SLA_THRESHOLDS.PAR,
-      slaPDD: SLA_THRESHOLDS.PDD,
       slaMDD: SLA_THRESHOLDS.MDD,
       slaMRD: SLA_THRESHOLDS.MRD,
       slaWCD: SLA_THRESHOLDS.WCD,
+      slaPRL: SLA_THRESHOLDS.PRL,
+      slaPAR: SLA_THRESHOLDS.PAR,
+      slaPDD: SLA_THRESHOLDS.PDD,
+      procurementReceivedDate: format(new Date(), "yyyy-MM-dd"),
       createdBy: { id: session.user.id, name: session.user.name ?? "Me" },
     };
 
@@ -356,6 +424,11 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
   // Save row to Database
   const handleSaveRow = async (row: RowData) => {
+    const cleanSourceNo = (row.sourceNo || "").trim();
+    if (!cleanSourceNo) {
+      toast.error("Source No is required before saving.");
+      return;
+    }
     if (!row.sourceDescription) {
       toast.error("Source Description is required before saving.");
       return;
@@ -363,6 +436,31 @@ export function ProcurementSpreadsheet({ session }: Props) {
     if (!row.departmentName) {
       toast.error("Department is required before saving.");
       return;
+    }
+
+    // 1. In-memory duplicate check against other rows in the spreadsheet
+    const duplicateInTable = rows.find(
+      (r) => r.id !== row.id && (r.sourceNo || "").trim().toUpperCase() === cleanSourceNo.toUpperCase()
+    );
+    if (duplicateInTable) {
+      toast.error("Duplicate Source Number Detected!", {
+        description: `Source No "${cleanSourceNo}" is already present in another row of this table. Duplicate source numbers are not allowed.`,
+      });
+      return;
+    }
+
+    // 2. Database duplicate check via API
+    try {
+      const checkRes = await fetch(`/api/requests/check-duplicate?sourceNo=${encodeURIComponent(cleanSourceNo)}&excludeId=${row.isNew ? "" : row.id}`);
+      const checkData = await checkRes.json();
+      if (checkData.exists) {
+        toast.error("Duplicate Source Number Detected!", {
+          description: checkData.message || `Source No "${cleanSourceNo}" already exists in the database. Duplicate numbers are not accepted.`,
+        });
+        return;
+      }
+    } catch {
+      // Backend POST/PUT will still validate
     }
     
     setSavingId(row.id);
@@ -373,6 +471,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
       // Map spreadsheet text fields to database fields expected by Prisma schemas
       const payload = {
         ...row,
+        sourceNo: cleanSourceNo,
         departmentId: row.departmentName, // Text department name maps dynamically on backend
         vendorId: row.vendorName, // Text vendor name maps dynamically on backend
         comparativeDate: row.comparativeDate || null,
@@ -506,22 +605,34 @@ export function ProcurementSpreadsheet({ session }: Props) {
     <div className="space-y-4 flex flex-col h-full">
       {/* Spreadsheet Control Header */}
       {!isManager ? (
-        <div className="flex justify-between items-center bg-slate-900 text-slate-200 p-4 rounded-xl shadow-md">
+        <div className="flex flex-wrap justify-between items-center gap-3 bg-slate-900 text-slate-200 p-4 rounded-xl shadow-md">
           <p className="text-xs font-medium text-slate-300 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             Spreadsheet Mode: Type directly into any cell to edit. Click the save icon to persist changes.
           </p>
-          <Link
-            href="/team/requests/new"
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 text-white hover:from-indigo-600 hover:to-violet-700 shadow-md shadow-indigo-500/25 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Add Row
-          </Link>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handleSyncSource}
+              disabled={isSyncing}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg border border-indigo-400/40 bg-indigo-500/20 text-indigo-200 hover:bg-indigo-500/30 hover:text-white transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+              title="Synchronize assigned requests directly from Source App"
+            >
+              <Sparkles className={`w-3.5 h-3.5 text-indigo-400 ${isSyncing ? "animate-spin" : ""}`} />
+              <span>{isSyncing ? "Syncing..." : "Sync Source Requests"}</span>
+            </button>
+            <Link
+              href="/team/requests/new"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 text-white hover:from-indigo-600 hover:to-violet-700 shadow-md shadow-indigo-500/25 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              Add Row
+            </Link>
+          </div>
         </div>
       ) : (
-        tabs.length > 1 && (
-          <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100/80 rounded-xl border border-slate-200/80">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-1.5 bg-slate-100/80 rounded-xl border border-slate-200/80">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-2">Employee Filter:</span>
             {tabs.map((tab) => {
               const userObj = handlers.find((h) => h.name === tab);
@@ -533,7 +644,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     setActiveTab(tab);
                     setPage(1);
                   }}
-                  className={`px-3.5 py-1.5 text-xs rounded-lg transition-all font-semibold flex items-center gap-1.5 ${
+                  className={`px-3.5 py-1.5 text-xs rounded-lg transition-all font-semibold flex items-center gap-1.5 cursor-pointer ${
                     activeTab === tab
                       ? "bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white shadow-md shadow-indigo-500/20"
                       : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/60"
@@ -551,14 +662,24 @@ export function ProcurementSpreadsheet({ session }: Props) {
               );
             })}
           </div>
-        )
+          <button
+            type="button"
+            onClick={handleSyncSource}
+            disabled={isSyncing}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50 transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer ml-auto"
+            title="Sync assigned requests across all handlers from Source App"
+          >
+            <Sparkles className={`w-3.5 h-3.5 text-indigo-600 ${isSyncing ? "animate-spin" : ""}`} />
+            <span>{isSyncing ? "Syncing Source..." : "Sync Source Requests"}</span>
+          </button>
+        </div>
       )}
 
       {/* Table Card Container */}
       <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.06)] flex flex-col flex-1">
         <div 
           ref={tableContainerRef}
-          className="overflow-x-auto overflow-y-auto custom-scrollbar flex-1" 
+          className="overflow-x-auto overflow-y-auto custom-scrollbar flex-1 [WebkitOverflowScrolling:touch]" 
           style={{ maxHeight: "calc(100vh - 315px)", minHeight: "380px" }}
         >
           <datalist id="handler-suggestions">
@@ -627,6 +748,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                 <th className={headerCellClass} style={{ width: "80px" }}>MDD (SLA)</th>
                 <th className={headerCellClass} style={{ width: "80px" }}>MRD (SLA)</th>
                 <th className={headerCellClass} style={{ width: "80px" }}>WCD (SLA)</th>
+                <th className={headerCellClass} style={{ width: "80px" }}>PRL (SLA)</th>
                 <th className={headerCellClass} style={{ width: "80px" }}>PAR (SLA)</th>
                 <th className={headerCellClass} style={{ width: "80px" }}>PDD (SLA)</th>
               </tr>
@@ -748,17 +870,26 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     </td>
 
                     {/* Source No */}
-                    <td className={bodyCellClass}>
-                      <input type="text" value={row.sourceNo} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (/[^0-9]/.test(val)) {
-                            toast.error("Source No. can only contain numbers");
-                          }
-                          handleCellChange(row.id, "sourceNo", val.replace(/[^0-9]/g, ''));
-                        }}
-                        className={cellInputClass}
-                      />
+                    <td className={`${bodyCellClass} ${duplicateSourceNos.has((row.sourceNo || "").trim().toUpperCase()) ? "bg-red-50/70" : ""}`}>
+                      <div className="relative w-full h-full flex items-center">
+                        <input
+                          type="text"
+                          value={row.sourceNo}
+                          disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                          onChange={(e) => {
+                            const val = e.target.value.toUpperCase();
+                            handleCellChange(row.id, "sourceNo", val);
+                          }}
+                          className={`${cellInputClass} ${duplicateSourceNos.has((row.sourceNo || "").trim().toUpperCase()) ? "!border-red-400 !text-red-700 font-bold !bg-red-50" : ""}`}
+                          placeholder="SRC-..."
+                          title={duplicateSourceNos.has((row.sourceNo || "").trim().toUpperCase()) ? "Duplicate Source No detected in spreadsheet!" : undefined}
+                        />
+                        {duplicateSourceNos.has((row.sourceNo || "").trim().toUpperCase()) && (
+                          <span className="absolute right-1.5 text-[9px] font-extrabold uppercase px-1 py-0.5 rounded bg-red-200 text-red-800 pointer-events-none tracking-tight">
+                            DUP
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Source Date (text input) */}
@@ -857,13 +988,17 @@ export function ProcurementSpreadsheet({ session }: Props) {
                       />
                     </td>
 
-                    {/* PR Status (text input) */}
+                    {/* PR Status (select dropdown) */}
                     <td className={bodyCellClass}>
-                      <input type="text" value={row.prStatus} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <select value={row.prStatus === "COMPLETED" ? "APPROVED" : row.prStatus} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "prStatus", e.target.value)}
                         className={cellInputClass}
-                        placeholder="PENDING..."
-                      />
+                      >
+                        <option value="PENDING">PENDING</option>
+                        <option value="IN_PROGRESS">IN_PROGRESS</option>
+                        <option value="APPROVED">APPROVED</option>
+                        <option value="REJECTED">REJECTED</option>
+                      </select>
                     </td>
 
                     {/* Days for PR */}
@@ -1093,6 +1228,14 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     <td className={bodyCellClass}>
                       <input type="number" value={row.slaWCD} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "slaWCD", parseInt(e.target.value) || 0)}
+                        className={cellInputClass}
+                      />
+                    </td>
+
+                    {/* PRL (SLA) */}
+                    <td className={bodyCellClass}>
+                      <input type="number" value={row.slaPRL} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                        onChange={(e) => handleCellChange(row.id, "slaPRL", parseInt(e.target.value) || 0)}
                         className={cellInputClass}
                       />
                     </td>

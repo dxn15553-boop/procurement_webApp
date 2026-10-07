@@ -55,6 +55,7 @@ function cleanStage(val: string | null | undefined, fallback: CurrentStage = "CS
   const v = val.toString().toUpperCase().trim();
   if (v.includes("CANCEL")) return "CANCELLED";
   if (v.includes("COMPLET")) return "COMPLETED";
+  if (v.includes("PRL") || v.includes("PRE-RECEIPT") || v.includes("LOGISTICS")) return "PRL";
   if (v.includes("WCD") || v.includes("WORK COMPLETION")) return "WCD";
   if (v.includes("MRD") || v.includes("MATERIAL RECEIVED")) return "MRD";
   if (v.includes("MDD") || v.includes("MATERIAL DISPATCH")) return "MDD";
@@ -177,6 +178,7 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
   const deptCache = new Map<string, string>();
   const vendorCache = new Map<string, string>();
   const userCache = new Map<string, string | null>();
+  const seenInFile = new Map<string, string>(); // sourceNo lowercase -> request id
 
   // Pre-load all existing departments and vendors into cache
   const [existingDepts, existingVendors] = await Promise.all([
@@ -220,10 +222,18 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
       }
     }
 
-      // Check if record exists in the main Procurement Database
-      const existing = await prisma.procurementRequest.findUnique({
-        where: { sourceNo }
+    const sourceNoKey = sourceNo.toLowerCase().trim();
+
+    // Check if record exists in the main Procurement Database or was seen earlier in this import
+    let existing = null;
+    if (seenInFile.has(sourceNoKey)) {
+      const seenId = seenInFile.get(sourceNoKey)!;
+      existing = await prisma.procurementRequest.findUnique({ where: { id: seenId } });
+    } else {
+      existing = await prisma.procurementRequest.findFirst({
+        where: { sourceNo: { equals: sourceNo, mode: "insensitive" } }
       });
+    }
 
       // 2. Extract Department & Vendor
       const rawDept = getValue(row, ["Department", "Department Name", "dept", "department_name", "department"]);
@@ -398,11 +408,15 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
       const slaCS = parseNullableInt(getValue(row, ["CS (SLA Target)", "slaCS", "SLA CS", "CS SLA", "CS"])) ?? existing?.slaCS ?? null;
       const slaPR = parseNullableInt(getValue(row, ["PR (SLA Target)", "slaPR", "SLA PR", "PR SLA", "PR"])) ?? existing?.slaPR ?? null;
       const slaPO = parseNullableInt(getValue(row, ["PO (SLA Target)", "slaPO", "SLA PO", "PO SLA", "PO"])) ?? existing?.slaPO ?? null;
-      const slaPAR = parseNullableInt(getValue(row, ["PAR (SLA Target)", "slaPAR", "SLA PAR", "PAR SLA", "PAR"])) ?? existing?.slaPAR ?? null;
-      const slaPDD = parseNullableInt(getValue(row, ["PDD (SLA Target)", "slaPDD", "SLA PDD", "PDD SLA", "PDD"])) ?? existing?.slaPDD ?? null;
       const slaMDD = parseNullableInt(getValue(row, ["MDD (SLA Target)", "slaMDD", "SLA MDD", "MDD SLA", "MDD"])) ?? existing?.slaMDD ?? null;
       const slaMRD = parseNullableInt(getValue(row, ["MRD (SLA Target)", "slaMRD", "SLA MRD", "MRD SLA", "MRD"])) ?? existing?.slaMRD ?? null;
       const slaWCD = parseNullableInt(getValue(row, ["WCD (SLA Target)", "slaWCD", "SLA WCD", "WCD SLA", "WCD"])) ?? existing?.slaWCD ?? null;
+      const slaPRL = parseNullableInt(getValue(row, ["PRL (SLA Target)", "slaPRL", "SLA PRL", "PRL SLA", "PRL"])) ?? existing?.slaPRL ?? null;
+      const slaPAR = parseNullableInt(getValue(row, ["PAR (SLA Target)", "slaPAR", "SLA PAR", "PAR SLA", "PAR"])) ?? existing?.slaPAR ?? null;
+      const slaPDD = parseNullableInt(getValue(row, ["PDD (SLA Target)", "slaPDD", "SLA PDD", "PDD SLA", "PDD"])) ?? existing?.slaPDD ?? null;
+
+      const rawProcDate = getValue(row, ["Procurement Received Date", "Procurement Date", "procurement_received_date"]);
+      const procurementReceivedDate = rawProcDate !== undefined ? parseDate(rawProcDate) : (existing ? existing.procurementReceivedDate : (sourceDate || new Date()));
 
       // 9. Calculate dynamic fields and SLA
       const calc = calculateAllFields({
@@ -457,11 +471,14 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
             slaCS,
             slaPR,
             slaPO,
-            slaPAR,
-            slaPDD,
             slaMDD,
             slaMRD,
             slaWCD,
+            slaPRL,
+            slaPAR,
+            slaPDD,
+            procurementReceivedDate,
+            isDeleted: false,
             ...(rawCreatedBy ? { createdById: rowCreatedById } : {}),
           }
         });
@@ -477,68 +494,112 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
           }
         });
 
+        seenInFile.set(sourceNoKey, existing.id);
         updatedCount++;
       } else {
-        // CREATE new record in the main Procurement Database
-        const request = await prisma.procurementRequest.create({
-          data: {
-            sourceNo,
-            sourceDescription: description,
-            departmentId: deptId!,
-            vendorId: vendId,
-            sourceDate,
-            comparativeDate,
-            daysForCS: calc.daysForCS,
-            csStatus,
-            prNumber,
-            prDate,
-            daysForPR: calc.daysForPR,
-            prStatus,
-            poNumber,
-            poDate,
-            poStatus,
-            daysForPO: calc.daysForPO,
-            paymentApprovalDate,
-            paymentDoneDate,
-            paymentStatus,
-            daysForPayment: calc.daysForPayment,
-            prlNo,
-            prlDate,
-            materialDispatchDate,
-            materialReceivedDate,
-            workCompletionDate,
-            sourceCancellationDate,
-            currentStatusByHandler,
-            nameOfHandler: handlerName || null,
-            handlerId: handlerId || null,
-            noOfDays: calc.noOfDays,
-            currentStage,
-            pendingFrom,
-            pendingDays: calc.pendingDays,
-            slaStatus: calc.slaStatus,
-            slaCS,
-            slaPR,
-            slaPO,
-            slaPAR,
-            slaPDD,
-            slaMDD,
-            slaMRD,
-            slaWCD,
-            createdById: rowCreatedById,
-          }
-        });
+        // CREATE new record in the main Procurement Database (or update if duplicate race condition occurs)
+        try {
+          const request = await prisma.procurementRequest.create({
+            data: {
+              sourceNo,
+              sourceDescription: description,
+              departmentId: deptId!,
+              vendorId: vendId,
+              sourceDate,
+              comparativeDate,
+              daysForCS: calc.daysForCS,
+              csStatus,
+              prNumber,
+              prDate,
+              daysForPR: calc.daysForPR,
+              prStatus,
+              poNumber,
+              poDate,
+              poStatus,
+              daysForPO: calc.daysForPO,
+              paymentApprovalDate,
+              paymentDoneDate,
+              paymentStatus,
+              daysForPayment: calc.daysForPayment,
+              prlNo,
+              prlDate,
+              materialDispatchDate,
+              materialReceivedDate,
+              workCompletionDate,
+              sourceCancellationDate,
+              currentStatusByHandler,
+              nameOfHandler: handlerName || null,
+              handlerId: handlerId || null,
+              noOfDays: calc.noOfDays,
+              currentStage,
+              pendingFrom,
+              pendingDays: calc.pendingDays,
+              slaStatus: calc.slaStatus,
+              slaCS,
+              slaPR,
+              slaPO,
+              slaMDD,
+              slaMRD,
+              slaWCD,
+              slaPRL,
+              slaPAR,
+              slaPDD,
+              procurementReceivedDate,
+              createdById: rowCreatedById,
+            }
+          });
 
-        // Audit log
-        await prisma.activityLog.create({
-          data: {
-            requestId: request.id,
-            userId: userId,
-            action: "IMPORTED",
-            newValue: `Source No: ${request.sourceNo}`,
-          }
-        });
+          // Audit log
+          await prisma.activityLog.create({
+            data: {
+              requestId: request.id,
+              userId: userId,
+              action: "IMPORTED",
+              newValue: `Source No: ${request.sourceNo}`,
+            }
+          });
 
-        createdCount++;
+          seenInFile.set(sourceNoKey, request.id);
+          createdCount++;
+        } catch (createErr: any) {
+          if (createErr?.code === 'P2002') {
+            // Unique key violation: another record with this source number exists; update it without crashing
+            const dup = await prisma.procurementRequest.findFirst({
+              where: { sourceNo: { equals: sourceNo, mode: "insensitive" } },
+            });
+            if (dup) {
+              await prisma.procurementRequest.update({
+                where: { id: dup.id },
+                data: {
+                  sourceDescription: description,
+                  departmentId: deptId!,
+                  vendorId: vendId,
+                  isDeleted: false,
+                  sourceDate,
+                  comparativeDate,
+                  daysForCS: calc.daysForCS,
+                  csStatus,
+                  prNumber,
+                  prDate,
+                  daysForPR: calc.daysForPR,
+                  prStatus,
+                  poNumber,
+                  poDate,
+                  poStatus,
+                  daysForPO: calc.daysForPO,
+                  currentStatusByHandler,
+                  nameOfHandler: handlerName || dup.nameOfHandler,
+                  handlerId: handlerId || dup.handlerId,
+                  currentStage,
+                },
+              });
+              seenInFile.set(sourceNoKey, dup.id);
+              updatedCount++;
+            }
+          } else {
+            throw createErr;
+          }
+        }
       }
     }
 

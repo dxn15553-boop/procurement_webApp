@@ -57,6 +57,7 @@ export const UNIFORM_REPORT_HEADERS = [
   "MDD (SLA Target)",
   "MRD (SLA Target)",
   "WCD (SLA Target)",
+  "PRL (SLA Target)",
   "PAR (SLA Target)",
   "PDD (SLA Target)",
 ];
@@ -126,9 +127,10 @@ export function mapRequestToUniformRow(r: any) {
     r.slaPO ?? 3,
     r.slaMDD ?? 5,
     r.slaMRD ?? 2,
-    r.slaWCD ?? 5,
-    r.slaPAR ?? 2,
-    r.slaPDD ?? 3,
+    r.slaWCD ?? 30,
+    r.slaPRL ?? 5,
+    r.slaPAR ?? 5,
+    r.slaPDD ?? 10,
   ];
 }
 
@@ -246,8 +248,9 @@ export function generateImportTemplate() {
     5,                               // MDD (SLA Target)
     2,                               // MRD (SLA Target)
     5,                               // WCD (SLA Target)
-    2,                               // PAR (SLA Target)
-    3,                               // PDD (SLA Target)
+    5,                               // PRL (SLA Target)
+    5,                               // PAR (SLA Target)
+    10,                              // PDD (SLA Target)
   ];
 
   const dataTable = [UNIFORM_REPORT_HEADERS, sampleRow1];

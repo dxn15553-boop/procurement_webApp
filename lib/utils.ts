@@ -48,14 +48,15 @@ export function getSLABadgeVariant(status: SLAStatus) {
 
 export function getStageColor(stage: CurrentStage): string {
   const colors: Record<CurrentStage, string> = {
-    CS: "bg-blue-100 text-blue-700",
-    PR: "bg-purple-100 text-purple-700",
-    PO: "bg-orange-100 text-orange-700",
-    PAR: "bg-cyan-100 text-cyan-700",
-    PDD: "bg-pink-100 text-pink-700",
-    MDD: "bg-indigo-100 text-indigo-700",
-    MRD: "bg-teal-100 text-teal-700",
-    WCD: "bg-green-100 text-green-700",
+    CS:        "bg-blue-100 text-blue-700",
+    PR:        "bg-purple-100 text-purple-700",
+    PO:        "bg-orange-100 text-orange-700",
+    MDD:       "bg-indigo-100 text-indigo-700",
+    MRD:       "bg-teal-100 text-teal-700",
+    WCD:       "bg-green-100 text-green-700",
+    PRL:       "bg-yellow-100 text-yellow-700",
+    PAR:       "bg-cyan-100 text-cyan-700",
+    PDD:       "bg-pink-100 text-pink-700",
     COMPLETED: "bg-emerald-100 text-emerald-700",
     CANCELLED: "bg-gray-100 text-gray-700",
   };
@@ -64,14 +65,15 @@ export function getStageColor(stage: CurrentStage): string {
 
 export function getStageName(stage: CurrentStage): string {
   const names: Record<CurrentStage, string> = {
-    CS: "Comparative Statement",
-    PR: "Purchase Requisition",
-    PO: "Purchase Order",
-    PAR: "PAR",
-    PDD: "PDD",
-    MDD: "Material Dispatch",
-    MRD: "Material Received",
-    WCD: "Work Completion",
+    CS:        "Comparative Statement",
+    PR:        "Purchase Requisition",
+    PO:        "Purchase Order",
+    MDD:       "Material Dispatch",
+    MRD:       "Material Received",
+    WCD:       "Work Completion",
+    PRL:       "Pre-Receipt Logistics",
+    PAR:       "Payment Approval",
+    PDD:       "Payment Done",
     COMPLETED: "Completed",
     CANCELLED: "Cancelled",
   };

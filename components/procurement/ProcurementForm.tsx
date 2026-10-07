@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { generateSourceNo, formatDate } from "@/lib/utils";
 import { SLA_THRESHOLDS } from "@/lib/calculations";
 import { differenceInDays, parseISO } from "date-fns";
-import { Save, RefreshCw, AlertCircle } from "lucide-react";
+import { Save, RefreshCw, AlertCircle, Sparkles, Loader2 } from "lucide-react";
 
 interface Dept { id: string; name: string; }
 interface Vendor { id: string; name: string; }
@@ -21,7 +21,7 @@ interface ProcurementFormProps {
   readOnly?: boolean;
 }
 
-const STAGES = ["CS", "PR", "PO", "PAR", "PDD", "MDD", "MRD", "WCD", "COMPLETED", "CANCELLED"] as const;
+const STAGES = ["CS", "PR", "PO", "MDD", "MRD", "WCD", "PRL", "PAR", "PDD", "COMPLETED", "CANCELLED"] as const;
 const CS_STATUSES = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const;
 const PR_STATUSES = ["PENDING", "IN_PROGRESS", "APPROVED", "REJECTED"] as const;
 
@@ -65,6 +65,47 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
   });
 
   const allValues = watch();
+  const watchedSourceNo = watch("sourceNo");
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+
+  // Check duplicate Source No in real-time
+  const checkDuplicateSourceNo = useCallback(async (sourceNoToCheck: string): Promise<boolean> => {
+    const cleanNo = (sourceNoToCheck || "").trim();
+    if (!cleanNo) {
+      setDuplicateError(null);
+      return false;
+    }
+
+    try {
+      setIsCheckingDuplicate(true);
+      const res = await fetch(`/api/requests/check-duplicate?sourceNo=${encodeURIComponent(cleanNo)}&excludeId=${requestId || ""}`);
+      const data = await res.json();
+      if (data.exists) {
+        setDuplicateError(data.message || `Source No "${cleanNo}" is already in use. Duplicate numbers are not accepted.`);
+        return true;
+      } else {
+        setDuplicateError(null);
+        return false;
+      }
+    } catch {
+      return false;
+    } finally {
+      setIsCheckingDuplicate(false);
+    }
+  }, [requestId]);
+
+  // Debounced check as user types sourceNo
+  useEffect(() => {
+    if (!watchedSourceNo || !watchedSourceNo.trim()) {
+      setDuplicateError(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      checkDuplicateSourceNo(watchedSourceNo);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [watchedSourceNo, checkDuplicateSourceNo]);
 
   // Load Draft from LocalStorage on mount
   useEffect(() => {
@@ -115,6 +156,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
   const pendingFrom = watch("pendingFrom");
   const currentStage = watch("currentStage");
   const isCancelled = currentStage === "CANCELLED" || !!sourceCancellationDate;
+  const effectiveReadOnly = readOnly || isCancelled;
 
   // Fetch departments and vendors
   useEffect(() => {
@@ -190,8 +232,8 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
   // Auto-update statuses based on dates
   useEffect(() => {
     if (comparativeDate) setValue("csStatus", "COMPLETED", { shouldDirty: true });
-    if (prDate) setValue("prStatus", "COMPLETED", { shouldDirty: true });
-    if (poDate) setValue("poStatus", "COMPLETED", { shouldDirty: true });
+    if (prDate || watch("prNumber")) setValue("prStatus", "APPROVED", { shouldDirty: true });
+    if (poDate || watch("poNumber")) setValue("poStatus", "COMPLETED", { shouldDirty: true });
     if (paymentDoneDate) setValue("paymentStatus", "COMPLETED", { shouldDirty: true });
   }, [comparativeDate, prDate, poDate, paymentDoneDate, setValue]);
 
@@ -199,28 +241,34 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
     recalculate();
   }, [recalculate]);
 
-  // Auto-update currentStage based on milestone dates
+  // Auto-update currentStage based on milestone dates in the correct order:
+  // CS → PR → PO → MDD → MRD → WCD → PRL → PAR → PDD → COMPLETED
   useEffect(() => {
     let autoStage = "CS";
     if (sourceCancellationDate) autoStage = "CANCELLED";
-    else if (workCompletionDate) autoStage = "COMPLETED";
+    else if (paymentDoneDate) autoStage = "COMPLETED";
+    else if (paymentApprovalDate) autoStage = "PDD";
+    else if (prlDate) autoStage = "PAR";
+    else if (workCompletionDate) autoStage = "PRL";
     else if (materialReceivedDate) autoStage = "WCD";
     else if (materialDispatchDate) autoStage = "MRD";
-    else if (paymentDoneDate) autoStage = "MDD";
-    else if (paymentApprovalDate) autoStage = "PDD";
-    else if (poDate) autoStage = "PAR";
+    else if (poDate) autoStage = "MDD";
     else if (prDate) autoStage = "PO";
     else if (comparativeDate) autoStage = "PR";
 
-    setValue("currentStage", autoStage, { shouldDirty: true, shouldValidate: true });
+    if (autoStage !== currentStage) {
+      setValue("currentStage", autoStage, { shouldDirty: true, shouldValidate: true });
+      setValue("pendingFrom", new Date().toISOString().split("T")[0], { shouldDirty: true });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     sourceCancellationDate,
+    paymentDoneDate,
+    paymentApprovalDate,
+    prlDate,
     workCompletionDate,
     materialReceivedDate,
     materialDispatchDate,
-    paymentDoneDate,
-    paymentApprovalDate,
     poDate,
     prDate,
     comparativeDate,
@@ -229,6 +277,17 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
 
   const onSubmit = async (data: ProcurementInput) => {
     setIsLoading(true);
+
+    // Validate Duplicate Source No
+    const isDup = await checkDuplicateSourceNo(data.sourceNo);
+    if (isDup) {
+      toast.error("Duplicate Source Number Detected", {
+        description: `Source No "${data.sourceNo}" already exists in the system. Duplicate source numbers are not accepted.`,
+        icon: <AlertCircle className="w-4 h-4 text-red-500" />
+      });
+      setIsLoading(false);
+      return;
+    }
 
     // Validate Handler
     if (!data.handlerId) {
@@ -280,6 +339,58 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
     }
   };
 
+  const [isFetchingSource, setIsFetchingSource] = useState(false);
+
+  const handleFetchSource = async (customNo?: string) => {
+    const rawNo = customNo || watch("sourceNo");
+    if (!rawNo || !rawNo.trim()) {
+      toast.error("Please enter a Source No first (e.g. SRC-2026-0004 or 0004)");
+      return;
+    }
+
+    setIsFetchingSource(true);
+    try {
+      const res = await fetch(`/api/source-lookup/${encodeURIComponent(rawNo.trim())}`);
+      const data = await res.json();
+
+      if (!res.ok || !data.found) {
+        toast.error(data.message || `No Source Request found matching "${rawNo}".`);
+        return;
+      }
+
+      setValue("sourceNo", data.sourceNo, { shouldValidate: true, shouldDirty: true });
+      if (data.sourceDate) {
+        setValue("sourceDate", data.sourceDate, { shouldValidate: true, shouldDirty: true });
+      }
+      if (data.departmentId) {
+        setValue("departmentId", data.departmentId, { shouldValidate: true, shouldDirty: true });
+      }
+      if (data.handlerId) {
+        setValue("handlerId", data.handlerId, { shouldValidate: true, shouldDirty: true });
+      }
+      if (data.handlerName) {
+        setValue("nameOfHandler", data.handlerName, { shouldValidate: true, shouldDirty: true });
+      }
+      if (data.sourceDescription) {
+        setValue("sourceDescription", data.sourceDescription, { shouldValidate: true, shouldDirty: true });
+      }
+
+      // Check if this source request already exists in Procurement
+      const isDup = await checkDuplicateSourceNo(data.sourceNo);
+      if (isDup && mode === "create") {
+        toast.warning(`Source Request "${data.sourceNo}" already exists in Procurement! Duplicate entries cannot be created.`);
+      } else {
+        toast.success(`Source details for ${data.sourceNo} loaded!`, {
+          description: `Department: ${data.departmentName || 'Identified'} | Handler: ${data.handlerName || 'Assigned'}`
+        });
+      }
+    } catch {
+      toast.error("Failed to connect to Source database.");
+    } finally {
+      setIsFetchingSource(false);
+    }
+  };
+
   const slaStatusColors: Record<string, string> = {
     ON_TRACK: "text-emerald-600 bg-emerald-50",
     AT_RISK: "text-amber-600 bg-amber-50",
@@ -298,7 +409,21 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
 
   return (
     <form onSubmit={handleSubmit(onSubmit, onSubmitError)} className="space-y-6">
-      {/* Section: Source Info */}
+      {/* Cancellation Notice Banner */}
+      {isCancelled && (
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-sm font-bold text-rose-900">Procurement Request Cancelled</h4>
+            <p className="text-xs text-rose-700 mt-0.5">
+              This request was marked as cancelled. Further stage advancement and operational updates are locked.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <fieldset disabled={effectiveReadOnly} className="space-y-6 border-0 p-0 m-0 min-w-0">
+        {/* Section: Source Info */}
       <div className="bg-white border border-slate-100 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
         <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-3">
           <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm border border-indigo-100">1</span>
@@ -306,15 +431,45 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className={labelClass}>Source No *</label>
-            <input {...register("sourceNo")} disabled={readOnly || isCancelled} className={`${inputClass} uppercase`} onInput={(e) => {
-              const val = e.currentTarget.value;
-              if (/[^0-9]/.test(val)) {
-                import("sonner").then(({ toast }) => toast.error("Source No. can only contain numbers"));
-                e.currentTarget.value = val.replace(/[^0-9]/g, '');
-              }
-            }} placeholder="ENTER SOURCE NO..." />
-            {errors.sourceNo && <p className="text-xs text-destructive mt-1">{errors.sourceNo.message}</p>}
+            <div className="flex items-center justify-between mb-1.5">
+              <label className={labelClass}>Source No *</label>
+              <button
+                type="button"
+                onClick={() => handleFetchSource()}
+                disabled={isFetchingSource || readOnly}
+                className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1 transition-colors disabled:opacity-50 cursor-pointer"
+                title="Fetch details from Source App database"
+              >
+                {isFetchingSource ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 text-indigo-500" />}
+                <span>{isFetchingSource ? "Fetching..." : "Fetch Source Info"}</span>
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                {...register("sourceNo")}
+                onBlur={(e) => {
+                  checkDuplicateSourceNo(e.target.value);
+                }}
+                disabled={readOnly || isCancelled}
+                className={`${inputClass} uppercase pr-20 ${duplicateError ? "border-red-500 ring-2 ring-red-500/20" : ""}`}
+                placeholder="E.G. SRC-2026-0004..."
+              />
+              <button
+                type="button"
+                onClick={() => handleFetchSource()}
+                disabled={isFetchingSource || readOnly}
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[10px] font-extrabold uppercase rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all border border-indigo-200/60 disabled:opacity-50 cursor-pointer"
+              >
+                {isFetchingSource ? "..." : "Fetch"}
+              </button>
+            </div>
+            {duplicateError && (
+              <div className="flex items-center gap-1.5 mt-1.5 px-2.5 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-xs font-semibold animate-in fade-in">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{duplicateError}</span>
+              </div>
+            )}
+            {errors.sourceNo && !duplicateError && <p className="text-xs text-destructive mt-1">{errors.sourceNo.message}</p>}
           </div>
           <div>
             <label className={labelClass}>Source Date</label>
@@ -537,8 +692,11 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
             <input type="date" min={watch("sourceDate") || undefined} {...register("workCompletionDate")} disabled={readOnly || isCancelled} className={inputClass} />
           </div>
           <div>
-            <label className={labelClass}>Source Cancellation Date</label>
-            <input type="date" min={watch("sourceDate") || undefined} {...register("sourceCancellationDate")} disabled={readOnly} className={inputClass} />
+            <label className={labelClass}>
+              Source Cancellation Date
+              <span className="text-rose-500 font-bold ml-1 text-[11px]">(⚠️ Cancels Request)</span>
+            </label>
+            <input type="date" min={watch("sourceDate") || undefined} {...register("sourceCancellationDate")} disabled={readOnly} className={`${inputClass} ${watch("sourceCancellationDate") ? "border-rose-400 bg-rose-50/50" : ""}`} title="Only set if source request was cancelled" />
           </div>
         </div>
       </div>
@@ -587,8 +745,10 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         </div>
       </div>
 
+      </fieldset>
+
       {/* Submit */}
-      {!readOnly && (
+      {!effectiveReadOnly ? (
         <div className="flex items-center gap-3 justify-end">
           {mode === "create" && (
             <button
@@ -597,7 +757,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
                 localStorage.removeItem("procurementFormDraft");
                 window.location.reload();
               }}
-              className="px-4 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+              className="px-4 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
             >
               Clear Draft
             </button>
@@ -605,20 +765,35 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors"
+            className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={isLoading}
-            className="flex items-center gap-2 px-5 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium disabled:opacity-50"
+            disabled={isLoading || !!duplicateError || isCheckingDuplicate}
+            className="flex items-center gap-2 px-5 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium disabled:opacity-50 cursor-pointer"
+            title={duplicateError ? duplicateError : undefined}
           >
             {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {isLoading ? "Saving..." : mode === "edit" ? "Update Request" : "Submit Request"}
           </button>
         </div>
-      )}
+      ) : isCancelled ? (
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-rose-50/70 border border-rose-200">
+          <span className="text-xs font-bold text-rose-700 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-500" />
+            Request Cancelled — Modifications are disabled.
+          </span>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="px-4 py-2 text-sm rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors text-slate-700 font-semibold cursor-pointer"
+          >
+            Back
+          </button>
+        </div>
+      ) : null}
     </form>
   );
 }

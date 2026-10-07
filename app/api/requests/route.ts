@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { procurementSchema } from "@/lib/validations";
-import { calculateAllFields } from "@/lib/calculations";
+import { calculateAllFields, deriveCurrentStage } from "@/lib/calculations";
+import type { CurrentStage } from "@/types";
 import { parse, isValid, parseISO } from "date-fns";
 import { resolveDepartmentId, resolveVendorId } from "@/lib/departmentHelper";
 
@@ -160,7 +161,7 @@ function cleanCSStatus(val: string | null | undefined): "PENDING" | "IN_PROGRESS
 
 function cleanPRStatus(val: string | null | undefined): "PENDING" | "IN_PROGRESS" | "APPROVED" | "REJECTED" {
   const v = (val || "").toUpperCase();
-  if (v.includes("APPROV")) return "APPROVED";
+  if (v.includes("APPROV") || v.includes("COMPLET") || v.includes("DONE")) return "APPROVED";
   if (v.includes("REJECT")) return "REJECTED";
   if (v.includes("PROGRESS")) return "IN_PROGRESS";
   return "PENDING";
@@ -181,18 +182,19 @@ function cleanPaymentStatus(val: string | null | undefined): "PENDING" | "IN_PRO
   return "PENDING";
 }
 
-function cleanStage(val: string | null | undefined): "CS" | "PR" | "PO" | "PAR" | "PDD" | "MDD" | "MRD" | "WCD" | "COMPLETED" | "CANCELLED" {
+function cleanStage(val: string | null | undefined): CurrentStage {
   const v = (val || "").toUpperCase();
+  if (v.includes("CANCEL")) return "CANCELLED";
+  if (v.includes("COMPLET")) return "COMPLETED";
   if (v.includes("CS")) return "CS";
+  if (v.includes("PRL")) return "PRL";
   if (v.includes("PR")) return "PR";
   if (v.includes("PO")) return "PO";
-  if (v.includes("PAR")) return "PAR";
-  if (v.includes("PDD")) return "PDD";
   if (v.includes("MDD")) return "MDD";
   if (v.includes("MRD")) return "MRD";
   if (v.includes("WCD")) return "WCD";
-  if (v.includes("CANCEL")) return "CANCELLED";
-  if (v.includes("COMPLET")) return "COMPLETED";
+  if (v.includes("PAR")) return "PAR";
+  if (v.includes("PDD")) return "PDD";
   return "CS";
 }
 
@@ -208,6 +210,20 @@ export async function POST(req: Request) {
 
   try {
     const data = parsed.data;
+    const cleanSourceNo = data.sourceNo.trim();
+
+    // Check for duplicate Source No
+    const duplicate = await prisma.procurementRequest.findFirst({
+      where: {
+        sourceNo: { equals: cleanSourceNo, mode: "insensitive" },
+      },
+    });
+    if (duplicate) {
+      return NextResponse.json(
+        { error: { message: `Source No "${cleanSourceNo}" already exists in the system. Duplicate source numbers are not allowed.` } },
+        { status: 409 }
+      );
+    }
 
     const departmentId = await resolveDepartmentId(data.departmentId);
     if (!departmentId) {
@@ -218,17 +234,43 @@ export async function POST(req: Request) {
   const sourceDate = parseDate(data.sourceDate) || new Date();
   const comparativeDate = parseDate(data.comparativeDate);
   const prDate = parseDate(data.prDate);
-  const pendingFrom = parseDate(data.pendingFrom);
-
-  const currentStage = cleanStage(data.currentStage);
-  const csStatus = cleanCSStatus(data.csStatus);
-  const prStatus = cleanPRStatus(data.prStatus);
-  const poStatus = cleanPOStatus(data.poStatus);
-  const paymentStatus = cleanPaymentStatus(data.paymentStatus);
-
   const poDate = parseDate(data.poDate);
   const prlDate = parseDate(data.prlDate);
   const paymentDoneDate = parseDate(data.paymentDoneDate);
+  const materialDispatchDate = parseDate(data.materialDispatchDate);
+  const materialReceivedDate = parseDate(data.materialReceivedDate);
+  const workCompletionDate = parseDate(data.workCompletionDate);
+  const sourceCancellationDate = parseDate(data.sourceCancellationDate);
+  const paymentApprovalDate = parseDate(data.paymentApprovalDate);
+
+  const csStatus = cleanCSStatus(data.csStatus);
+  let prStatus = cleanPRStatus(data.prStatus);
+  if ((prDate || data.prNumber) && (!data.prStatus || data.prStatus.trim() === "" || data.prStatus.toUpperCase() === "PENDING")) {
+    prStatus = "APPROVED";
+  }
+  const poStatus = cleanPOStatus(data.poStatus);
+  const paymentStatus = cleanPaymentStatus(data.paymentStatus);
+
+  const inputStage = data.currentStage ? cleanStage(data.currentStage) : "CS";
+  const derivedStage = deriveCurrentStage({
+    currentStage: inputStage,
+    csStatus,
+    comparativeDate,
+    prStatus,
+    prDate,
+    poStatus,
+    poDate,
+    materialDispatchDate,
+    materialReceivedDate,
+    workCompletionDate,
+    prlDate,
+    paymentApprovalDate,
+    paymentDoneDate,
+    sourceCancellationDate,
+  });
+
+  const pendingFrom = parseDate(data.pendingFrom) || new Date();
+  const procurementReceivedDate = parseDate(data.procurementReceivedDate) || new Date();
 
   const calc = calculateAllFields({
     sourceDate,
@@ -238,7 +280,14 @@ export async function POST(req: Request) {
     prlDate,
     paymentDoneDate,
     pendingFrom,
-    currentStage,
+    currentStage: derivedStage,
+    csStatus,
+    prStatus,
+    poStatus,
+    materialDispatchDate,
+    materialReceivedDate,
+    workCompletionDate,
+    paymentApprovalDate,
   });
 
   let handlerId = data.handlerId || null;
@@ -271,11 +320,11 @@ export async function POST(req: Request) {
       daysForPO: calc.daysForPO,
       prlNo: data.prlNo ?? null,
       prlDate,
-      materialDispatchDate: parseDate(data.materialDispatchDate),
-      materialReceivedDate: parseDate(data.materialReceivedDate),
-      workCompletionDate: parseDate(data.workCompletionDate),
-      sourceCancellationDate: parseDate(data.sourceCancellationDate),
-      paymentApprovalDate: parseDate(data.paymentApprovalDate),
+      materialDispatchDate,
+      materialReceivedDate,
+      workCompletionDate,
+      sourceCancellationDate,
+      paymentApprovalDate,
       paymentDoneDate,
       paymentStatus,
       daysForPayment: calc.daysForPayment,
@@ -283,18 +332,20 @@ export async function POST(req: Request) {
       nameOfHandler: data.nameOfHandler ?? null,
       handlerId: handlerId ?? null,
       noOfDays: calc.noOfDays,
-      currentStage: currentStage,
+      currentStage: derivedStage,
       pendingFrom,
       pendingDays: calc.pendingDays,
       slaStatus: calc.slaStatus,
       slaCS: data.slaCS ?? null,
       slaPR: data.slaPR ?? null,
       slaPO: data.slaPO ?? null,
-      slaPAR: data.slaPAR ?? null,
-      slaPDD: data.slaPDD ?? null,
       slaMDD: data.slaMDD ?? null,
       slaMRD: data.slaMRD ?? null,
       slaWCD: data.slaWCD ?? null,
+      slaPRL: data.slaPRL ?? null,
+      slaPAR: data.slaPAR ?? null,
+      slaPDD: data.slaPDD ?? null,
+      procurementReceivedDate,
       createdById: session.user.id!,
     },
   });

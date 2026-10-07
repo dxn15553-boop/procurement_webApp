@@ -47,11 +47,12 @@ enum CurrentStage {
   CS
   PR
   PO
-  PAR
-  PDD
   MDD
   MRD
   WCD
+  PRL
+  PAR
+  PDD
   COMPLETED
   CANCELLED
 }
@@ -180,11 +181,15 @@ model ProcurementRequest {
   slaCS       Int?
   slaPR       Int?
   slaPO       Int?
-  slaPAR      Int?
-  slaPDD      Int?
   slaMDD      Int?
   slaMRD      Int?
   slaWCD      Int?
+  slaPRL      Int?
+  slaPAR      Int?
+  slaPDD      Int?
+
+  // Procurement Received Date (when procurement first took ownership — different from sourceDate which is the requester's original submission date)
+  procurementReceivedDate DateTime?
 
   // Meta
   createdById String

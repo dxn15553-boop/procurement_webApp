@@ -6,7 +6,7 @@ export const loginSchema = z.object({
 });
 
 export const procurementSchema = z.object({
-  sourceNo: z.string().min(1, "Source number is required").regex(/^\d+$/, "Source number must contain only numbers"),
+  sourceNo: z.string().min(1, "Source number is required").regex(/^(SRC-[A-Z0-9-]+|\d+)$/i, "Source number must be numeric or a valid SRC code (e.g. SRC-2026-0001)"),
   sourceDate: z.string().optional().nullable(),
   sourceDescription: z.string().min(1, "Description is required"),
   departmentId: z.string().min(1, "Department is required"),
@@ -34,15 +34,17 @@ export const procurementSchema = z.object({
   slaCS: z.number().optional().nullable(),
   slaPR: z.number().optional().nullable(),
   slaPO: z.number().optional().nullable(),
-  slaPAR: z.number().optional().nullable(),
-  slaPDD: z.number().optional().nullable(),
   slaMDD: z.number().optional().nullable(),
   slaMRD: z.number().optional().nullable(),
   slaWCD: z.number().optional().nullable(),
+  slaPRL: z.number().optional().nullable(),
+  slaPAR: z.number().optional().nullable(),
+  slaPDD: z.number().optional().nullable(),
   poStatus: z.string().optional().nullable(),
   daysForPO: z.number().optional().nullable(),
   paymentStatus: z.string().optional().nullable(),
   daysForPayment: z.number().optional().nullable(),
+  procurementReceivedDate: z.string().optional().nullable(),
 }).superRefine((data, ctx) => {
   if (!data.sourceDate) return;
   const sDate = new Date(data.sourceDate);

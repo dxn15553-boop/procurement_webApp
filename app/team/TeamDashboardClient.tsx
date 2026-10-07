@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
   MonthlyTrendChart,
   DepartmentChart,
@@ -9,7 +11,7 @@ import {
 import { formatDate, getSLAColor, getStageColor, getStageName } from "@/lib/utils";
 import {
   ShoppingCart, CheckCircle2, XCircle, AlertTriangle,
-  Activity, ArrowRight, RefreshCw, BarChart3
+  Activity, ArrowRight, RefreshCw, BarChart3, Sparkles
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -44,6 +46,38 @@ interface Props {
 export function TeamDashboardClient({ data, userName }: Props) {
   const router = useRouter();
   const { kpi, recentRequests, departmentData, stageData, monthlyData, slaChartData } = data;
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncSource = async (silent = false) => {
+    setIsSyncing(true);
+    try {
+      const res = await fetch("/api/requests/sync-source", { method: "POST" });
+      const resData = await res.json();
+      if (res.ok) {
+        if (!silent || (resData.count && resData.count > 0)) {
+          toast.success(resData.message || `Synchronized ${resData.count} source request(s)`);
+        }
+        router.refresh();
+      } else if (!silent) {
+        toast.error(resData.error || "Failed to sync source requests");
+      }
+    } catch {
+      if (!silent) toast.error("Error syncing with Source database");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Auto-sync on component mount (debounced: at most once every 5 minutes per session)
+  useEffect(() => {
+    const SYNC_KEY = "dxn_procurement_last_auto_sync";
+    const lastSync = sessionStorage.getItem(SYNC_KEY);
+    const now = Date.now();
+    if (!lastSync || now - parseInt(lastSync, 10) > 5 * 60 * 1000) {
+      sessionStorage.setItem(SYNC_KEY, now.toString());
+      handleSyncSource(true);
+    }
+  }, []);
 
   const kpiCards = [
     { label: "MY TOTAL REQUESTS", value: kpi.total,     bgIcon: <BarChart3     className="w-24 h-24 text-slate-800"   /> },
@@ -67,8 +101,18 @@ export function TeamDashboardClient({ data, userName }: Props) {
         </div>
         <div className="flex items-center gap-3">
           <button 
+            type="button"
+            onClick={() => handleSyncSource(false)}
+            disabled={isSyncing}
+            className="flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-xl border border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+            title="Fetch all assigned requests from Source App database"
+          >
+            <Sparkles className={`w-4 h-4 text-indigo-600 ${isSyncing ? "animate-spin" : ""}`} />
+            <span>{isSyncing ? "Syncing Source..." : "Sync Source Requests"}</span>
+          </button>
+          <button 
             onClick={() => router.refresh()}
-            className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors active:scale-95"
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors active:scale-95 cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { procurementSchema } from "@/lib/validations";
-import { calculateAllFields } from "@/lib/calculations";
+import { calculateAllFields, deriveCurrentStage } from "@/lib/calculations";
+import type { CurrentStage } from "@/types";
 import { parse, isValid } from "date-fns";
 import { resolveDepartmentId, resolveVendorId } from "@/lib/departmentHelper";
 
@@ -73,7 +74,7 @@ function cleanCSStatus(val: string | null | undefined): "PENDING" | "IN_PROGRESS
 
 function cleanPRStatus(val: string | null | undefined): "PENDING" | "IN_PROGRESS" | "APPROVED" | "REJECTED" {
   const v = (val || "").toUpperCase();
-  if (v.includes("APPROV")) return "APPROVED";
+  if (v.includes("APPROV") || v.includes("COMPLET") || v.includes("DONE")) return "APPROVED";
   if (v.includes("REJECT")) return "REJECTED";
   if (v.includes("PROGRESS")) return "IN_PROGRESS";
   return "PENDING";
@@ -94,18 +95,19 @@ function cleanPaymentStatus(val: string | null | undefined): "PENDING" | "IN_PRO
   return "PENDING";
 }
 
-function cleanStage(val: string | null | undefined): "CS" | "PR" | "PO" | "PAR" | "PDD" | "MDD" | "MRD" | "WCD" | "COMPLETED" | "CANCELLED" {
+function cleanStage(val: string | null | undefined): CurrentStage {
   const v = (val || "").toUpperCase();
+  if (v.includes("CANCEL")) return "CANCELLED";
+  if (v.includes("COMPLET")) return "COMPLETED";
   if (v.includes("CS")) return "CS";
+  if (v.includes("PRL")) return "PRL";
   if (v.includes("PR")) return "PR";
   if (v.includes("PO")) return "PO";
-  if (v.includes("PAR")) return "PAR";
-  if (v.includes("PDD")) return "PDD";
   if (v.includes("MDD")) return "MDD";
   if (v.includes("MRD")) return "MRD";
   if (v.includes("WCD")) return "WCD";
-  if (v.includes("CANCEL")) return "CANCELLED";
-  if (v.includes("COMPLET")) return "COMPLETED";
+  if (v.includes("PAR")) return "PAR";
+  if (v.includes("PDD")) return "PDD";
   return "CS";
 }
 
@@ -136,7 +138,29 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Guard: Prevent non-manager modifications to a cancelled procurement request
+    if (existing.currentStage === "CANCELLED" && session.user.role !== "MANAGER") {
+      return NextResponse.json({ error: { message: "Cannot edit or advance a cancelled procurement request." } }, { status: 400 });
+    }
+
     const data = parsed.data;
+
+    // Check for duplicate Source No if sourceNo changed
+    if (data.sourceNo && data.sourceNo.trim().toUpperCase() !== existing.sourceNo.trim().toUpperCase()) {
+      const cleanSourceNo = data.sourceNo.trim();
+      const duplicate = await prisma.procurementRequest.findFirst({
+        where: {
+          id: { not: id },
+          sourceNo: { equals: cleanSourceNo, mode: "insensitive" },
+        },
+      });
+      if (duplicate) {
+        return NextResponse.json(
+          { error: { message: `Source No "${cleanSourceNo}" already exists on another request. Duplicate source numbers are not allowed.` } },
+          { status: 409 }
+        );
+      }
+    }
 
     const departmentId = await resolveDepartmentId(data.departmentId);
     if (!departmentId) {
@@ -147,17 +171,50 @@ export async function PUT(
     const sourceDate = parseDate(data.sourceDate) || new Date();
     const comparativeDate = parseDate(data.comparativeDate);
     const prDate = parseDate(data.prDate);
-    const pendingFrom = parseDate(data.pendingFrom);
-
-    const currentStage = cleanStage(data.currentStage);
-    const csStatus = cleanCSStatus(data.csStatus);
-    const prStatus = cleanPRStatus(data.prStatus);
-    const poStatus = cleanPOStatus(data.poStatus);
-    const paymentStatus = cleanPaymentStatus(data.paymentStatus);
-
     const poDate = parseDate(data.poDate);
     const prlDate = parseDate(data.prlDate);
     const paymentDoneDate = parseDate(data.paymentDoneDate);
+    const materialDispatchDate = parseDate(data.materialDispatchDate);
+    const materialReceivedDate = parseDate(data.materialReceivedDate);
+    const workCompletionDate = parseDate(data.workCompletionDate);
+    const sourceCancellationDate = parseDate(data.sourceCancellationDate);
+    const paymentApprovalDate = parseDate(data.paymentApprovalDate);
+
+    const csStatus = cleanCSStatus(data.csStatus);
+    let prStatus = cleanPRStatus(data.prStatus);
+    if ((prDate || data.prNumber) && (!data.prStatus || data.prStatus.trim() === "" || data.prStatus.toUpperCase() === "PENDING")) {
+      prStatus = "APPROVED";
+    }
+    const poStatus = cleanPOStatus(data.poStatus);
+    const paymentStatus = cleanPaymentStatus(data.paymentStatus);
+
+    // Derive stage from actual submitted/existing data
+    const inputStage = data.currentStage ? cleanStage(data.currentStage) : existing.currentStage;
+    const derivedStage = deriveCurrentStage({
+      currentStage: inputStage,
+      csStatus,
+      comparativeDate,
+      prStatus,
+      prDate,
+      poStatus,
+      poDate,
+      materialDispatchDate,
+      materialReceivedDate,
+      workCompletionDate,
+      prlDate,
+      paymentApprovalDate,
+      paymentDoneDate,
+      sourceCancellationDate,
+    });
+
+    // Reset pendingFrom if the stage has changed/advanced, unless user explicitly provided an edited date
+    let pendingFrom = parseDate(data.pendingFrom);
+    if (!pendingFrom) {
+      pendingFrom = existing.pendingFrom || new Date();
+    }
+    if (derivedStage !== existing.currentStage && (!data.pendingFrom || parseDate(data.pendingFrom)?.getTime() === existing.pendingFrom?.getTime())) {
+      pendingFrom = new Date();
+    }
 
     const calc = calculateAllFields({
       sourceDate,
@@ -167,7 +224,15 @@ export async function PUT(
       prlDate,
       paymentDoneDate,
       pendingFrom,
-      currentStage
+      currentStage: derivedStage,
+      existingStage: existing.currentStage,
+      csStatus,
+      prStatus,
+      poStatus,
+      materialDispatchDate,
+      materialReceivedDate,
+      workCompletionDate,
+      paymentApprovalDate,
     });
 
     let handlerId = data.handlerId !== undefined ? (data.handlerId || null) : existing.handlerId;
@@ -203,11 +268,11 @@ export async function PUT(
         daysForPO: calc.daysForPO,
         prlNo: data.prlNo ?? null,
         prlDate,
-        materialDispatchDate: parseDate(data.materialDispatchDate),
-        materialReceivedDate: parseDate(data.materialReceivedDate),
-        workCompletionDate: parseDate(data.workCompletionDate),
-        sourceCancellationDate: parseDate(data.sourceCancellationDate),
-        paymentApprovalDate: parseDate(data.paymentApprovalDate),
+        materialDispatchDate,
+        materialReceivedDate,
+        workCompletionDate,
+        sourceCancellationDate,
+        paymentApprovalDate,
         paymentDoneDate,
         paymentStatus,
         daysForPayment: calc.daysForPayment,
@@ -215,18 +280,20 @@ export async function PUT(
         nameOfHandler: nameOfHandler ?? null,
         handlerId: handlerId ?? null,
         noOfDays: calc.noOfDays,
-        currentStage: currentStage,
+        currentStage: derivedStage,
         pendingFrom,
         pendingDays: calc.pendingDays,
         slaStatus: calc.slaStatus,
         slaCS: data.slaCS ?? null,
         slaPR: data.slaPR ?? null,
         slaPO: data.slaPO ?? null,
-        slaPAR: data.slaPAR ?? null,
-        slaPDD: data.slaPDD ?? null,
         slaMDD: data.slaMDD ?? null,
         slaMRD: data.slaMRD ?? null,
         slaWCD: data.slaWCD ?? null,
+        slaPRL: data.slaPRL ?? null,
+        slaPAR: data.slaPAR ?? null,
+        slaPDD: data.slaPDD ?? null,
+        procurementReceivedDate: data.procurementReceivedDate !== undefined ? parseDate(data.procurementReceivedDate) : existing.procurementReceivedDate,
       },
     });
 
@@ -276,6 +343,12 @@ export async function PUT(
     return NextResponse.json({ request: updated });
   } catch (error: any) {
     console.error("PUT Error:", error);
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { error: { message: `Source No "${body.sourceNo || 'entered'}" is already in use by another request. Duplicate source numbers are not allowed.` } },
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
       { error: { message: error.message || "Internal server error" } },
       { status: 500 }
@@ -317,6 +390,38 @@ export async function PATCH(
     if (body.poNumber !== undefined) updateData.poNumber = body.poNumber;
     if (body.poDate !== undefined) updateData.poDate = parseDate(body.poDate);
     if (body.poStatus) updateData.poStatus = cleanPOStatus(body.poStatus);
+    if (body.prlNo !== undefined) updateData.prlNo = body.prlNo;
+    if (body.prlDate !== undefined) updateData.prlDate = parseDate(body.prlDate);
+    if (body.materialDispatchDate !== undefined) updateData.materialDispatchDate = parseDate(body.materialDispatchDate);
+    if (body.materialReceivedDate !== undefined) updateData.materialReceivedDate = parseDate(body.materialReceivedDate);
+    if (body.workCompletionDate !== undefined) updateData.workCompletionDate = parseDate(body.workCompletionDate);
+    if (body.paymentApprovalDate !== undefined) updateData.paymentApprovalDate = parseDate(body.paymentApprovalDate);
+    if (body.paymentDoneDate !== undefined) updateData.paymentDoneDate = parseDate(body.paymentDoneDate);
+    if (body.sourceCancellationDate !== undefined) updateData.sourceCancellationDate = parseDate(body.sourceCancellationDate);
+
+    // Auto-derive stage from candidate updates
+    const candidateStage = updateData.currentStage || existing.currentStage;
+    const derivedStage = deriveCurrentStage({
+      currentStage: candidateStage,
+      csStatus: updateData.csStatus !== undefined ? updateData.csStatus : existing.csStatus,
+      comparativeDate: updateData.comparativeDate !== undefined ? updateData.comparativeDate : existing.comparativeDate,
+      prStatus: updateData.prStatus !== undefined ? updateData.prStatus : existing.prStatus,
+      prDate: updateData.prDate !== undefined ? updateData.prDate : existing.prDate,
+      poStatus: updateData.poStatus !== undefined ? updateData.poStatus : existing.poStatus,
+      poDate: updateData.poDate !== undefined ? updateData.poDate : existing.poDate,
+      materialDispatchDate: updateData.materialDispatchDate !== undefined ? updateData.materialDispatchDate : existing.materialDispatchDate,
+      materialReceivedDate: updateData.materialReceivedDate !== undefined ? updateData.materialReceivedDate : existing.materialReceivedDate,
+      workCompletionDate: updateData.workCompletionDate !== undefined ? updateData.workCompletionDate : existing.workCompletionDate,
+      prlDate: updateData.prlDate !== undefined ? updateData.prlDate : existing.prlDate,
+      paymentApprovalDate: updateData.paymentApprovalDate !== undefined ? updateData.paymentApprovalDate : existing.paymentApprovalDate,
+      paymentDoneDate: updateData.paymentDoneDate !== undefined ? updateData.paymentDoneDate : existing.paymentDoneDate,
+      sourceCancellationDate: updateData.sourceCancellationDate !== undefined ? updateData.sourceCancellationDate : existing.sourceCancellationDate,
+    });
+    updateData.currentStage = derivedStage;
+
+    if (derivedStage !== existing.currentStage && updateData.pendingFrom === undefined) {
+      updateData.pendingFrom = new Date();
+    }
 
     // Auto-recalculate metrics
     const calc = calculateAllFields({
@@ -324,10 +429,10 @@ export async function PATCH(
       comparativeDate: updateData.comparativeDate !== undefined ? updateData.comparativeDate : existing.comparativeDate,
       prDate: updateData.prDate !== undefined ? updateData.prDate : existing.prDate,
       poDate: updateData.poDate !== undefined ? updateData.poDate : existing.poDate,
-      prlDate: existing.prlDate,
-      paymentDoneDate: existing.paymentDoneDate,
+      prlDate: updateData.prlDate !== undefined ? updateData.prlDate : existing.prlDate,
+      paymentDoneDate: updateData.paymentDoneDate !== undefined ? updateData.paymentDoneDate : existing.paymentDoneDate,
       pendingFrom: updateData.pendingFrom !== undefined ? updateData.pendingFrom : existing.pendingFrom,
-      currentStage: updateData.currentStage || existing.currentStage,
+      currentStage: derivedStage,
     });
 
     Object.assign(updateData, {
