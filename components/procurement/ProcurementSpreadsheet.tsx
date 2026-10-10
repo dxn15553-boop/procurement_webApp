@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Plus, Save, RefreshCw, Trash2, ArrowRight, ChevronLeft, ChevronRight, Upload, FileSpreadsheet, FileText, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Save, RefreshCw, Trash2, ArrowRight, ChevronLeft, ChevronRight, Upload, FileSpreadsheet, FileText, Sparkles, Loader2, X, AlertTriangle } from "lucide-react";
 import { generateSourceNo, formatDate } from "@/lib/utils";
 import { differenceInDays, parseISO, format } from "date-fns";
 import { SLA_THRESHOLDS } from "@/lib/calculations";
@@ -84,6 +84,15 @@ export function ProcurementSpreadsheet({ session }: Props) {
   const [isSyncing, setIsSyncing] = useState(false);
   const importFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Bulk Selection & Deletion States
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [deleteMode, setDeleteMode] = useState<"selected" | "filtered" | "all">("selected");
+  const [isHardDelete, setIsHardDelete] = useState<boolean>(false);
+  const [confirmDeleteText, setConfirmDeleteText] = useState<string>("");
+
   const handleSyncSource = async () => {
     setIsSyncing(true);
     try {
@@ -143,6 +152,9 @@ export function ProcurementSpreadsheet({ session }: Props) {
       .then((r) => r.json())
       .then((reqData) => {
         setTotalPages(reqData.pagination?.pages || 1);
+        if (reqData.pagination?.total !== undefined) {
+          setTotalCount(reqData.pagination.total);
+        }
         const initialRows = (reqData.requests ?? []).map((r: any) => ({
           id: r.id,
           createdAt: r.createdAt ? r.createdAt : "",
@@ -531,9 +543,107 @@ export function ProcurementSpreadsheet({ session }: Props) {
       const res = await fetch(`/api/requests/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete request");
       setRows((prev) => prev.filter((r) => r.id !== id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       toast.success(`Request ${sourceNo} deleted successfully`);
+      loadData(true);
+      router.refresh();
     } catch {
       toast.error("Failed to delete request");
+    }
+  };
+
+  const isAllPageSelected = useMemo(() => {
+    const validRows = rows.filter((r) => !r.isNew);
+    if (validRows.length === 0) return false;
+    return validRows.every((r) => selectedIds.has(r.id));
+  }, [rows, selectedIds]);
+
+  const isSomePageSelected = useMemo(() => {
+    const validRows = rows.filter((r) => !r.isNew);
+    return validRows.some((r) => selectedIds.has(r.id)) && !isAllPageSelected;
+  }, [rows, selectedIds, isAllPageSelected]);
+
+  const handleToggleSelectRow = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleToggleSelectAllPage = () => {
+    const validRows = rows.filter((r) => !r.isNew);
+    if (isAllPageSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        validRows.forEach((r) => next.delete(r.id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        validRows.forEach((r) => next.add(r.id));
+        return next;
+      });
+    }
+  };
+
+  const handleExecuteBulkDelete = async () => {
+    if (deleteMode === "all" && confirmDeleteText.trim().toUpperCase() !== "DELETE") {
+      toast.error("Please type DELETE to confirm wiping the entire database.");
+      return;
+    }
+
+    if (deleteMode === "selected" && selectedIds.size === 0) {
+      toast.error("No requests selected.");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const payload: any = {
+        hardDelete: isHardDelete,
+      };
+
+      if (deleteMode === "selected") {
+        payload.ids = Array.from(selectedIds);
+      } else if (deleteMode === "filtered") {
+        payload.all = true;
+        if (activeTab && activeTab !== "All") {
+          payload.employee = activeTab;
+        }
+      } else if (deleteMode === "all") {
+        payload.all = true;
+      }
+
+      const res = await fetch("/api/requests/bulk", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || "Failed to delete requests");
+      }
+
+      toast.success(
+        `Successfully ${isHardDelete ? "permanently deleted" : "deleted"} ${data.count ?? 0} request(s)!`
+      );
+      setSelectedIds(new Set());
+      setShowDeleteModal(false);
+      setConfirmDeleteText("");
+      loadData();
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete requests");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -662,16 +772,78 @@ export function ProcurementSpreadsheet({ session }: Props) {
               );
             })}
           </div>
-          <button
-            type="button"
-            onClick={handleSyncSource}
-            disabled={isSyncing}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50 transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer ml-auto"
-            title="Sync assigned requests across all handlers from Source App"
-          >
-            <Sparkles className={`w-3.5 h-3.5 text-indigo-600 ${isSyncing ? "animate-spin" : ""}`} />
-            <span>{isSyncing ? "Syncing Source..." : "Sync Source Requests"}</span>
-          </button>
+          <div className="flex items-center gap-2 ml-auto">
+            {isManager && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteMode(selectedIds.size > 0 ? "selected" : "all");
+                  setShowDeleteModal(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-all shadow-sm active:scale-95 cursor-pointer"
+                title="Bulk delete selected rows or clear database"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Bulk / Total Delete</span>
+                {selectedIds.size > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-red-600 text-white text-[10px]">
+                    {selectedIds.size}
+                  </span>
+                )}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleSyncSource}
+              disabled={isSyncing}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50 transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+              title="Sync assigned requests across all handlers from Source App"
+            >
+              <Sparkles className={`w-3.5 h-3.5 text-indigo-600 ${isSyncing ? "animate-spin" : ""}`} />
+              <span>{isSyncing ? "Syncing Source..." : "Sync Source Requests"}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Selected Items Banner */}
+      {isManager && selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-xl shadow-lg border border-indigo-500/30 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500 text-white text-xs font-bold">
+              {selectedIds.size}
+            </span>
+            <span className="text-xs font-semibold">
+              {selectedIds.size} {selectedIds.size === 1 ? "request" : "requests"} selected on this page
+            </span>
+            <button
+              type="button"
+              onClick={handleToggleSelectAllPage}
+              className="text-xs text-indigo-300 hover:text-white underline cursor-pointer ml-1 font-medium"
+            >
+              {isAllPageSelected ? "Deselect this page" : "Select all on this page"}
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
+            >
+              Clear Selection
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteMode("selected");
+                setShowDeleteModal(true);
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-sm transition-all cursor-pointer active:scale-95"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Selected ({selectedIds.size})</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -690,8 +862,23 @@ export function ProcurementSpreadsheet({ session }: Props) {
           <table className="w-full text-sm table-fixed min-w-[5000px] border-collapse">
             <thead>
               <tr>
-                <th className="px-3 py-3 text-xs font-bold text-indigo-700 uppercase tracking-wider border-r border-indigo-200 border-b border-indigo-200 bg-indigo-100 sticky top-0 left-0 z-30 text-center w-28 select-none shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
-                  Actions
+                <th className="px-2 py-3 text-xs font-bold text-indigo-700 uppercase tracking-wider border-r border-indigo-200 border-b border-indigo-200 bg-indigo-100 sticky top-0 left-0 z-30 text-center w-36 min-w-[140px] select-none shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
+                  <div className="flex items-center justify-center gap-2">
+                    {isManager && (
+                      <input
+                        type="checkbox"
+                        aria-label="Select all on this page"
+                        checked={isAllPageSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = isSomePageSelected;
+                        }}
+                        onChange={handleToggleSelectAllPage}
+                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-indigo-300 cursor-pointer"
+                        title="Select all on this page"
+                      />
+                    )}
+                    <span>Actions</span>
+                  </div>
                 </th>
                 <th className={headerCellClass} style={{ width: "140px" }}>Created By</th>
                 <th className={headerCellClass} style={{ width: "135px" }}>Added Time</th>
@@ -782,7 +969,9 @@ export function ProcurementSpreadsheet({ session }: Props) {
                         }
                       }}
                       className={`group cursor-pointer transition-colors duration-150 ${
-                        row.isDirty
+                        selectedIds.has(row.id)
+                          ? "bg-indigo-50/80 hover:bg-indigo-100/70"
+                          : row.isDirty
                           ? "bg-amber-50/80 hover:bg-amber-50"
                           : isAssignedByManager
                           ? "bg-violet-100/70 hover:bg-violet-200 border-l-[6px] border-l-violet-600"
@@ -793,8 +982,10 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     >
                     {/* Actions sticky Left */}
                     <td 
-                      className={`p-2 border-r border-b border-slate-100 sticky left-0 z-10 text-center whitespace-nowrap w-28 transition-colors duration-150 ${
-                        row.isDirty
+                      className={`p-2 border-r border-b border-slate-100 sticky left-0 z-10 text-center whitespace-nowrap w-36 min-w-[140px] transition-colors duration-150 ${
+                        selectedIds.has(row.id)
+                          ? "bg-indigo-100/90 group-hover:bg-indigo-100"
+                          : row.isDirty
                           ? "bg-amber-50 group-hover:bg-amber-50"
                           : isAssignedByManager
                           ? "bg-violet-100/70 group-hover:bg-violet-200"
@@ -805,6 +996,15 @@ export function ProcurementSpreadsheet({ session }: Props) {
                       style={{ boxShadow: "4px 0 8px rgba(0,0,0,0.03)" }}
                     >
                       <div className="flex items-center justify-center gap-1.5">
+                        {isManager && !row.isNew && (
+                          <input
+                            type="checkbox"
+                            aria-label={`Select request ${row.sourceNo}`}
+                            checked={selectedIds.has(row.id)}
+                            onChange={() => handleToggleSelectRow(row.id)}
+                            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                          />
+                        )}
                         <button
                           onClick={() => handleSaveRow(row)}
                           disabled={savingId === row.id || !row.isDirty}
@@ -1338,6 +1538,186 @@ export function ProcurementSpreadsheet({ session }: Props) {
           </button>
         </div>
       </div>
+
+      {/* Bulk / Total Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5 text-red-600">
+                <div className="p-2 rounded-xl bg-red-100 text-red-600">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">Bulk Delete Procurement Requests</h3>
+                  <p className="text-xs text-slate-500">Choose what you would like to delete</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setConfirmDeleteText("");
+                }}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {/* Option 1: Selected rows */}
+              <label
+                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  deleteMode === "selected"
+                    ? "border-red-500 bg-red-50/50 ring-1 ring-red-500/30"
+                    : "border-slate-200 hover:bg-slate-50"
+                } ${selectedIds.size === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <input
+                  type="radio"
+                  name="deleteMode"
+                  value="selected"
+                  checked={deleteMode === "selected"}
+                  disabled={selectedIds.size === 0}
+                  onChange={() => setDeleteMode("selected")}
+                  className="mt-1 w-4 h-4 text-red-600 focus:ring-red-500"
+                />
+                <div className="text-xs">
+                  <span className="font-bold text-slate-800 block text-sm">
+                    Delete Selected Rows ({selectedIds.size})
+                  </span>
+                  <span className="text-slate-500">
+                    Only delete the {selectedIds.size} request(s) currently checked in the table.
+                  </span>
+                </div>
+              </label>
+
+              {/* Option 2: Active Tab Filter */}
+              <label
+                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  deleteMode === "filtered"
+                    ? "border-red-500 bg-red-50/50 ring-1 ring-red-500/30"
+                    : "border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="deleteMode"
+                  value="filtered"
+                  checked={deleteMode === "filtered"}
+                  onChange={() => setDeleteMode("filtered")}
+                  className="mt-1 w-4 h-4 text-red-600 focus:ring-red-500"
+                />
+                <div className="text-xs">
+                  <span className="font-bold text-slate-800 block text-sm">
+                    Delete Filtered Tab: {activeTab === "All" ? "Master Sheet (Everyone)" : activeTab}
+                  </span>
+                  <span className="text-slate-500">
+                    Delete all requests matching the currently selected tab ({activeTab === "All" ? "all records" : `all requests for ${activeTab}`}).
+                  </span>
+                </div>
+              </label>
+
+              {/* Option 3: Entire Database Wipe */}
+              <label
+                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  deleteMode === "all"
+                    ? "border-red-600 bg-red-50 ring-2 ring-red-600/30"
+                    : "border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="deleteMode"
+                  value="all"
+                  checked={deleteMode === "all"}
+                  onChange={() => setDeleteMode("all")}
+                  className="mt-1 w-4 h-4 text-red-600 focus:ring-red-500"
+                />
+                <div className="text-xs">
+                  <span className="font-bold text-red-700 block text-sm">
+                    Delete Entire Database ({totalCount} Total Records)
+                  </span>
+                  <span className="text-slate-500">
+                    Total wipe: deletes all procurement requests across all employees and tabs at once.
+                  </span>
+                </div>
+              </label>
+            </div>
+
+            {/* Hard delete option */}
+            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 space-y-1.5">
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-amber-900">
+                <input
+                  type="checkbox"
+                  checked={isHardDelete}
+                  onChange={(e) => setIsHardDelete(e.target.checked)}
+                  className="w-4 h-4 text-red-600 rounded border-amber-300 focus:ring-red-500 cursor-pointer"
+                />
+                <span>Permanently delete from database (Hard Delete from Neon)</span>
+              </label>
+              <p className="text-[11px] text-amber-700 pl-6 leading-relaxed">
+                {isHardDelete
+                  ? "WARNING: Records will be permanently erased from PostgreSQL. This cannot be undone."
+                  : "Default (Soft Delete): Records are marked as deleted and hidden from the app."}
+              </p>
+            </div>
+
+            {/* Type confirmation for Total wipe */}
+            {deleteMode === "all" && (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">
+                  Type <span className="font-mono text-red-600 font-bold">DELETE</span> to confirm total database wipe:
+                </label>
+                <input
+                  type="text"
+                  value={confirmDeleteText}
+                  onChange={(e) => setConfirmDeleteText(e.target.value)}
+                  placeholder="DELETE"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 outline-none uppercase font-mono"
+                />
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setConfirmDeleteText("");
+                }}
+                className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={
+                  isDeleting ||
+                  (deleteMode === "selected" && selectedIds.size === 0) ||
+                  (deleteMode === "all" && confirmDeleteText.trim().toUpperCase() !== "DELETE")
+                }
+                onClick={handleExecuteBulkDelete}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white transition-all shadow-md active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isDeleting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                <span>
+                  {isDeleting
+                    ? "Deleting..."
+                    : deleteMode === "all"
+                    ? "Wipe Entire Database"
+                    : deleteMode === "filtered"
+                    ? "Delete Filtered Tab"
+                    : `Delete Selected (${selectedIds.size})`}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

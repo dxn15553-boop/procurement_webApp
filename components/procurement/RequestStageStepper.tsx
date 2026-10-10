@@ -18,7 +18,7 @@ const STAGES = [
   { id: "MDD", label: "Material Dispatch", short: "MDD" },
   { id: "MRD", label: "Material Received", short: "MRD" },
   { id: "WCD", label: "Work Completion", short: "WCD" },
-  { id: "PRL", label: "Pre-Receipt Logistics", short: "PRL" },
+  { id: "PRL", label: "Payment Request Letter", short: "PRL" },
   { id: "PAR", label: "Payment Approval", short: "PAR" },
   { id: "PDD", label: "Payment Done", short: "PDD" },
   { id: "COMPLETED", label: "Completed", short: "Done" },

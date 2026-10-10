@@ -71,7 +71,7 @@ export function getStageName(stage: CurrentStage): string {
     MDD:       "Material Dispatch",
     MRD:       "Material Received",
     WCD:       "Work Completion",
-    PRL:       "Pre-Receipt Logistics",
+    PRL:       "Payment Request Letter",
     PAR:       "Payment Approval",
     PDD:       "Payment Done",
     COMPLETED: "Completed",

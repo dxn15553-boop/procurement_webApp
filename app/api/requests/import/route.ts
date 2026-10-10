@@ -55,7 +55,7 @@ function cleanStage(val: string | null | undefined, fallback: CurrentStage = "CS
   const v = val.toString().toUpperCase().trim();
   if (v.includes("CANCEL")) return "CANCELLED";
   if (v.includes("COMPLET")) return "COMPLETED";
-  if (v.includes("PRL") || v.includes("PRE-RECEIPT") || v.includes("LOGISTICS")) return "PRL";
+  if (v.includes("PRL") || v.includes("PAYMENT REQUEST") || v.includes("PRE-RECEIPT") || v.includes("LOGISTICS")) return "PRL";
   if (v.includes("WCD") || v.includes("WORK COMPLETION")) return "WCD";
   if (v.includes("MRD") || v.includes("MATERIAL RECEIVED")) return "MRD";
   if (v.includes("MDD") || v.includes("MATERIAL DISPATCH")) return "MDD";
