@@ -262,8 +262,29 @@ export function generateImportTemplate() {
   }));
   ws["!cols"] = colWidths;
 
+  // Instructions Sheet detailing automatic source date and workflow date rules
+  const rulesData = [
+    ["PROCUREMENT WORKFLOW & DATE VALIDATION RULES"],
+    [""],
+    ["Rule 1: Source Date Automation", "When a source request is synced or created, Source Date is automatically set to the submission timestamp and locked."],
+    ["Rule 2: Sequential Date Order", "Milestone dates must follow the chronological workflow progression:"],
+    ["  - Stage 1: CS Phase", "Source Date <= Comparative Date (CS Date)"],
+    ["  - Stage 2: PR Phase", "CS Date <= Purchase Requisition Date (PR Date)"],
+    ["  - Stage 3: PO Phase", "PR Date <= Purchase Order Date (PO Date)"],
+    ["  - Stage 4: Logistics", "PO Date <= Material Dispatch Date <= Material Received Date <= Work Completion Date"],
+    ["  - Stage 5: Payment", "PO Date <= PRL Date <= Payment Approval Date <= Payment Done Date"],
+    ["  - Stage 6: Cancellation", "Source Date <= Cancellation Date (request must exist before cancellation)"],
+    [""],
+    ["Rule 3: Date Format", "Use YYYY-MM-DD format (e.g. 2026-10-12) for all date columns."],
+    ["Rule 4: Same-Day Milestones", "Milestones occurring on the same calendar day are valid (Source Date = CS Date = PR Date)."],
+    ["Rule 5: Automatic Sanity Clamping", "During bulk import, any inverted timestamps are automatically normalized so workflow integrity is never broken."],
+  ];
+  const wsRules = XLSX.utils.aoa_to_sheet(rulesData);
+  wsRules["!cols"] = [{ wch: 35 }, { wch: 80 }];
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Import Template");
+  XLSX.utils.book_append_sheet(wb, wsRules, "Workflow Date Rules");
   XLSX.writeFile(wb, `procurement_import_template.xlsx`);
 }
 

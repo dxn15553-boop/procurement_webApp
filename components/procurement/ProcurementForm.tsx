@@ -8,8 +8,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { generateSourceNo, formatDate } from "@/lib/utils";
 import { SLA_THRESHOLDS } from "@/lib/calculations";
-import { differenceInDays, parseISO } from "date-fns";
-import { Save, RefreshCw, AlertCircle, Sparkles, Loader2 } from "lucide-react";
+import { differenceInDays, parseISO, format } from "date-fns";
+import { Save, RefreshCw, AlertCircle, Sparkles, Loader2, Lock } from "lucide-react";
+import { getWorkflowDateMinBound, getWorkflowDateMaxBound, deriveStagePendingFrom } from "@/lib/dateWorkflow";
 
 interface Dept { id: string; name: string; }
 interface Vendor { id: string; name: string; }
@@ -55,6 +56,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
     resolver: zodResolver(procurementSchema),
     defaultValues: {
       sourceNo: "",
+      sourceDate: defaultValues?.sourceDate || format(new Date(), "yyyy-MM-dd"),
       csStatus: "PENDING",
       prStatus: "PENDING",
       poStatus: "PENDING",
@@ -258,7 +260,22 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
 
     if (autoStage !== currentStage) {
       setValue("currentStage", autoStage, { shouldDirty: true, shouldValidate: true });
-      setValue("pendingFrom", new Date().toISOString().split("T")[0], { shouldDirty: true });
+      const autoPending = deriveStagePendingFrom({
+        sourceCancellationDate,
+        paymentDoneDate,
+        paymentApprovalDate,
+        prlDate,
+        workCompletionDate,
+        materialReceivedDate,
+        materialDispatchDate,
+        poDate,
+        prDate,
+        comparativeDate,
+        sourceDate,
+      });
+      if (autoPending) {
+        setValue("pendingFrom", autoPending, { shouldDirty: true });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -472,8 +489,21 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
             {errors.sourceNo && !duplicateError && <p className="text-xs text-destructive mt-1">{errors.sourceNo.message}</p>}
           </div>
           <div>
-            <label className={labelClass}>Source Date</label>
-            <input type="date" {...register("sourceDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <div className="flex items-center justify-between mb-2">
+              <label className={labelClass}>Source Date</label>
+              <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 inline-flex items-center gap-1" title="Set automatically from source request and immutable">
+                <Lock className="w-2.5 h-2.5 text-slate-400" />
+                Auto
+              </span>
+            </div>
+            <input 
+              type="date" 
+              {...register("sourceDate")} 
+              readOnly 
+              tabIndex={-1}
+              className={`${inputClass} !bg-slate-100/80 !cursor-not-allowed text-slate-600 select-none pointer-events-none font-medium`} 
+              title="Source Date is filled automatically from the source request submission date & time and cannot be modified."
+            />
             {errors.sourceDate && <p className="text-xs text-destructive mt-1">{errors.sourceDate.message}</p>}
           </div>
           <div>
@@ -521,7 +551,14 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
 
           <div>
             <label className={labelClass}>Comparative Date</label>
-            <input type="date" min={watch("sourceDate") || undefined} {...register("comparativeDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input 
+              type="date" 
+              min={getWorkflowDateMinBound(allValues, "comparativeDate")} 
+              max={getWorkflowDateMaxBound(allValues, "comparativeDate")} 
+              {...register("comparativeDate")} 
+              disabled={readOnly || isCancelled} 
+              className={inputClass} 
+            />
           </div>
           <div>
             <label className={labelClass}>Days for CS <span className="text-blue-500">(Auto)</span></label>
@@ -579,7 +616,14 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>PR Date</label>
-            <input type="date" min={watch("sourceDate") || undefined} {...register("prDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input 
+              type="date" 
+              min={getWorkflowDateMinBound(allValues, "prDate")} 
+              max={getWorkflowDateMaxBound(allValues, "prDate")} 
+              {...register("prDate")} 
+              disabled={readOnly || isCancelled} 
+              className={inputClass} 
+            />
           </div>
           <div>
             <label className={labelClass}>Days for PR <span className="text-blue-500">(Auto)</span></label>
@@ -625,7 +669,14 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>PO Date</label>
-            <input type="date" min={watch("sourceDate") || undefined} {...register("poDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input 
+              type="date" 
+              min={getWorkflowDateMinBound(allValues, "poDate")} 
+              max={getWorkflowDateMaxBound(allValues, "poDate")} 
+              {...register("poDate")} 
+              disabled={readOnly || isCancelled} 
+              className={inputClass} 
+            />
           </div>
           <div>
             <label className={labelClass}>Days for PO <span className="text-blue-500">(Auto)</span></label>
@@ -651,15 +702,36 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>PRL Date</label>
-            <input type="date" min={watch("sourceDate") || undefined} {...register("prlDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input 
+              type="date" 
+              min={getWorkflowDateMinBound(allValues, "prlDate")} 
+              max={getWorkflowDateMaxBound(allValues, "prlDate")} 
+              {...register("prlDate")} 
+              disabled={readOnly || isCancelled} 
+              className={inputClass} 
+            />
           </div>
           <div>
             <label className={labelClass}>Payment Approval Date</label>
-            <input type="date" min={watch("sourceDate") || undefined} {...register("paymentApprovalDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input 
+              type="date" 
+              min={getWorkflowDateMinBound(allValues, "paymentApprovalDate")} 
+              max={getWorkflowDateMaxBound(allValues, "paymentApprovalDate")} 
+              {...register("paymentApprovalDate")} 
+              disabled={readOnly || isCancelled} 
+              className={inputClass} 
+            />
           </div>
           <div>
             <label className={labelClass}>Payment Done Date</label>
-            <input type="date" min={watch("sourceDate") || undefined} {...register("paymentDoneDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input 
+              type="date" 
+              min={getWorkflowDateMinBound(allValues, "paymentDoneDate")} 
+              max={getWorkflowDateMaxBound(allValues, "paymentDoneDate")} 
+              {...register("paymentDoneDate")} 
+              disabled={readOnly || isCancelled} 
+              className={inputClass} 
+            />
           </div>
           <div>
             <label className={labelClass}>Days for Payment <span className="text-blue-500">(Auto)</span></label>
@@ -681,22 +753,50 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>Material Dispatch Date</label>
-            <input type="date" min={watch("sourceDate") || undefined} {...register("materialDispatchDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input 
+              type="date" 
+              min={getWorkflowDateMinBound(allValues, "materialDispatchDate")} 
+              max={getWorkflowDateMaxBound(allValues, "materialDispatchDate")} 
+              {...register("materialDispatchDate")} 
+              disabled={readOnly || isCancelled} 
+              className={inputClass} 
+            />
           </div>
           <div>
             <label className={labelClass}>Material Received Date</label>
-            <input type="date" min={watch("sourceDate") || undefined} {...register("materialReceivedDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input 
+              type="date" 
+              min={getWorkflowDateMinBound(allValues, "materialReceivedDate")} 
+              max={getWorkflowDateMaxBound(allValues, "materialReceivedDate")} 
+              {...register("materialReceivedDate")} 
+              disabled={readOnly || isCancelled} 
+              className={inputClass} 
+            />
           </div>
           <div>
             <label className={labelClass}>Work Completion Date</label>
-            <input type="date" min={watch("sourceDate") || undefined} {...register("workCompletionDate")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input 
+              type="date" 
+              min={getWorkflowDateMinBound(allValues, "workCompletionDate")} 
+              max={getWorkflowDateMaxBound(allValues, "workCompletionDate")} 
+              {...register("workCompletionDate")} 
+              disabled={readOnly || isCancelled} 
+              className={inputClass} 
+            />
           </div>
           <div>
             <label className={labelClass}>
               Source Cancellation Date
               <span className="text-rose-500 font-bold ml-1 text-[11px]">(⚠️ Cancels Request)</span>
             </label>
-            <input type="date" min={watch("sourceDate") || undefined} {...register("sourceCancellationDate")} disabled={readOnly} className={`${inputClass} ${watch("sourceCancellationDate") ? "border-rose-400 bg-rose-50/50" : ""}`} title="Only set if source request was cancelled" />
+            <input 
+              type="date" 
+              min={getWorkflowDateMinBound(allValues, "sourceCancellationDate")} 
+              {...register("sourceCancellationDate")} 
+              disabled={readOnly} 
+              className={`${inputClass} ${watch("sourceCancellationDate") ? "border-rose-400 bg-rose-50/50" : ""}`} 
+              title="Only set if source request was cancelled" 
+            />
           </div>
         </div>
       </div>
@@ -718,7 +818,14 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
           </div>
           <div>
             <label className={labelClass}>Pending From</label>
-            <input type="date" {...register("pendingFrom")} disabled={readOnly || isCancelled} className={inputClass} />
+            <input 
+              type="date" 
+              min={getWorkflowDateMinBound(allValues, "pendingFrom")} 
+              max={getWorkflowDateMaxBound(allValues, "pendingFrom")} 
+              {...register("pendingFrom")} 
+              disabled={readOnly || isCancelled} 
+              className={inputClass} 
+            />
           </div>
           <div>
             <label className={labelClass}>Pending Days <span className="text-blue-500">(Auto)</span></label>

@@ -16,8 +16,8 @@ export default async function ManagerRequestsPage() {
   });
 
   return (
-    <div className="space-y-5 fade-in max-w-[100vw] overflow-hidden">
-      <div className="flex items-center justify-between px-2">
+    <div className="flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] fade-in max-w-[100vw] overflow-hidden gap-3">
+      <div className="flex items-center justify-between px-2 shrink-0">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-foreground">Procurement Database</h1>
@@ -33,7 +33,9 @@ export default async function ManagerRequestsPage() {
           New Request
         </Link>
       </div>
-      <ProcurementSpreadsheet session={session} />
+      <div className="flex-1 min-h-0 flex flex-col">
+        <ProcurementSpreadsheet session={session} />
+      </div>
     </div>
   );
 }

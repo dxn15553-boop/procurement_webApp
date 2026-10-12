@@ -22,15 +22,17 @@ export default async function TeamRequestsPage() {
   });
 
   return (
-    <div className="space-y-5 fade-in max-w-[100vw] overflow-hidden">
-      <div className="px-2">
+    <div className="flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] fade-in max-w-[100vw] overflow-hidden gap-3">
+      <div className="px-2 shrink-0">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold text-foreground">My Requests Database</h1>
           <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">Total: {totalCount}</span>
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">Inline editable database for your requests</p>
       </div>
-      <ProcurementSpreadsheet session={session} />
+      <div className="flex-1 min-h-0 flex flex-col">
+        <ProcurementSpreadsheet session={session} />
+      </div>
     </div>
   );
 }

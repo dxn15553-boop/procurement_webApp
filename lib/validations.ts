@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validateWorkflowDates } from "./dateWorkflow";
 
 export const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -46,34 +47,14 @@ export const procurementSchema = z.object({
   daysForPayment: z.number().optional().nullable(),
   procurementReceivedDate: z.string().optional().nullable(),
 }).superRefine((data, ctx) => {
-  if (!data.sourceDate) return;
-  const sDate = new Date(data.sourceDate);
-  if (isNaN(sDate.getTime())) return;
-
-  const checkDate = (field: keyof typeof data, label: string) => {
-    const val = data[field];
-    if (val && typeof val === "string") {
-      const d = new Date(val);
-      if (!isNaN(d.getTime()) && d < sDate) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `${label} cannot be earlier than Source Date`,
-          path: [field],
-        });
-      }
-    }
-  };
-
-  checkDate("comparativeDate", "Comparative Date");
-  checkDate("prDate", "PR Date");
-  checkDate("poDate", "PO Date");
-  checkDate("prlDate", "PRL Date");
-  checkDate("materialDispatchDate", "Material Dispatch Date");
-  checkDate("materialReceivedDate", "Material Received Date");
-  checkDate("workCompletionDate", "Work Completion Date");
-  checkDate("paymentApprovalDate", "Payment Approval Date");
-  checkDate("paymentDoneDate", "Payment Done Date");
-  checkDate("sourceCancellationDate", "Cancellation Date");
+  const result = validateWorkflowDates(data);
+  for (const err of result.errors) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: err.message,
+      path: [err.field as keyof typeof data],
+    });
+  }
 });
 
 export const departmentSchema = z.object({

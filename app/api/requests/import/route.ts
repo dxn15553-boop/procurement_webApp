@@ -7,6 +7,8 @@ import { calculateAllFields } from "@/lib/calculations";
 import { generateSourceNo } from "@/lib/utils";
 import type { CurrentStage } from "@/types";
 import { resolveDepartmentId, resolveVendorId } from "@/lib/departmentHelper";
+import { sanitizeImportDates, validateWorkflowDates } from "@/lib/dateWorkflow";
+import { fetchSourceRequestByNo } from "@/lib/sourceDb";
 
 function parseDate(val: any): Date | null {
   if (val === undefined || val === null || val === "") return null;
@@ -339,8 +341,25 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
       const description = rawDesc ? String(rawDesc).trim() : (existing?.sourceDescription || "Procurement Request");
 
       // 5. Extract and parse dates
-      const rawSourceDate = getValue(row, ["Source Date", "Date", "source_date", "source date", "request_date"]);
-      const sourceDate = parseDate(rawSourceDate) || existing?.sourceDate || new Date();
+      let effectiveSourceDate: Date = existing?.sourceDate ? new Date(existing.sourceDate) : new Date();
+      if (!existing?.sourceDate) {
+        // Try looking up the authentic submission date from Source DB
+        try {
+          const src = await fetchSourceRequestByNo(sourceNo);
+          if (src) {
+            if (src.request_date) effectiveSourceDate = new Date(src.request_date);
+            else if (src.created_at) effectiveSourceDate = new Date(src.created_at);
+          } else {
+            const rawSourceDate = getValue(row, ["Source Date", "Date", "source_date", "source date", "request_date"]);
+            const parsed = parseDate(rawSourceDate);
+            if (parsed) effectiveSourceDate = parsed;
+          }
+        } catch {
+          const rawSourceDate = getValue(row, ["Source Date", "Date", "source_date", "source date", "request_date"]);
+          const parsed = parseDate(rawSourceDate);
+          if (parsed) effectiveSourceDate = parsed;
+        }
+      }
 
       const rawCompDate = getValue(row, ["Comparative Date", "Comparative Statement Date", "CS Date", "comparative_date"]);
       const comparativeDate = rawCompDate !== undefined ? parseDate(rawCompDate) : (existing ? existing.comparativeDate : null);
@@ -374,6 +393,33 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
 
       const rawPendingFrom = getValue(row, ["Pending From Date", "Pending From", "pending_from", "pending_from_date"]);
       const pendingFrom = rawPendingFrom !== undefined ? parseDate(rawPendingFrom) : (existing ? existing.pendingFrom : null);
+
+      // Sanitize and enforce workflow date sequential ordering
+      const { sanitized: sDates } = sanitizeImportDates({
+        sourceDate: effectiveSourceDate,
+        comparativeDate,
+        prDate,
+        poDate,
+        materialDispatchDate,
+        materialReceivedDate,
+        workCompletionDate,
+        prlDate,
+        paymentApprovalDate,
+        paymentDoneDate,
+        sourceCancellationDate,
+      });
+
+      const sourceDate = sDates.sourceDate || effectiveSourceDate;
+      const cleanCompDate = sDates.comparativeDate;
+      const cleanPrDate = sDates.prDate;
+      const cleanPoDate = sDates.poDate;
+      const cleanMddDate = sDates.materialDispatchDate;
+      const cleanMrdDate = sDates.materialReceivedDate;
+      const cleanWcdDate = sDates.workCompletionDate;
+      const cleanPrlDate = sDates.prlDate;
+      const cleanParDate = sDates.paymentApprovalDate;
+      const cleanPddDate = sDates.paymentDoneDate;
+      const cleanCancelDate = sDates.sourceCancellationDate;
 
       // 6. Stages & Statuses
       const rawStage = getValue(row, ["Current Stage", "Stage", "current_stage", "stage"]);
@@ -418,14 +464,14 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
       const rawProcDate = getValue(row, ["Procurement Received Date", "Procurement Date", "procurement_received_date"]);
       const procurementReceivedDate = rawProcDate !== undefined ? parseDate(rawProcDate) : (existing ? existing.procurementReceivedDate : (sourceDate || new Date()));
 
-      // 9. Calculate dynamic fields and SLA
+      // 9. Calculate dynamic fields and SLA using sanitized workflow dates
       const calc = calculateAllFields({
         sourceDate,
-        comparativeDate,
-        prDate,
-        poDate,
-        prlDate,
-        paymentDoneDate,
+        comparativeDate: cleanCompDate,
+        prDate: cleanPrDate,
+        poDate: cleanPoDate,
+        prlDate: cleanPrlDate,
+        paymentDoneDate: cleanPddDate,
         pendingFrom,
         currentStage,
       });
@@ -439,27 +485,27 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
             departmentId: deptId!,
             vendorId: vendId,
             sourceDate,
-            comparativeDate,
+            comparativeDate: cleanCompDate,
             daysForCS: calc.daysForCS,
             csStatus,
             prNumber,
-            prDate,
+            prDate: cleanPrDate,
             daysForPR: calc.daysForPR,
             prStatus,
             poNumber,
-            poDate,
+            poDate: cleanPoDate,
             poStatus,
             daysForPO: calc.daysForPO,
-            paymentApprovalDate,
-            paymentDoneDate,
+            paymentApprovalDate: cleanParDate,
+            paymentDoneDate: cleanPddDate,
             paymentStatus,
             daysForPayment: calc.daysForPayment,
             prlNo,
-            prlDate,
-            materialDispatchDate,
-            materialReceivedDate,
-            workCompletionDate,
-            sourceCancellationDate,
+            prlDate: cleanPrlDate,
+            materialDispatchDate: cleanMddDate,
+            materialReceivedDate: cleanMrdDate,
+            workCompletionDate: cleanWcdDate,
+            sourceCancellationDate: cleanCancelDate,
             currentStatusByHandler,
             nameOfHandler: handlerName || null,
             handlerId: handlerId || null,
@@ -506,27 +552,27 @@ export async function processImportBuffer(buffer: ArrayBuffer | Buffer, userId: 
               departmentId: deptId!,
               vendorId: vendId,
               sourceDate,
-              comparativeDate,
+              comparativeDate: cleanCompDate,
               daysForCS: calc.daysForCS,
               csStatus,
               prNumber,
-              prDate,
+              prDate: cleanPrDate,
               daysForPR: calc.daysForPR,
               prStatus,
               poNumber,
-              poDate,
+              poDate: cleanPoDate,
               poStatus,
               daysForPO: calc.daysForPO,
-              paymentApprovalDate,
-              paymentDoneDate,
+              paymentApprovalDate: cleanParDate,
+              paymentDoneDate: cleanPddDate,
               paymentStatus,
               daysForPayment: calc.daysForPayment,
               prlNo,
-              prlDate,
-              materialDispatchDate,
-              materialReceivedDate,
-              workCompletionDate,
-              sourceCancellationDate,
+              prlDate: cleanPrlDate,
+              materialDispatchDate: cleanMddDate,
+              materialReceivedDate: cleanMrdDate,
+              workCompletionDate: cleanWcdDate,
+              sourceCancellationDate: cleanCancelDate,
               currentStatusByHandler,
               nameOfHandler: handlerName || null,
               handlerId: handlerId || null,

@@ -6,6 +6,7 @@ import { calculateAllFields, deriveCurrentStage } from "@/lib/calculations";
 import type { CurrentStage } from "@/types";
 import { parse, isValid, parseISO } from "date-fns";
 import { resolveDepartmentId, resolveVendorId } from "@/lib/departmentHelper";
+import { validateWorkflowDates } from "@/lib/dateWorkflow";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -231,7 +232,17 @@ export async function POST(req: Request) {
     }
     const vendorId = await resolveVendorId(data.vendorId);
 
-  const sourceDate = parseDate(data.sourceDate) || new Date();
+  // Auto-fill Source Date from original Source App submission date if available
+  let sourceDate = parseDate(data.sourceDate) || new Date();
+  try {
+    const { fetchSourceRequestByNo } = await import("@/lib/sourceDb");
+    const src = await fetchSourceRequestByNo(cleanSourceNo);
+    if (src) {
+      if (src.request_date) sourceDate = new Date(src.request_date);
+      else if (src.created_at) sourceDate = new Date(src.created_at);
+    }
+  } catch {}
+
   const comparativeDate = parseDate(data.comparativeDate);
   const prDate = parseDate(data.prDate);
   const poDate = parseDate(data.poDate);
@@ -242,6 +253,27 @@ export async function POST(req: Request) {
   const workCompletionDate = parseDate(data.workCompletionDate);
   const sourceCancellationDate = parseDate(data.sourceCancellationDate);
   const paymentApprovalDate = parseDate(data.paymentApprovalDate);
+
+  // Validate workflow date sequence
+  const dateValidation = validateWorkflowDates({
+    sourceDate,
+    comparativeDate,
+    prDate,
+    poDate,
+    materialDispatchDate,
+    materialReceivedDate,
+    workCompletionDate,
+    prlDate,
+    paymentApprovalDate,
+    paymentDoneDate,
+    sourceCancellationDate,
+  });
+  if (!dateValidation.isValid) {
+    return NextResponse.json(
+      { error: { message: dateValidation.firstError || "Workflow date sequence validation failed." } },
+      { status: 400 }
+    );
+  }
 
   const csStatus = cleanCSStatus(data.csStatus);
   let prStatus = cleanPRStatus(data.prStatus);

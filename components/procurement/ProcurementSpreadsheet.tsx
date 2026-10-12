@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Plus, Save, RefreshCw, Trash2, ArrowRight, ChevronLeft, ChevronRight, Upload, FileSpreadsheet, FileText, Sparkles, Loader2, X, AlertTriangle } from "lucide-react";
+import { Plus, Save, RefreshCw, Trash2, ArrowRight, ChevronLeft, ChevronRight, Upload, FileSpreadsheet, FileText, Sparkles, Loader2, X, AlertTriangle, Lock } from "lucide-react";
 import { generateSourceNo, formatDate } from "@/lib/utils";
 import { differenceInDays, parseISO, format } from "date-fns";
 import { SLA_THRESHOLDS } from "@/lib/calculations";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { exportUniformCsv, exportUniformExcel, generateImportTemplate } from "@/lib/exportHelper";
+import { validateWorkflowDates, getWorkflowDateMinBound, getWorkflowDateMaxBound, deriveStagePendingFrom } from "@/lib/dateWorkflow";
 
 interface RowData {
   id: string; // "new-xxx" or real database id
@@ -284,13 +285,6 @@ export function ProcurementSpreadsheet({ session }: Props) {
     if (row.prlDate && row.paymentDoneDate) {
       try { daysForPayment = Math.max(0, differenceInDays(parseISO(row.paymentDoneDate), parseISO(row.prlDate))); } catch {}
     }
-    if (row.sourceDate) {
-      try { noOfDays = Math.max(0, differenceInDays(new Date(), parseISO(row.sourceDate))); } catch {}
-    }
-    if (row.pendingFrom) {
-      try { pendingDays = Math.max(0, differenceInDays(new Date(), parseISO(row.pendingFrom))); } catch {}
-    }
-
     let currentStage = row.currentStage || "CS";
     if (row.sourceCancellationDate) currentStage = "CANCELLED";
     else if (row.paymentDoneDate) currentStage = "COMPLETED";
@@ -303,6 +297,22 @@ export function ProcurementSpreadsheet({ session }: Props) {
     else if (row.prDate) currentStage = "PO";
     else if (row.comparativeDate) currentStage = "PR";
     else currentStage = "CS";
+
+    // Auto-update pendingFrom when workflow stage advances, or initialize if missing
+    let pendingFrom = row.pendingFrom;
+    if (!pendingFrom || (currentStage !== row.currentStage && currentStage !== "COMPLETED" && currentStage !== "CANCELLED")) {
+      const autoPending = deriveStagePendingFrom({ ...row, currentStage });
+      if (autoPending) pendingFrom = autoPending;
+    }
+
+    if (row.sourceDate) {
+      try { noOfDays = Math.max(0, differenceInDays(new Date(), parseISO(row.sourceDate))); } catch {}
+    }
+    if (pendingFrom && currentStage !== "COMPLETED" && currentStage !== "CANCELLED") {
+      try { pendingDays = Math.max(0, differenceInDays(new Date(), parseISO(pendingFrom))); } catch {}
+    } else {
+      pendingDays = null;
+    }
 
     let prStatus = row.prStatus;
     if ((row.prDate || row.prNumber) && (!prStatus || prStatus === "PENDING")) {
@@ -337,11 +347,46 @@ export function ProcurementSpreadsheet({ session }: Props) {
       slaStatus = "COMPLETED";
     }
 
-    return { ...row, daysForCS, daysForPR, daysForPO, daysForPayment, noOfDays, pendingDays, currentStage, slaStatus, prStatus, csStatus, poStatus, paymentStatus, isDirty: true };
+    return { ...row, daysForCS, daysForPR, daysForPO, daysForPayment, noOfDays, pendingDays, pendingFrom, currentStage, slaStatus, prStatus, csStatus, poStatus, paymentStatus, isDirty: true };
   }, []);
+
+  const DATE_FIELDS: (keyof RowData)[] = [
+    "comparativeDate",
+    "prDate",
+    "poDate",
+    "materialDispatchDate",
+    "materialReceivedDate",
+    "workCompletionDate",
+    "prlDate",
+    "paymentApprovalDate",
+    "paymentDoneDate",
+    "sourceCancellationDate",
+    "pendingFrom",
+  ];
 
   // Handle cell edit change
   const handleCellChange = (id: string, field: keyof RowData, value: any) => {
+    // 1. Source Date cannot be changed manually
+    if (field === "sourceDate") {
+      toast.info("Source Date is automatically set to the submission date and cannot be modified manually.");
+      return;
+    }
+
+    // 2. Validate workflow date order if a date cell is edited
+    if (DATE_FIELDS.includes(field) && value) {
+      const targetRow = rows.find((r) => r.id === id);
+      if (targetRow) {
+        const candidateRow = { ...targetRow, [field]: value };
+        const validation = validateWorkflowDates(candidateRow);
+        if (!validation.isValid) {
+          toast.error("Workflow Date Sequence Error", {
+            description: validation.firstError,
+          });
+          return;
+        }
+      }
+    }
+
     setRows((prev) =>
       prev.map((row) => {
         if (row.id !== id) return row;
@@ -475,6 +520,15 @@ export function ProcurementSpreadsheet({ session }: Props) {
       // Backend POST/PUT will still validate
     }
     
+    // 3. Workflow Sequential Date Validation
+    const dateValidation = validateWorkflowDates(row);
+    if (!dateValidation.isValid) {
+      toast.error("Cannot save row with invalid date order!", {
+        description: dateValidation.firstError,
+      });
+      return;
+    }
+
     setSavingId(row.id);
     try {
       const url = row.isNew ? "/api/requests" : `/api/requests/${row.id}`;
@@ -848,11 +902,89 @@ export function ProcurementSpreadsheet({ session }: Props) {
       )}
 
       {/* Table Card Container */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.06)] flex flex-col flex-1">
+      <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.06)] flex flex-col flex-1 min-h-0">
+        {/* Controls Toolbar: Action, Export & Pagination */}
+        <div className="shrink-0 border-b border-slate-200/90 bg-slate-50/80 backdrop-blur-xs px-3.5 py-2 flex flex-wrap items-center justify-between gap-3 select-none">
+          <div className="flex flex-wrap items-center gap-2">
+            <input 
+              type="file" 
+              accept=".csv, .xlsx, .xls" 
+              className="hidden" 
+              ref={importFileInputRef} 
+              onChange={handleImportFile}
+            />
+            <button 
+              disabled={importing}
+              onClick={() => importFileInputRef.current?.click()}
+              className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-100 transition-all font-bold shadow-xs disabled:opacity-50 cursor-pointer"
+              title="Import Excel or CSV into the Procurement Database"
+            >
+              {importing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-indigo-600" />}
+              Import Data
+            </button>
+            <button 
+              type="button"
+              onClick={() => generateImportTemplate()}
+              className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-white border border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-50 transition-all font-bold shadow-xs cursor-pointer"
+              title="Download an Excel template matching the export format"
+            >
+              <FileText className="w-3.5 h-3.5 text-indigo-600" />
+              Template
+            </button>
+            <button 
+              onClick={exportToExcel} 
+              className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-white border border-emerald-200 text-emerald-700 rounded-lg hover:bg-emerald-50 transition-all font-bold shadow-xs cursor-pointer"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              Export Excel
+            </button>
+            <button 
+              onClick={exportToCSV} 
+              className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white rounded-lg hover:from-indigo-700 hover:to-violet-800 transition-all font-bold shadow-xs cursor-pointer"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              Export CSV
+            </button>
+
+            {/* Quick horizontal scroll helpers */}
+            <div className="hidden sm:flex items-center gap-1 ml-2 bg-white px-1.5 py-0.5 rounded-lg border border-slate-200 shadow-xs">
+              <span className="text-[10px] font-bold uppercase text-slate-500 px-1">Scroll:</span>
+              <button
+                type="button"
+                onClick={() => scrollTable(-600)}
+                className="px-2 py-0.5 text-xs font-bold rounded bg-slate-50 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 transition-all flex items-center gap-0.5 shadow-xs cursor-pointer"
+                title="Scroll Left"
+              >
+                <ChevronLeft className="w-3 h-3" />
+                <span>Left</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollTable(600)}
+                className="px-2 py-0.5 text-xs font-bold rounded bg-slate-50 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 transition-all flex items-center gap-0.5 shadow-xs cursor-pointer"
+                title="Scroll Right"
+              >
+                <span>Right</span>
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500 hidden sm:inline font-medium">Page {page} of {totalPages}</span>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-colors shadow-xs cursor-pointer">
+              ← Prev
+            </button>
+            <span className="px-2.5 py-1 text-xs font-bold text-slate-700 bg-white rounded-lg border border-slate-200 shadow-xs">{page} / {totalPages}</span>
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-colors shadow-xs cursor-pointer">
+              Next →
+            </button>
+          </div>
+        </div>
+
+        {/* Spreadsheet Table Scroll Container */}
         <div 
           ref={tableContainerRef}
-          className="overflow-x-auto overflow-y-auto custom-scrollbar flex-1 [WebkitOverflowScrolling:touch]" 
-          style={{ maxHeight: "calc(100vh - 315px)", minHeight: "380px" }}
+          className="overflow-x-auto overflow-y-auto custom-scrollbar flex-1 min-h-0 [WebkitOverflowScrolling:touch]" 
         >
           <datalist id="handler-suggestions">
             {handlers.map((h) => (
@@ -883,7 +1015,15 @@ export function ProcurementSpreadsheet({ session }: Props) {
                 <th className={headerCellClass} style={{ width: "140px" }}>Created By</th>
                 <th className={headerCellClass} style={{ width: "135px" }}>Added Time</th>
                 <th className={headerCellClass} style={{ width: "120px" }}>Source No</th>
-                <th className={headerCellClass} style={{ width: "120px" }}>Source Date *</th>
+                <th className={headerCellClass} style={{ width: "145px" }}>
+                  <div className="flex items-center gap-1.5">
+                    <span>Source Date *</span>
+                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-100/90 px-1.5 py-0.5 rounded border border-slate-200/80 inline-flex items-center gap-1" title="Set automatically from source request and immutable">
+                      <Lock className="w-2.5 h-2.5 text-slate-400" />
+                      Auto
+                    </span>
+                  </div>
+                </th>
                 <th className={headerCellClass} style={{ width: "260px" }}>Source Description *</th>
                 <th className={headerCellClass} style={{ width: "160px" }}>Department *</th>
                 <th className={headerCellClass} style={{ width: "150px" }}>Name of Handler</th>
@@ -1092,12 +1232,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
                       </div>
                     </td>
 
-                    {/* Source Date (text input) */}
-                    <td className={bodyCellClass}>
-                      <input type="date" value={row.sourceDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
-                        onChange={(e) => handleCellChange(row.id, "sourceDate", e.target.value)}
-                        className={cellInputClass}
-                      />
+                    {/* Source Date (Auto & Immutable) */}
+                    <td className={`${bodyCellClass} bg-slate-50/70`} title="Source Date is automatically set from the source request submission date and time. It cannot be modified manually.">
+                      <div className="flex items-center justify-between gap-1 px-2.5 py-1.5 text-slate-700 font-mono text-[11px] select-all cursor-not-allowed">
+                        <span>{row.sourceDate || "—"}</span>
+                        <Lock className="w-3 h-3 text-slate-400 shrink-0" />
+                      </div>
                     </td>
 
                     {/* Source Description */}
@@ -1142,7 +1282,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Comparative Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" min={row.sourceDate || undefined} value={row.comparativeDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input 
+                        type="date" 
+                        min={getWorkflowDateMinBound(row, "comparativeDate")} 
+                        max={getWorkflowDateMaxBound(row, "comparativeDate")} 
+                        value={row.comparativeDate} 
+                        disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "comparativeDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -1182,7 +1327,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PR Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" min={row.sourceDate || undefined} value={row.prDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input 
+                        type="date" 
+                        min={getWorkflowDateMinBound(row, "prDate")} 
+                        max={getWorkflowDateMaxBound(row, "prDate")} 
+                        value={row.prDate} 
+                        disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "prDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -1226,7 +1376,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PO Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" min={row.sourceDate || undefined} value={row.poDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input 
+                        type="date" 
+                        min={getWorkflowDateMinBound(row, "poDate")} 
+                        max={getWorkflowDateMaxBound(row, "poDate")} 
+                        value={row.poDate} 
+                        disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "poDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -1250,7 +1405,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Material Dispatch Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" min={row.sourceDate || undefined} value={row.materialDispatchDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input 
+                        type="date" 
+                        min={getWorkflowDateMinBound(row, "materialDispatchDate")} 
+                        max={getWorkflowDateMaxBound(row, "materialDispatchDate")} 
+                        value={row.materialDispatchDate} 
+                        disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "materialDispatchDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -1258,7 +1418,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Material Received Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" min={row.sourceDate || undefined} value={row.materialReceivedDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input 
+                        type="date" 
+                        min={getWorkflowDateMinBound(row, "materialReceivedDate")} 
+                        max={getWorkflowDateMaxBound(row, "materialReceivedDate")} 
+                        value={row.materialReceivedDate} 
+                        disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "materialReceivedDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -1266,7 +1431,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Work Completion Date */}
                     <td className={bodyCellClass}>
-                      <input type="date" min={row.sourceDate || undefined} value={row.workCompletionDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input 
+                        type="date" 
+                        min={getWorkflowDateMinBound(row, "workCompletionDate")} 
+                        max={getWorkflowDateMaxBound(row, "workCompletionDate")} 
+                        value={row.workCompletionDate} 
+                        disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "workCompletionDate", e.target.value)}
                         className={cellInputClass}
                         title="Work Completion Date"
@@ -1284,7 +1454,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* PRL DATE (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" min={row.sourceDate || undefined} value={row.prlDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input 
+                        type="date" 
+                        min={getWorkflowDateMinBound(row, "prlDate")} 
+                        max={getWorkflowDateMaxBound(row, "prlDate")} 
+                        value={row.prlDate} 
+                        disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "prlDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -1292,7 +1467,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Payment Approval Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" min={row.sourceDate || undefined} value={row.paymentApprovalDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input 
+                        type="date" 
+                        min={getWorkflowDateMinBound(row, "paymentApprovalDate")} 
+                        max={getWorkflowDateMaxBound(row, "paymentApprovalDate")} 
+                        value={row.paymentApprovalDate} 
+                        disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "paymentApprovalDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -1300,7 +1480,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Payment Done Date (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" min={row.sourceDate || undefined} value={row.paymentDoneDate} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input 
+                        type="date" 
+                        min={getWorkflowDateMinBound(row, "paymentDoneDate")} 
+                        max={getWorkflowDateMaxBound(row, "paymentDoneDate")} 
+                        value={row.paymentDoneDate} 
+                        disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "paymentDoneDate", e.target.value)}
                         className={cellInputClass}
                       />
@@ -1341,7 +1526,12 @@ export function ProcurementSpreadsheet({ session }: Props) {
 
                     {/* Pending From (text input) */}
                     <td className={bodyCellClass}>
-                      <input type="date" value={row.pendingFrom} disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
+                      <input 
+                        type="date" 
+                        min={getWorkflowDateMinBound(row, "pendingFrom")} 
+                        max={getWorkflowDateMaxBound(row, "pendingFrom")} 
+                        value={row.pendingFrom} 
+                        disabled={!row.isNew && (row.currentStage === "CANCELLED" || !!row.sourceCancellationDate)}
                         onChange={(e) => handleCellChange(row.id, "pendingFrom", e.target.value)}
                         className={cellInputClass}
                       />
@@ -1360,6 +1550,7 @@ export function ProcurementSpreadsheet({ session }: Props) {
                     <td className={bodyCellClass}>
                       <input
                         type="date"
+                        min={getWorkflowDateMinBound(row, "sourceCancellationDate")}
                         value={row.sourceCancellationDate}
                         onChange={(e) => handleCellChange(row.id, "sourceCancellationDate", e.target.value)}
                         className={cellInputClass}
@@ -1461,81 +1652,6 @@ export function ProcurementSpreadsheet({ session }: Props) {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      {/* Pagination, Scroll Navigation & Export Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 pb-1 px-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <input 
-            type="file" 
-            accept=".csv, .xlsx, .xls" 
-            className="hidden" 
-            ref={importFileInputRef} 
-            onChange={handleImportFile}
-          />
-          <button 
-            disabled={importing}
-            onClick={() => importFileInputRef.current?.click()}
-            className="text-xs flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-bold shadow-sm disabled:opacity-50"
-            title="Import Excel or CSV into the Procurement Database"
-          >
-            {importing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-indigo-600" />}
-            Import Data
-          </button>
-          <button 
-            type="button"
-            onClick={() => generateImportTemplate()}
-            className="text-xs flex items-center gap-1.5 px-3 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-xl hover:bg-indigo-50 transition-all font-bold shadow-sm"
-            title="Download an Excel template matching the export format"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            Template
-          </button>
-          <button 
-            onClick={exportToExcel} 
-            className="text-xs flex items-center gap-1.5 px-3.5 py-2 bg-white border border-emerald-200 text-emerald-700 rounded-xl hover:bg-emerald-50 transition-all font-bold shadow-sm"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            Export Excel
-          </button>
-          <button 
-            onClick={exportToCSV} 
-            className="text-xs flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white rounded-xl hover:from-indigo-700 hover:to-violet-800 transition-all font-bold shadow-md shadow-indigo-500/20"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-            Export CSV
-          </button>
-
-          {/* Quick horizontal scroll helpers */}
-          <div className="hidden sm:flex items-center gap-1 ml-2 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
-            <span className="text-[10px] font-bold uppercase text-slate-500 px-2">Scroll Table:</span>
-            <button
-              onClick={() => scrollTable(-600)}
-              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 transition-all flex items-center gap-1 shadow-xs"
-              title="Scroll Left"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-              <span>Left</span>
-            </button>
-            <button
-              onClick={() => scrollTable(600)}
-              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 transition-all flex items-center gap-1 shadow-xs"
-              title="Scroll Right"
-            >
-              <span>Right</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-colors shadow-sm">
-            ← Prev
-          </button>
-          <span className="px-3.5 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl border border-slate-200/80">{page} / {totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-colors shadow-sm">
-            Next →
-          </button>
         </div>
       </div>
 

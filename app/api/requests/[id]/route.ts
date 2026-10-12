@@ -6,6 +6,7 @@ import { calculateAllFields, deriveCurrentStage } from "@/lib/calculations";
 import type { CurrentStage } from "@/types";
 import { parse, isValid } from "date-fns";
 import { resolveDepartmentId, resolveVendorId } from "@/lib/departmentHelper";
+import { validateWorkflowDates } from "@/lib/dateWorkflow";
 
 function parseDate(val: string | null | undefined): Date | null {
   if (!val) return null;
@@ -168,7 +169,8 @@ export async function PUT(
     }
     const vendorId = await resolveVendorId(data.vendorId);
 
-    const sourceDate = parseDate(data.sourceDate) || new Date();
+    // Source Date is immutable and preserved from the authentic request submission
+    const sourceDate = existing.sourceDate || parseDate(data.sourceDate) || new Date();
     const comparativeDate = parseDate(data.comparativeDate);
     const prDate = parseDate(data.prDate);
     const poDate = parseDate(data.poDate);
@@ -179,6 +181,27 @@ export async function PUT(
     const workCompletionDate = parseDate(data.workCompletionDate);
     const sourceCancellationDate = parseDate(data.sourceCancellationDate);
     const paymentApprovalDate = parseDate(data.paymentApprovalDate);
+
+    // Validate workflow date sequence
+    const dateValidation = validateWorkflowDates({
+      sourceDate,
+      comparativeDate,
+      prDate,
+      poDate,
+      materialDispatchDate,
+      materialReceivedDate,
+      workCompletionDate,
+      prlDate,
+      paymentApprovalDate,
+      paymentDoneDate,
+      sourceCancellationDate,
+    });
+    if (!dateValidation.isValid) {
+      return NextResponse.json(
+        { error: { message: dateValidation.firstError || "Workflow date sequence validation failed." } },
+        { status: 400 }
+      );
+    }
 
     const csStatus = cleanCSStatus(data.csStatus);
     let prStatus = cleanPRStatus(data.prStatus);
@@ -417,6 +440,27 @@ export async function PATCH(
       paymentDoneDate: updateData.paymentDoneDate !== undefined ? updateData.paymentDoneDate : existing.paymentDoneDate,
       sourceCancellationDate: updateData.sourceCancellationDate !== undefined ? updateData.sourceCancellationDate : existing.sourceCancellationDate,
     });
+    // Validate workflow date sequence on PATCH
+    const dateValidation = validateWorkflowDates({
+      sourceDate: existing.sourceDate,
+      comparativeDate: updateData.comparativeDate !== undefined ? updateData.comparativeDate : existing.comparativeDate,
+      prDate: updateData.prDate !== undefined ? updateData.prDate : existing.prDate,
+      poDate: updateData.poDate !== undefined ? updateData.poDate : existing.poDate,
+      materialDispatchDate: updateData.materialDispatchDate !== undefined ? updateData.materialDispatchDate : existing.materialDispatchDate,
+      materialReceivedDate: updateData.materialReceivedDate !== undefined ? updateData.materialReceivedDate : existing.materialReceivedDate,
+      workCompletionDate: updateData.workCompletionDate !== undefined ? updateData.workCompletionDate : existing.workCompletionDate,
+      prlDate: updateData.prlDate !== undefined ? updateData.prlDate : existing.prlDate,
+      paymentApprovalDate: updateData.paymentApprovalDate !== undefined ? updateData.paymentApprovalDate : existing.paymentApprovalDate,
+      paymentDoneDate: updateData.paymentDoneDate !== undefined ? updateData.paymentDoneDate : existing.paymentDoneDate,
+      sourceCancellationDate: updateData.sourceCancellationDate !== undefined ? updateData.sourceCancellationDate : existing.sourceCancellationDate,
+    });
+    if (!dateValidation.isValid) {
+      return NextResponse.json(
+        { error: { message: dateValidation.firstError || "Workflow date sequence validation failed." } },
+        { status: 400 }
+      );
+    }
+
     updateData.currentStage = derivedStage;
 
     if (derivedStage !== existing.currentStage && updateData.pendingFrom === undefined) {
