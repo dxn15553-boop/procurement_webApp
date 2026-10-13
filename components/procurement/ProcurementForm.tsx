@@ -489,13 +489,7 @@ export function ProcurementForm({ mode = "create", defaultValues, requestId, rea
             {errors.sourceNo && !duplicateError && <p className="text-xs text-destructive mt-1">{errors.sourceNo.message}</p>}
           </div>
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className={labelClass}>Source Date</label>
-              <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 inline-flex items-center gap-1" title="Set automatically from source request and immutable">
-                <Lock className="w-2.5 h-2.5 text-slate-400" />
-                Auto
-              </span>
-            </div>
+            <label className={labelClass}>Source Date</label>
             <input 
               type="date" 
               {...register("sourceDate")} 
