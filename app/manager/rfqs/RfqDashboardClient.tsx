@@ -408,23 +408,26 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  navigator.clipboard.writeText(`http://localhost:5173/vendor/rfqs/${vendor.accessKey}`);
-                                  toast.success(`Copied magic link for ${vendor.vendorName}!`);
+                                  const prodUrl = `https://www.dxnmanufacturing.com/vendor/rfqs/${vendor.accessKey}`;
+                                  navigator.clipboard.writeText(prodUrl);
+                                  toast.success(`Copied official link for ${vendor.vendorName}!`);
                                 }}
                                 className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-medium cursor-pointer"
-                                title="Copy link to send via WhatsApp or Email"
+                                title="Copy official link to send via WhatsApp or Email"
                               >
                                 <Copy className="w-3 h-3" />
-                                <span>Copy Magic Link</span>
+                                <span>Copy Official Link</span>
                               </button>
                               <a
-                                href={`http://localhost:5173/vendor/rfqs/${vendor.accessKey}`}
+                                href={typeof window !== 'undefined' && window.location.hostname === 'localhost'
+                                  ? `http://localhost:5173/vendor/rfqs/${vendor.accessKey}`
+                                  : `https://www.dxnmanufacturing.com/vendor/rfqs/${vendor.accessKey}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 hover:underline font-bold"
-                                title="Open vendor quotation submission form directly"
+                                title="Open vendor quotation submission form"
                               >
-                                <span>Open as Vendor</span>
+                                <span>Open Form</span>
                                 <ExternalLink className="w-3 h-3" />
                               </a>
                             </div>

@@ -234,7 +234,7 @@ export async function sendRfqInvitationEmail({
   submissionDeadline,
   deliveryLocation,
   accessKey,
-  vendorPortalUrl = process.env.NEXT_PUBLIC_VENDOR_PORTAL_URL || "http://localhost:5173",
+  vendorPortalUrl = process.env.VENDOR_PORTAL_URL || process.env.NEXT_PUBLIC_VENDOR_PORTAL_URL || "https://www.dxnmanufacturing.com",
 }: RfqInvitationEmailProps) {
   if (!process.env.SMTP_USER && process.env.NODE_ENV === "production") {
     console.warn("SMTP credentials not configured. Skipping vendor RFQ email.");
