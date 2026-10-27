@@ -207,3 +207,138 @@ export async function sendBatchReminderEmail({ to, cc, handlerName, userRole, is
   }
 }
 
+export interface RfqInvitationEmailProps {
+  to: string;
+  vendorName: string;
+  rfqNumber: string;
+  sourceNo: string;
+  title: string;
+  specifications?: string | null;
+  quantity?: number | null;
+  unit?: string | null;
+  submissionDeadline: string;
+  deliveryLocation?: string | null;
+  accessKey: string;
+  vendorPortalUrl?: string;
+}
+
+export async function sendRfqInvitationEmail({
+  to,
+  vendorName,
+  rfqNumber,
+  sourceNo,
+  title,
+  specifications,
+  quantity,
+  unit,
+  submissionDeadline,
+  deliveryLocation,
+  accessKey,
+  vendorPortalUrl = process.env.NEXT_PUBLIC_VENDOR_PORTAL_URL || "http://localhost:5173",
+}: RfqInvitationEmailProps) {
+  if (!process.env.SMTP_USER && process.env.NODE_ENV === "production") {
+    console.warn("SMTP credentials not configured. Skipping vendor RFQ email.");
+    return false;
+  }
+
+  const directSubmitUrl = `${vendorPortalUrl}/vendor/rfqs/${accessKey}`;
+
+  const htmlContent = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+      <!-- Header -->
+      <div style="background: #0f172a; padding: 24px 32px; border-bottom: 3px solid #dc2626;">
+        <div style="color: #ef4444; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px;">
+          DXN Manufacturing India · Procurement Department
+        </div>
+        <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">
+          Request for Quotation (RFQ)
+        </h1>
+        <p style="color: #94a3b8; margin: 6px 0 0; font-size: 13px; font-family: monospace;">
+          Reference: ${rfqNumber} (Source: ${sourceNo})
+        </p>
+      </div>
+
+      <!-- Main Body -->
+      <div style="padding: 32px;">
+        <p style="color: #1e293b; margin: 0 0 16px; font-size: 15px;">
+          Dear <strong>${vendorName}</strong>,
+        </p>
+        <p style="color: #475569; margin: 0 0 24px; line-height: 1.6; font-size: 14px;">
+          DXN Manufacturing India Pvt. Ltd. invites your esteemed organization to submit a commercial quotation for the procurement requirement detailed below:
+        </p>
+
+        <!-- Details Card -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 28px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; width: 140px; font-weight: 600;">Subject / Title:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${title}</td>
+            </tr>
+            ${quantity ? `
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Required Quantity:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${quantity} ${unit || "Units"}</td>
+            </tr>
+            ` : ""}
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Submission Deadline:</td>
+              <td style="padding: 6px 0; color: #dc2626; font-weight: bold;">${new Date(submissionDeadline).toLocaleDateString("en-IN", { weekday: "short", year: "numeric", month: "long", day: "numeric" })}</td>
+            </tr>
+            ${deliveryLocation ? `
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Delivery Plant:</td>
+              <td style="padding: 6px 0; color: #0f172a;">${deliveryLocation}</td>
+            </tr>
+            ` : ""}
+            ${specifications ? `
+            <tr>
+              <td style="padding: 10px 0 4px 0; color: #64748b; font-weight: 600; vertical-align: top;">Specifications:</td>
+              <td style="padding: 10px 0 4px 0; color: #334155; line-height: 1.5; white-space: pre-wrap;">${specifications}</td>
+            </tr>
+            ` : ""}
+          </table>
+        </div>
+
+        <!-- Call to Action -->
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${directSubmitUrl}" style="display: inline-block; background: #dc2626; color: #ffffff; padding: 14px 32px; border-radius: 8px; font-size: 15px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);">
+            Submit Quotation Online →
+          </a>
+          <p style="color: #64748b; font-size: 12px; margin: 12px 0 0;">
+            ✓ <strong>No login or password needed.</strong> This secure link opens directly to your company's submission form.
+          </p>
+        </div>
+
+        <p style="color: #64748b; font-size: 12px; margin-top: 24px; border-top: 1px dashed #e2e8f0; padding-top: 16px;">
+          If the button above does not open, please copy and paste this direct link into your browser:<br />
+          <a href="${directSubmitUrl}" style="color: #dc2626; word-break: break-all;">${directSubmitUrl}</a>
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div style="background: #f8fafc; padding: 16px 32px; border-top: 1px solid #e2e8f0; text-align: center;">
+        <p style="margin: 0; font-size: 11px; color: #94a3b8;">
+          DXN Manufacturing India Pvt. Ltd. · Sy. No. 138 & 139, Mandapally Village, Siddipet, Telangana 502277<br />
+          This is an official automated transmission from the DXN Procurement Portal.
+        </p>
+      </div>
+    </div>
+  `;
+
+  try {
+    const transporter = await getTransporter();
+    const info = await transporter.sendMail({
+      from: process.env.SMTP_FROM || '"DXN Procurement" <dxn15553@gmail.com>',
+      to,
+      subject: `[RFQ Invitation] ${rfqNumber}: ${title} - DXN Manufacturing India`,
+      html: htmlContent,
+    });
+
+    console.log("RFQ Invitation Email sent to %s (MsgId: %s)", to, info.messageId);
+    return true;
+  } catch (error) {
+    console.error(`Error sending RFQ invitation email to ${to}:`, error);
+    return false;
+  }
+}
+

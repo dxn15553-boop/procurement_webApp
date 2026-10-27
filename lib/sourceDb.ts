@@ -157,6 +157,32 @@ export async function fetchAllAssignedSourceRequests(): Promise<SourceRequestRec
 }
 
 /**
+ * Fetch all source requests that have completed internal approvals and are eligible for RFQ / Vendor Selection
+ */
+export async function fetchEligibleSourceRequestsForRfq(): Promise<SourceRequestRecord[]> {
+  return executeWithRetry(async (sql) => {
+    const rows = (await sql`
+      SELECT 
+        sr.*,
+        d.name as department_name,
+        COALESCE(sr.requester_name, p.full_name) as requester_name,
+        p.email as requester_email,
+        sr.requester_designation as requester_designation,
+        hp.full_name as handler_name,
+        hp.email as handler_email
+      FROM source_requests sr
+      LEFT JOIN departments d ON sr.department_id = d.id
+      LEFT JOIN profiles p ON sr.requester_id = p.id
+      LEFT JOIN profiles hp ON sr.assigned_employee_id = hp.id
+      WHERE sr.status IN ('Procurement Approved', 'Section Manager Assignment', 'Assigned', 'Vendor Evaluation', 'PR Created', 'PO Created', 'Payment Pending', 'Delivered', 'Completed')
+      ORDER BY sr.created_at DESC
+    `) as any[];
+
+    return (rows || []) as SourceRequestRecord[];
+  });
+}
+
+/**
  * Formats full source info into standard sourceDescription string
  */
 export function formatSourceDescription(src: SourceRequestRecord): string {

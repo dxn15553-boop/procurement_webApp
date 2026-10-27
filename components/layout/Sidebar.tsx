@@ -45,6 +45,12 @@ const navItems: NavItem[] = [
     roles: ["TEAM", "MANAGER"],
   },
   {
+    label: "Vendor Selection & RFQs",
+    href: "/manager/rfqs",
+    icon: Store,
+    roles: ["MANAGER", "TEAM"],
+  },
+  {
     label: "Analytics",
     href: "/manager/analytics",
     icon: TrendingUp,

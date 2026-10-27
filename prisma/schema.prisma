@@ -83,6 +83,8 @@ model User {
   activityLogs        ActivityLog[]
   notifications       Notification[]
   sessions            Session[]
+  rfqsCreated         Rfq[]
+  csApproved          ComparativeStatement[]
 }
 
 model Session {
@@ -231,4 +233,154 @@ model Notification {
 
   user    User                @relation(fields: [userId], references: [id])
   request ProcurementRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+}
+
+enum RfqStatus {
+  DRAFT
+  DISPATCHED
+  IN_PROGRESS
+  QUOTES_RECEIVED
+  CLOSED
+  CANCELLED
+}
+
+enum RfqVendorStatus {
+  INVITED
+  VIEWED
+  SUBMITTED
+  DECLINED
+  EXPIRED
+}
+
+enum QuotationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+}
+
+enum CSApprovalStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  RETURNED
+  REJECTED
+}
+
+model Rfq {
+  id                  String                @id @default(cuid())
+  rfqNumber           String                @unique
+  sourceNo            String
+  title               String
+  description         String
+  specifications      String?
+  quantity            Int?
+  unit                String?
+  requiredDate        DateTime?
+  submissionDeadline  DateTime
+  deliveryLocation    String?
+  termsAndConditions  String?
+  status              RfqStatus             @default(DRAFT)
+  createdById         String
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  createdBy           User                  @relation(fields: [createdById], references: [id])
+  vendors             RfqVendor[]
+  comparativeStatement ComparativeStatement?
+}
+
+model RfqVendor {
+  id              String          @id @default(cuid())
+  rfqId           String
+  vendorId        String          // ID from Supabase Vendor master
+  vendorName      String
+  vendorEmail     String
+  status          RfqVendorStatus @default(INVITED)
+  sentAt          DateTime        @default(now())
+  viewedAt        DateTime?
+  respondedAt     DateTime?
+  accessKey       String          @unique @default(cuid())
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  rfq             Rfq             @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  quotations      Quotation[]
+}
+
+model Quotation {
+  id              String          @id @default(cuid())
+  quotationNo     String
+  rfqVendorId     String
+  vendorId        String          // Supabase vendor id
+  version         Int             @default(1)
+  baseAmount      Float
+  taxAmount       Float           @default(0)
+  freightCharges  Float           @default(0)
+  otherCharges    Float           @default(0)
+  totalAmount     Float
+  leadTimeDays    Int?
+  paymentTerms    String?
+  deliveryTerms   String?
+  validityDays    Int?
+  documentUrl     String?
+  remarks         String?
+  status          QuotationStatus @default(SUBMITTED)
+  submittedAt     DateTime        @default(now())
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  rfqVendor       RfqVendor       @relation(fields: [rfqVendorId], references: [id], onDelete: Cascade)
+  items           QuotationItem[]
+  csItems         ComparativeStatementItem[]
+}
+
+model QuotationItem {
+  id              String    @id @default(cuid())
+  quotationId     String
+  description     String
+  quantity        Float
+  unit            String
+  unitPrice       Float
+  taxRate         Float     @default(0)
+  totalPrice      Float
+  createdAt       DateTime  @default(now())
+
+  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+}
+
+model ComparativeStatement {
+  id                    String                     @id @default(cuid())
+  csNumber              String                     @unique
+  rfqId                 String                     @unique
+  sourceNo              String
+  status                CSApprovalStatus           @default(DRAFT)
+  recommendedVendorId   String?
+  recommendedVendorName String?
+  recommendationReason  String?
+  approvalComments      String?
+  approvedById          String?
+  approvedAt            DateTime?
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+
+  rfq                   Rfq                        @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  approvedBy            User?                      @relation(fields: [approvedById], references: [id])
+  items                 ComparativeStatementItem[]
+}
+
+model ComparativeStatementItem {
+  id               String               @id @default(cuid())
+  csId             String
+  quotationId      String
+  evaluatedAmount  Float
+  isLowest         Boolean              @default(false)
+  technicalStatus  String?
+  commercialStatus String?
+  remarks          String?
+  createdAt        DateTime             @default(now())
+
+  cs               ComparativeStatement @relation(fields: [csId], references: [id], onDelete: Cascade)
+  quotation        Quotation            @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 }
