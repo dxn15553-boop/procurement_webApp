@@ -15,84 +15,26 @@ export async function OPTIONS() {
 }
 
 /**
- * Public vendor lookup of their assigned RFQs by email or vendor ID
+ * Public vendor lookup is disabled for confidentiality.
+ * RFQs can only be accessed via the unique token endpoint: GET /api/vendor-rfqs/:accessKey
  */
-export async function GET(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const email = searchParams.get("email")?.trim().toLowerCase();
-    const vendorId = searchParams.get("vendorId")?.trim();
-
-    if (!email && !vendorId) {
-      return NextResponse.json(
-        { error: "Vendor email or vendor ID is required." },
-        { status: 400, headers: corsHeaders() }
-      );
-    }
-
-    const whereClause: any = {};
-    if (email) {
-      whereClause.vendorEmail = { equals: email, mode: "insensitive" };
-    }
-    if (vendorId) {
-      whereClause.vendorId = vendorId;
-    }
-
-    const invitations = await prisma.rfqVendor.findMany({
-      where: whereClause,
-      include: {
-        rfq: {
-          select: {
-            id: true,
-            rfqNumber: true,
-            sourceNo: true,
-            title: true,
-            description: true,
-            specifications: true,
-            quantity: true,
-            unit: true,
-            submissionDeadline: true,
-            deliveryLocation: true,
-            status: true,
-            createdAt: true,
-          },
-        },
-        quotations: {
-          orderBy: { version: "desc" },
-          select: {
-            id: true,
-            quotationNo: true,
-            totalAmount: true,
-            baseAmount: true,
-            taxAmount: true,
-            status: true,
-            submittedAt: true,
-            documentUrl: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    return NextResponse.json({ invitations }, { headers: corsHeaders() });
-  } catch (error: any) {
-    console.error("Error in GET /api/vendor-rfqs:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch vendor RFQs", details: error.message },
-      { status: 500, headers: corsHeaders() }
-    );
-  }
+export async function GET() {
+  return NextResponse.json(
+    {
+      error: "Public email lookup is disabled for confidentiality. RFQs are strictly accessible via the unique secure token link issued in your official invitation email.",
+    },
+    { status: 403, headers: corsHeaders() }
+  );
 }
 
 /**
- * Vendor submits quotation for an assigned RFQ
+ * Vendor submits quotation for an assigned RFQ - STRICT TOKEN REQUIRED
  */
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const {
       accessKey,
-      rfqVendorId,
       baseAmount,
       taxAmount,
       freightCharges,
@@ -106,15 +48,22 @@ export async function POST(req: Request) {
       items, // Array of line items
     } = body;
 
-    // Locate the RFQ Vendor invitation
-    const invitation = await prisma.rfqVendor.findFirst({
-      where: accessKey ? { accessKey } : { id: rfqVendorId },
+    if (!accessKey || typeof accessKey !== "string") {
+      return NextResponse.json(
+        { error: "Access token is required. Quotations can only be submitted via your authorized invitation link." },
+        { status: 401, headers: corsHeaders() }
+      );
+    }
+
+    // Locate the RFQ Vendor invitation strictly by secret accessKey
+    const invitation = await prisma.rfqVendor.findUnique({
+      where: { accessKey: accessKey.trim() },
       include: { rfq: true },
     });
 
     if (!invitation) {
       return NextResponse.json(
-        { error: "Invalid invitation or access token." },
+        { error: "Invalid or expired RFQ access token." },
         { status: 404, headers: corsHeaders() }
       );
     }
