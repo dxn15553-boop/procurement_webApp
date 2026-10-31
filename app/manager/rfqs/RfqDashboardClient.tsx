@@ -25,10 +25,12 @@ import {
   Download,
   FileDown,
   FileSpreadsheet,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import { VendorSelectionModal } from "@/components/procurement/VendorSelectionModal";
 import { ComparativeStatementModal } from "@/components/procurement/ComparativeStatementModal";
+import { SourceInformationModal, SourceDetailsData } from "@/components/procurement/SourceInformationModal";
 import { downloadRfqPdf, downloadBiddingsPdf, downloadBiddingsExcel, QuoteExportData } from "@/lib/rfqExportHelper";
 
 interface RfqItem {
@@ -46,6 +48,7 @@ interface RfqItem {
   submissionDeadline: string;
   createdAt: string;
   createdBy: { name: string; email: string };
+  sourceDetails?: SourceDetailsData | null;
   vendors: {
     id: string;
     vendorId: string;
@@ -84,6 +87,10 @@ interface SourceRequestItem {
   description: string;
   department_name?: string;
   requester_name?: string;
+  requester_designation?: string | null;
+  requester_email?: string | null;
+  handler_name?: string | null;
+  handler_email?: string | null;
   priority?: string;
   status: string;
   created_at: string;
@@ -110,6 +117,11 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRfqForCs, setSelectedRfqForCs] = useState<string | null>(null);
   const [isCsModalOpen, setIsCsModalOpen] = useState(false);
+
+  // Source details dossier modal & filter
+  const [selectedSourceForDetails, setSelectedSourceForDetails] = useState<SourceDetailsData | null>(null);
+  const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
+  const [selectedSourceFilter, setSelectedSourceFilter] = useState<string>("ALL");
 
   useEffect(() => {
     loadData();
@@ -202,6 +214,10 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
       r.vendors.some((v) => v.vendorName.toLowerCase().includes(q))
     );
   });
+
+  const displayedRfqs = filteredRfqs.filter((r) =>
+    selectedSourceFilter === "ALL" ? true : r.sourceNo === selectedSourceFilter
+  );
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -311,7 +327,28 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                       className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 transition-colors"
                     >
                       <td className="py-3 px-4 font-mono font-bold text-neutral-900 dark:text-neutral-100">
-                        {source.id}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedSourceForDetails({
+                              id: source.id,
+                              description: source.description,
+                              department_name: source.department_name,
+                              requester_name: source.requester_name,
+                              priority: source.priority,
+                              purpose_justification: source.purpose_justification,
+                              required_by_date: source.required_by_date,
+                              status: source.status,
+                              created_at: source.created_at,
+                            });
+                            setIsSourceModalOpen(true);
+                          }}
+                          className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline cursor-pointer flex items-center gap-1.5"
+                          title="Click to view Source Request Dossier"
+                        >
+                          <span>{source.id}</span>
+                          <Info className="w-3 h-3 text-neutral-400" />
+                        </button>
                       </td>
                       <td className="py-3 px-4 max-w-xs">
                         <div className="font-medium text-neutral-900 dark:text-neutral-100 line-clamp-1">
@@ -389,12 +426,61 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
       {/* TAB 2: Source Request Biddings & Quotations */}
       {activeTab === "rfqs" && (
         <div className="space-y-6">
-          {filteredRfqs.length === 0 ? (
+          {/* Source Request Filter Pills */}
+          {rfqs.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-neutral-200 dark:border-neutral-800 text-xs">
+              <span className="font-bold text-neutral-500 uppercase tracking-wider text-[11px] shrink-0 mr-1 flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-red-600" />
+                <span>Filter Individual Source:</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedSourceFilter("ALL")}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  selectedSourceFilter === "ALL"
+                    ? "bg-red-600 text-white shadow-xs"
+                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                }`}
+              >
+                All Sources ({rfqs.length})
+              </button>
+              {rfqs.map((r) => (
+                <button
+                  key={r.sourceNo}
+                  type="button"
+                  onClick={() => setSelectedSourceFilter(r.sourceNo)}
+                  className={`px-3 py-1 rounded-full font-mono text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                    selectedSourceFilter === r.sourceNo
+                      ? "bg-red-600 text-white shadow-xs"
+                      : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                  }`}
+                >
+                  {r.sourceNo}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {displayedRfqs.length === 0 ? (
             <div className="p-12 text-center text-xs text-neutral-500 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
-              No active Source Request biddings found. Go to "Eligible Source Requests" and click "Select Vendors & RFQ" to initiate invitations.
+              No active Source Request biddings found matching your filter.
             </div>
           ) : (
-            filteredRfqs.map((rfq) => {
+            displayedRfqs.map((rfq) => {
+              const matchingSource =
+                rfq.sourceDetails ||
+                sources.find((s) => s.id.toUpperCase() === rfq.sourceNo.toUpperCase());
+              const sourceDept = matchingSource?.department_name || "Enterprise Operations";
+              const sourceRequester = matchingSource?.requester_name || "Staff Member";
+              const sourceDesig = matchingSource?.requester_designation ? ` (${matchingSource.requester_designation})` : "";
+              const sourcePriority = matchingSource?.priority || "NORMAL";
+              const sourceReqDate = matchingSource?.required_by_date
+                ? new Date(matchingSource.required_by_date).toLocaleDateString()
+                : "—";
+              const sourceHandler = matchingSource?.handler_name || rfq.createdBy?.name || "Procurement";
+              const sourceJustification = matchingSource?.purpose_justification || null;
+              const sourceDescription = matchingSource?.description || rfq.description || rfq.title;
+
               const allQuotesList = rfq.vendors.flatMap((vendor) =>
                 (vendor.quotations || []).map((quote) => ({
                   ...quote,
@@ -419,92 +505,196 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                   key={rfq.id}
                   className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-sm space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
                 >
-                  {/* Top Bar: Source Request & Synchronized RFQ Info */}
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 pb-4">
-                    <div className="space-y-1.5">
+                  {/* BLOCK 1: INDIVIDUAL SOURCE REQUEST INFORMATION */}
+                  <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-neutral-800/40 border border-slate-200 dark:border-neutral-700/80 space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-xs font-bold text-neutral-800 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 rounded-md border border-neutral-300 dark:border-neutral-700">
-                          Source Ref: {rfq.sourceNo}
-                        </span>
-                        <span className="font-mono font-black text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2.5 py-1 rounded-md border border-red-200 dark:border-red-900/60 text-xs">
-                          RFQ: {rfq.rfqNumber}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const dataToOpen = matchingSource || {
+                              id: rfq.sourceNo,
+                              description: rfq.description || rfq.title,
+                            };
+                            setSelectedSourceForDetails(dataToOpen);
+                            setIsSourceModalOpen(true);
+                          }}
+                          className="font-mono text-xs font-black text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-md border border-blue-200 dark:border-blue-800 flex items-center gap-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/60 cursor-pointer transition-colors shadow-2xs"
+                          title="Click to view full Source Request Dossier"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>Source Ref: {rfq.sourceNo}</span>
+                        </button>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                          Requisition Dossier
                         </span>
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                            rfq.status === "CLOSED" || isCsApproved
-                              ? "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-300"
-                              : quotedCount > 0
-                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
-                              : "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400"
+                          className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                            sourcePriority === "URGENT" || sourcePriority === "HIGH"
+                              ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border border-red-300"
+                              : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300"
                           }`}
                         >
-                          {isCsApproved ? "CS APPROVED" : rfq.status}
+                          {sourcePriority} Priority
                         </span>
                       </div>
-                      <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-100">
-                        {rfq.title}
-                      </h3>
-                      {rfq.description && rfq.description !== rfq.title && (
-                        <p className="text-xs text-neutral-500 line-clamp-1">
-                          {rfq.description}
-                        </p>
-                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const dataToOpen = matchingSource || {
+                            id: rfq.sourceNo,
+                            description: rfq.description || rfq.title,
+                          };
+                          setSelectedSourceForDetails(dataToOpen);
+                          setIsSourceModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700 font-bold text-xs cursor-pointer shadow-2xs transition-colors"
+                        title="Open complete source requisition dossier modal"
+                      >
+                        <Info className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                        <span>View Source Dossier</span>
+                      </button>
                     </div>
 
-                    <div className="flex items-center gap-2 self-start lg:self-center flex-wrap">
-                      <div className="text-right text-xs text-neutral-500 hidden sm:block mr-1">
-                        <div className="flex items-center gap-1 md:justify-end">
-                          <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-                          <span>Deadline: {new Date(rfq.submissionDeadline).toLocaleDateString()}</span>
+                    {/* Source Details Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+                      <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-0.5">
+                        <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-neutral-400">
+                          <Building className="w-3 h-3 text-red-500" />
+                          <span>Originating Department</span>
                         </div>
-                        <div className="text-[11px] text-neutral-400">Created by {rfq.createdBy?.name || "Procurement"}</div>
+                        <div className="font-bold text-neutral-900 dark:text-neutral-100 truncate">
+                          {sourceDept}
+                        </div>
                       </div>
 
-                      {/* Download RFQ */}
-                      <button
-                        type="button"
-                        onClick={() => downloadRfqPdf(rfq)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                        title="Download Official RFQ Document (PDF)"
-                      >
-                        <FileDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-                        <span>Download RFQ</span>
-                      </button>
+                      <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-0.5">
+                        <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-neutral-400">
+                          <User className="w-3 h-3 text-red-500" />
+                          <span>Requisition Initiator</span>
+                        </div>
+                        <div className="font-bold text-neutral-900 dark:text-neutral-100 truncate">
+                          {sourceRequester} {sourceDesig}
+                        </div>
+                      </div>
 
-                      {/* Download Biddings PDF */}
-                      <button
-                        type="button"
-                        onClick={() => downloadBiddingsPdf(rfq, allQuotesList)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                        title="Download Comparative Bidding Statement (PDF)"
-                      >
-                        <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                        <span>Download Biddings</span>
-                      </button>
+                      <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-0.5">
+                        <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-neutral-400">
+                          <Calendar className="w-3 h-3 text-red-500" />
+                          <span>Required Delivery Date</span>
+                        </div>
+                        <div className="font-bold text-neutral-900 dark:text-neutral-100">
+                          {sourceReqDate}
+                        </div>
+                      </div>
 
-                      {/* Export Excel */}
-                      <button
-                        type="button"
-                        onClick={() => downloadBiddingsExcel(rfq, allQuotesList)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                        title="Export Bidding Data to Excel (.xlsx)"
-                      >
-                        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                        <span className="hidden xl:inline">Excel</span>
-                      </button>
+                      <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-0.5">
+                        <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-neutral-400">
+                          <Clock className="w-3 h-3 text-red-500" />
+                          <span>Assigned Handler</span>
+                        </div>
+                        <div className="font-bold text-neutral-900 dark:text-neutral-100 truncate">
+                          {sourceHandler}
+                        </div>
+                      </div>
+                    </div>
 
-                      {/* Invite More Vendors */}
-                      <button
-                        type="button"
-                        onClick={() => handleOpenVendorSelection(null, rfq)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 text-xs font-bold transition-colors cursor-pointer"
-                        title="Add additional vendors to this Source Request under the same RFQ number"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Invite More Vendors</span>
-                      </button>
+                    {/* Scope & Justification */}
+                    <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs space-y-1">
+                      <div className="text-[10px] uppercase font-bold text-neutral-400">
+                        Requisition Scope & Technical Details
+                      </div>
+                      <div className="font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2">
+                        {sourceDescription}
+                      </div>
+                      {sourceJustification && (
+                        <div className="text-[11px] text-neutral-500 italic line-clamp-1 pt-1 border-t border-neutral-100 dark:border-neutral-800">
+                          "{sourceJustification}"
+                        </div>
+                      )}
                     </div>
                   </div>
+
+                  {/* BLOCK 2: COMMERCIAL BIDDING & QUOTATIONS REGISTER */}
+                  <div className="space-y-4 pt-2 border-t border-neutral-200 dark:border-neutral-800">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 pb-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-black text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2.5 py-1 rounded-md border border-red-200 dark:border-red-900/60 text-xs">
+                            RFQ: {rfq.rfqNumber}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                              rfq.status === "CLOSED" || isCsApproved
+                                ? "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                                : quotedCount > 0
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+                                : "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400"
+                            }`}
+                          >
+                            {isCsApproved ? "CS APPROVED" : rfq.status}
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-100">
+                          {rfq.title}
+                        </h3>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-start lg:self-center flex-wrap">
+                        <div className="text-right text-xs text-neutral-500 hidden sm:block mr-1">
+                          <div className="flex items-center gap-1 md:justify-end">
+                            <Calendar className="w-3.5 h-3.5 text-neutral-400" />
+                            <span>Deadline: {new Date(rfq.submissionDeadline).toLocaleDateString()}</span>
+                          </div>
+                          <div className="text-[11px] text-neutral-400">Created by {rfq.createdBy?.name || "Procurement"}</div>
+                        </div>
+
+                        {/* Download RFQ */}
+                        <button
+                          type="button"
+                          onClick={() => downloadRfqPdf(rfq)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                          title="Download Official RFQ Document (PDF)"
+                        >
+                          <FileDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                          <span>Download RFQ</span>
+                        </button>
+
+                        {/* Download Biddings PDF */}
+                        <button
+                          type="button"
+                          onClick={() => downloadBiddingsPdf(rfq, allQuotesList)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                          title="Download Comparative Bidding Statement (PDF)"
+                        >
+                          <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Download Biddings</span>
+                        </button>
+
+                        {/* Export Excel */}
+                        <button
+                          type="button"
+                          onClick={() => downloadBiddingsExcel(rfq, allQuotesList)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                          title="Export Bidding Data to Excel (.xlsx)"
+                        >
+                          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span className="hidden xl:inline">Excel</span>
+                        </button>
+
+                        {/* Invite More Vendors */}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenVendorSelection(null, rfq)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 text-xs font-bold transition-colors cursor-pointer"
+                          title="Add additional vendors to this Source Request under the same RFQ number"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Invite More Vendors</span>
+                        </button>
+                      </div>
+                    </div>
 
                   {/* Summary Bar */}
                   <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800/40 rounded-lg border border-neutral-200 dark:border-neutral-800 text-xs">
@@ -815,8 +1005,10 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                     </div>
                   </div>
                 </div>
-              );
-          }))}
+              </div>
+            );
+            })
+          )}
         </div>
       )}
 
@@ -838,6 +1030,28 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
         onCsApproved={() => {
           loadData();
         }}
+      />
+
+      {/* Modal for viewing complete individual Source Request information */}
+      <SourceInformationModal
+        isOpen={isSourceModalOpen}
+        onClose={() => setIsSourceModalOpen(false)}
+        source={selectedSourceForDetails}
+        linkedRfq={
+          selectedSourceForDetails
+            ? (() => {
+                const r = rfqs.find((item) => item.sourceNo.toUpperCase() === selectedSourceForDetails.id.toUpperCase());
+                if (!r) return null;
+                const totalQuotes = r.vendors.reduce((acc, v) => acc + (v.quotations?.length || 0), 0);
+                return {
+                  rfqNumber: r.rfqNumber,
+                  status: r.status,
+                  vendorsCount: r.vendors.length,
+                  quotesCount: totalQuotes,
+                };
+              })()
+            : null
+        }
       />
     </div>
   );

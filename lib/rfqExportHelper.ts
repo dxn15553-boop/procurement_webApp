@@ -492,3 +492,4 @@ export function downloadBiddingsExcel(rfq: RfqExportData, quotes: QuoteExportDat
     toast.error("Failed to export Biddings to Excel.");
   }
 }
+

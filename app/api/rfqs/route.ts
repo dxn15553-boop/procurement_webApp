@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { fetchEligibleSourceRequestsForRfq } from "@/lib/sourceDb";
+import { fetchEligibleSourceRequestsForRfq, fetchSourceRequestByNo } from "@/lib/sourceDb";
 import { sendRfqInvitationEmail } from "@/lib/email";
 
 export async function GET(req: Request) {
@@ -105,7 +105,57 @@ export async function GET(req: Request) {
       }
     }
 
-    const rfqs = Array.from(sourceMap.values());
+    // Enrich each RFQ with its individual Source Request information from Source DB
+    const sourceNos = Array.from(sourceMap.keys());
+    const sourceDetailsMap = new Map<string, any>();
+    try {
+      const eligibleSources = await fetchEligibleSourceRequestsForRfq();
+      for (const s of eligibleSources) {
+        sourceDetailsMap.set(s.id.toUpperCase(), s);
+      }
+    } catch (e) {
+      console.warn("Could not batch load eligible sources:", e);
+    }
+
+    // Direct lookup for any source number not present in the eligible set
+    for (const sNo of sourceNos) {
+      if (!sourceDetailsMap.has(sNo)) {
+        try {
+          const directSrc = await fetchSourceRequestByNo(sNo);
+          if (directSrc) {
+            sourceDetailsMap.set(sNo, directSrc);
+          }
+        } catch (e) {
+          console.warn(`Could not lookup source ${sNo}:`, e);
+        }
+      }
+    }
+
+    const rfqs = Array.from(sourceMap.values()).map((rfq) => {
+      const key = rfq.sourceNo.trim().toUpperCase();
+      const src = sourceDetailsMap.get(key);
+      return {
+        ...rfq,
+        sourceDetails: src
+          ? {
+              id: src.id,
+              description: src.description,
+              department_name: src.department_name,
+              requester_name: src.requester_name,
+              requester_email: src.requester_email,
+              requester_designation: src.requester_designation,
+              priority: src.priority,
+              purpose_justification: src.purpose_justification,
+              required_by_date: src.required_by_date,
+              handler_name: src.handler_name,
+              handler_email: src.handler_email,
+              status: src.status,
+              created_at: src.created_at,
+              srf_number: src.srf_number,
+            }
+          : null,
+      };
+    });
 
     return NextResponse.json({ rfqs });
   } catch (error: any) {
