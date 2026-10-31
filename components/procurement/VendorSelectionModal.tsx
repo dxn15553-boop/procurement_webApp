@@ -37,6 +37,13 @@ interface SourceRequest {
   required_by_date?: string | null;
   priority?: string | null;
   purpose_justification?: string | null;
+  rfq?: {
+    id: string;
+    rfqNumber: string;
+    status: string;
+    _count?: { vendors: number };
+    vendors?: { vendorId: string; vendorEmail: string }[];
+  } | null;
 }
 
 interface VendorSelectionModalProps {
@@ -110,7 +117,20 @@ export function VendorSelectionModal({
     }
   };
 
+  const isVendorAlreadyInvited = (vendor: SupabaseVendor) => {
+    if (!sourceRequest?.rfq?.vendors) return false;
+    const vid = String(vendor.id);
+    const email = (vendor.email || "").toLowerCase().trim();
+    return sourceRequest.rfq.vendors.some(
+      (v) => String(v.vendorId) === vid || (v.vendorEmail || "").toLowerCase().trim() === email
+    );
+  };
+
   const toggleVendorSelection = (vendor: SupabaseVendor) => {
+    if (isVendorAlreadyInvited(vendor)) {
+      toast.info(`${vendor.company_name} has already been invited to this RFQ.`);
+      return;
+    }
     const isAlready = selectedVendors.some((v) => v.id === vendor.id);
     if (isAlready) {
       setSelectedVendors(selectedVendors.filter((v) => v.id !== vendor.id));
@@ -180,9 +200,16 @@ export function VendorSelectionModal({
         throw new Error(data.error || "Failed to create RFQ");
       }
 
-      toast.success(
-        `RFQ ${data.rfq.rfqNumber} created & dispatched to ${selectedVendors.length} vendors!`
-      );
+      if (data.isExisting) {
+        toast.success(
+          `RFQ ${data.rfq.rfqNumber} synchronized! Added ${data.addedVendorsCount ?? selectedVendors.length} new vendor(s).`
+        );
+      } else {
+        toast.success(
+          `RFQ ${data.rfq.rfqNumber} created & dispatched to ${selectedVendors.length} vendor(s)!`
+        );
+      }
+
       if (onRfqCreated) {
         onRfqCreated(data.rfq);
       }
@@ -207,11 +234,16 @@ export function VendorSelectionModal({
               <Layers className="w-4 h-4" />
               <span>Procurement · Vendor Selection & RFQ Dispatch</span>
             </div>
-            <div className="text-lg md:text-xl font-extrabold flex items-center gap-2 mt-1 text-slate-900 dark:text-white">
-              <span>Issue RFQ for</span>
+            <div className="text-lg md:text-xl font-extrabold flex items-center gap-2 mt-1 text-slate-900 dark:text-white flex-wrap">
+              <span>{sourceRequest?.rfq ? "Add Vendors to" : "Issue RFQ for"}</span>
               <span className="font-mono text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 px-2.5 py-0.5 rounded-md border border-red-200 dark:border-red-900/60 text-sm font-semibold">
                 {sourceRequest?.id}
               </span>
+              {sourceRequest?.rfq?.rfqNumber && (
+                <span className="font-mono text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 px-2.5 py-0.5 rounded-md border border-blue-200 dark:border-blue-900/60 text-sm font-bold">
+                  {sourceRequest.rfq.rfqNumber}
+                </span>
+              )}
             </div>
           </div>
           <button
@@ -226,6 +258,16 @@ export function VendorSelectionModal({
         <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
           {/* LEFT: RFQ Details Form */}
           <div className="space-y-4 bg-slate-50 dark:bg-slate-950/40 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+            {sourceRequest?.rfq && (
+              <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-xl p-3 text-xs flex items-center gap-2.5 text-blue-800 dark:text-blue-300">
+                <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>
+                  Adding vendors will synchronize their bids under existing{" "}
+                  <strong>{sourceRequest.rfq.rfqNumber}</strong>. The RFQ number will not change.
+                </span>
+              </div>
+            )}
+
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5 text-red-500" />
               <span>1. RFQ Specification</span>
@@ -348,15 +390,18 @@ export function VendorSelectionModal({
                 </div>
               ) : (
                 filteredVendors.map((vendor) => {
+                  const isAlreadyInvited = isVendorAlreadyInvited(vendor);
                   const isSelected = selectedVendors.some((v) => v.id === vendor.id);
                   return (
                     <div
                       key={vendor.id}
-                      onClick={() => toggleVendorSelection(vendor)}
-                      className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-start justify-between gap-3 ${
-                        isSelected
-                          ? "bg-red-500/10 border-red-500 dark:bg-red-950/50 dark:border-red-600 shadow-sm"
-                          : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/70 hover:dark:bg-slate-900"
+                      onClick={() => !isAlreadyInvited && toggleVendorSelection(vendor)}
+                      className={`p-3 rounded-xl border text-xs transition-all flex items-start justify-between gap-3 ${
+                        isAlreadyInvited
+                          ? "opacity-50 bg-slate-100 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 cursor-not-allowed"
+                          : isSelected
+                          ? "bg-red-500/10 border-red-500 dark:bg-red-950/50 dark:border-red-600 shadow-sm cursor-pointer"
+                          : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/70 hover:dark:bg-slate-900 cursor-pointer"
                       }`}
                     >
                       <div className="space-y-1.5 flex-1 min-w-0">
@@ -364,15 +409,21 @@ export function VendorSelectionModal({
                           <span className="font-bold text-slate-900 dark:text-white truncate">
                             {vendor.company_name}
                           </span>
-                          <span
-                            className={`px-2 py-0.5 text-[10px] rounded-full font-bold uppercase tracking-wider ${
-                              vendor.status === "approved"
-                                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
-                                : "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20"
-                            }`}
-                          >
-                            {vendor.status}
-                          </span>
+                          {isAlreadyInvited ? (
+                            <span className="px-2 py-0.5 text-[10px] rounded-full font-bold uppercase tracking-wider bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/20">
+                              Already Invited
+                            </span>
+                          ) : (
+                            <span
+                              className={`px-2 py-0.5 text-[10px] rounded-full font-bold uppercase tracking-wider ${
+                                vendor.status === "approved"
+                                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
+                                  : "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20"
+                              }`}
+                            >
+                              {vendor.status}
+                            </span>
+                          )}
                         </div>
                         <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-3 flex-wrap">
                           <span className="flex items-center gap-1">
@@ -394,12 +445,14 @@ export function VendorSelectionModal({
                       <div className="pt-0.5">
                         <div
                           className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-                            isSelected
+                            isAlreadyInvited
+                              ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                              : isSelected
                               ? "bg-red-600 border-red-600 text-white shadow-sm"
                               : "border-slate-300 dark:border-slate-600 hover:border-slate-400"
                           }`}
                         >
-                          {isSelected && <CheckCircle2 className="w-4 h-4" />}
+                          {(isSelected || isAlreadyInvited) && <CheckCircle2 className="w-4 h-4" />}
                         </div>
                       </div>
                     </div>
@@ -450,6 +503,10 @@ export function VendorSelectionModal({
             <span>
               {isSubmitting
                 ? "Dispatching..."
+                : sourceRequest?.rfq
+                ? `Add ${selectedVendors.length} ${
+                    selectedVendors.length === 1 ? "Vendor" : "Vendors"
+                  } to ${sourceRequest.rfq.rfqNumber}`
                 : `Dispatch RFQ to ${selectedVendors.length} ${
                     selectedVendors.length === 1 ? "Vendor" : "Vendors"
                   }`}

@@ -75,6 +75,7 @@ interface SourceRequestItem {
     rfqNumber: string;
     status: string;
     _count?: { vendors: number };
+    vendors?: { vendorId: string; vendorEmail: string }[];
   } | null;
 }
 
@@ -119,8 +120,45 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
     }
   };
 
-  const handleOpenVendorSelection = (source: SourceRequestItem) => {
-    setSelectedSourceForRfq(source);
+  const handleOpenVendorSelection = (source: SourceRequestItem | null, rfq?: RfqItem) => {
+    if (source) {
+      const matchingRfq = rfq || rfqs.find((r) => r.sourceNo.toUpperCase() === source.id.toUpperCase());
+      const enrichedSource: SourceRequestItem = {
+        ...source,
+        rfq: matchingRfq
+          ? {
+              id: matchingRfq.id,
+              rfqNumber: matchingRfq.rfqNumber,
+              status: matchingRfq.status,
+              vendors: matchingRfq.vendors.map((v) => ({
+                vendorId: v.vendorId,
+                vendorEmail: v.vendorEmail,
+              })),
+            }
+          : source.rfq,
+      };
+      setSelectedSourceForRfq(enrichedSource);
+    } else if (rfq) {
+      const foundSource = sources.find((s) => s.id.toUpperCase() === rfq.sourceNo.toUpperCase());
+      const synthesizedSource: SourceRequestItem = {
+        id: rfq.sourceNo,
+        description: foundSource?.description || rfq.description || rfq.title,
+        department_name: foundSource?.department_name,
+        requester_name: foundSource?.requester_name || rfq.createdBy?.name,
+        status: foundSource?.status || "APPROVED",
+        created_at: foundSource?.created_at || rfq.createdAt,
+        rfq: {
+          id: rfq.id,
+          rfqNumber: rfq.rfqNumber,
+          status: rfq.status,
+          vendors: rfq.vendors.map((v) => ({
+            vendorId: v.vendorId,
+            vendorEmail: v.vendorEmail,
+          })),
+        },
+      };
+      setSelectedSourceForRfq(synthesizedSource);
+    }
     setIsModalOpen(true);
   };
 
@@ -198,7 +236,7 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                 : "border-transparent text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300"
             }`}
           >
-            <span>Active RFQs</span>
+            <span>Source Request Biddings</span>
             <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-neutral-100 dark:bg-neutral-800 font-mono">
               {rfqs.length}
             </span>
@@ -309,52 +347,124 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
         </div>
       )}
 
-      {/* TAB 2: Active RFQs & Quotations */}
+      {/* TAB 2: Source Request Biddings & Quotations */}
       {activeTab === "rfqs" && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {filteredRfqs.length === 0 ? (
-            <div className="p-12 text-center text-xs text-neutral-500 bg-white dark:bg-neutral-900 rounded-lg border">
-              No active RFQs created yet. Go to "Eligible Source Requests" and click "Select Vendors & RFQ".
+            <div className="p-12 text-center text-xs text-neutral-500 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
+              No active Source Request biddings found. Go to "Eligible Source Requests" and click "Select Vendors & RFQ" to initiate invitations.
             </div>
           ) : (
-            filteredRfqs.map((rfq) => (
-              <div
-                key={rfq.id}
-                className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 shadow-sm space-y-4"
-              >
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b pb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-black text-red-600 text-sm">
-                        {rfq.rfqNumber}
-                      </span>
-                      <span className="text-xs text-neutral-400">·</span>
-                      <span className="font-mono text-xs font-semibold text-neutral-600 dark:text-neutral-400">
-                        Source Ref: {rfq.sourceNo}
-                      </span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400">
-                        {rfq.status}
-                      </span>
+            filteredRfqs.map((rfq) => {
+              const quotes = rfq.vendors.flatMap((v) => v.quotations || []);
+              const quotedCount = rfq.vendors.filter((v) => v.quotations && v.quotations.length > 0).length;
+              const validAmounts = quotes
+                .map((q) => Number(q.totalAmount))
+                .filter((amt) => !isNaN(amt) && amt > 0);
+              const lowestBid = validAmounts.length > 0 ? Math.min(...validAmounts) : null;
+
+              return (
+                <div
+                  key={rfq.id}
+                  className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-sm space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
+                >
+                  {/* Top Bar: Source Request & Synchronized RFQ Info */}
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 pb-4">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-xs font-bold text-neutral-800 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 rounded-md border border-neutral-300 dark:border-neutral-700">
+                          Source Ref: {rfq.sourceNo}
+                        </span>
+                        <span className="font-mono font-black text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2.5 py-1 rounded-md border border-red-200 dark:border-red-900/60 text-xs">
+                          RFQ: {rfq.rfqNumber}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                            rfq.status === "CLOSED"
+                              ? "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                              : rfq.status === "QUOTES_RECEIVED"
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+                              : "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400"
+                          }`}
+                        >
+                          {rfq.status}
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-100">
+                        {rfq.title}
+                      </h3>
+                      {rfq.description && rfq.description !== rfq.title && (
+                        <p className="text-xs text-neutral-500 line-clamp-1">
+                          {rfq.description}
+                        </p>
+                      )}
                     </div>
-                    <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-100 mt-1">
-                      {rfq.title}
-                    </h3>
+
+                    <div className="flex items-center gap-3 self-start lg:self-center flex-wrap">
+                      <div className="text-right text-xs text-neutral-500 hidden sm:block">
+                        <div className="flex items-center gap-1 md:justify-end">
+                          <Calendar className="w-3.5 h-3.5 text-neutral-400" />
+                          <span>Deadline: {new Date(rfq.submissionDeadline).toLocaleDateString()}</span>
+                        </div>
+                        <div className="text-[11px] text-neutral-400">Created by {rfq.createdBy?.name || "Procurement"}</div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleOpenVendorSelection(null, rfq)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 text-xs font-bold transition-colors cursor-pointer"
+                        title="Add additional vendors to this Source Request under the same RFQ number"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Invite More Vendors</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="text-right text-xs text-neutral-500">
-                    <div className="flex items-center gap-1 md:justify-end">
-                      <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-                      <span>Deadline: {new Date(rfq.submissionDeadline).toLocaleDateString()}</span>
+                  {/* Synchronized Bidding Summary Metrics */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-1">
+                    <div className="p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
+                          Vendors Invited
+                        </div>
+                        <div className="text-lg font-black text-neutral-900 dark:text-white mt-0.5">
+                          {rfq.vendors.length}
+                        </div>
+                      </div>
+                      <Building className="w-5 h-5 text-neutral-400" />
                     </div>
-                    <div>Created by {rfq.createdBy?.name}</div>
-                  </div>
-                </div>
 
-                {/* Vendors Invited List */}
-                <div className="space-y-2">
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 flex items-center justify-between">
-                    <span>Invited Vendors & Quotation Status ({rfq.vendors.length})</span>
-                  </h4>
+                    <div className="p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
+                          Quotes Submitted
+                        </div>
+                        <div className="text-lg font-black text-neutral-900 dark:text-white mt-0.5">
+                          {quotedCount} <span className="text-xs font-normal text-neutral-400">of {rfq.vendors.length}</span>
+                        </div>
+                      </div>
+                      <FileText className="w-5 h-5 text-neutral-400" />
+                    </div>
+
+                    <div className="p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
+                          Lowest Bid (L1)
+                        </div>
+                        <div className={`text-lg font-black mt-0.5 ${lowestBid !== null ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-400 text-sm"}`}>
+                          {lowestBid !== null ? `₹${lowestBid.toLocaleString()}` : "Awaiting Submissions"}
+                        </div>
+                      </div>
+                      <TrendingDown className={`w-5 h-5 ${lowestBid !== null ? "text-emerald-500" : "text-neutral-400"}`} />
+                    </div>
+                  </div>
+
+                  {/* Vendors Invited List */}
+                  <div className="space-y-2 pt-1">
+                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 flex items-center justify-between">
+                      <span>Synchronized Vendor Bids & Quotation Status ({rfq.vendors.length})</span>
+                    </h4>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {rfq.vendors.map((vendor) => {
@@ -364,41 +474,50 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                       return (
                         <div
                           key={vendor.id}
-                          className={`p-3 rounded-md border text-xs flex flex-col justify-between gap-2 ${
+                          className={`p-3.5 rounded-xl border text-xs flex flex-col justify-between gap-2.5 transition-all ${
                             hasQuote
-                              ? "bg-emerald-50/50 border-emerald-300 dark:bg-emerald-950/20 dark:border-emerald-800"
-                              : "bg-neutral-50/50 border-neutral-200 dark:bg-neutral-800/40"
+                              ? "bg-emerald-50/40 border-emerald-300 dark:bg-emerald-950/20 dark:border-emerald-800/80 shadow-xs"
+                              : "bg-neutral-50/50 border-neutral-200 dark:bg-neutral-800/40 dark:border-neutral-800"
                           }`}
                         >
-                          <div>
-                            <div className="font-semibold text-neutral-900 dark:text-neutral-100">
-                              {vendor.vendorName}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-bold text-neutral-900 dark:text-neutral-100 truncate">
+                                {vendor.vendorName}
+                              </span>
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold shrink-0 ${
+                                  hasQuote
+                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                                    : "bg-neutral-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-300"
+                                }`}
+                              >
+                                {vendor.status}
+                              </span>
                             </div>
-                            <div className="text-[11px] text-neutral-500">{vendor.vendorEmail}</div>
+                            <div className="text-[11px] text-neutral-500 truncate">{vendor.vendorEmail}</div>
                           </div>
 
-                          <div className="flex items-center justify-between pt-2 border-t border-neutral-200/60 dark:border-neutral-700/60">
+                          <div className="pt-2 border-t border-neutral-200/60 dark:border-neutral-700/60">
                             {hasQuote ? (
-                              <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-bold">
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>Quoted: ₹{quote?.totalAmount.toLocaleString()}</span>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-black text-sm">
+                                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                                    <span>Quoted: ₹{quote?.totalAmount.toLocaleString()}</span>
+                                  </div>
+                                </div>
+                                <div className="text-[10px] text-neutral-500 flex items-center justify-between">
+                                  <span>Ref: {quote?.quotationNo}</span>
+                                  <span>{new Date(quote?.submittedAt || "").toLocaleDateString()}</span>
+                                </div>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-1 text-neutral-400">
-                                <Clock className="w-3 h-3" />
-                                <span>Awaiting Quote</span>
+                              <div className="flex items-center gap-1.5 text-neutral-400 py-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Awaiting Quotation Submission</span>
                               </div>
                             )}
-
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                                hasQuote
-                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
-                                  : "bg-neutral-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-300"
-                              }`}
-                            >
-                              {vendor.status}
-                            </span>
                           </div>
 
                           {/* One-Click Direct Link Actions */}
@@ -419,9 +538,11 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                                 <span>Copy Official Link</span>
                               </button>
                               <a
-                                href={typeof window !== 'undefined' && window.location.hostname === 'localhost'
-                                  ? `http://localhost:5173/vendor/rfqs/${vendor.accessKey}`
-                                  : `https://www.dxnmanufacturing.com/vendor/rfqs/${vendor.accessKey}`}
+                                href={
+                                  typeof window !== "undefined" && window.location.hostname === "localhost"
+                                    ? `http://localhost:5173/vendor/rfqs/${vendor.accessKey}`
+                                    : `https://www.dxnmanufacturing.com/vendor/rfqs/${vendor.accessKey}`
+                                }
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 hover:underline font-bold"
@@ -444,11 +565,14 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                     {rfq.comparativeStatement ? (
                       <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>CS Approved · Winning Vendor: <strong>{rfq.comparativeStatement.recommendedVendorName}</strong></span>
+                        <span>
+                          CS Approved · Winning Vendor:{" "}
+                          <strong>{rfq.comparativeStatement.recommendedVendorName}</strong>
+                        </span>
                       </span>
                     ) : (
                       <span>
-                        {rfq.vendors.filter((v) => v.quotations && v.quotations.length > 0).length} of {rfq.vendors.length} vendors responded
+                        {quotedCount} of {rfq.vendors.length} vendors responded
                       </span>
                     )}
                   </div>
@@ -458,12 +582,12 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                       setSelectedRfqForCs(rfq.id);
                       setIsCsModalOpen(true);
                     }}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-sm ${
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-sm cursor-pointer ${
                       rfq.comparativeStatement
                         ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                        : rfq.vendors.some((v) => v.quotations && v.quotations.length > 0)
+                        : quotedCount > 0
                         ? "bg-red-600 hover:bg-red-700 text-white"
-                        : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-neutral-700"
+                        : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-neutral-700 cursor-not-allowed opacity-60"
                     }`}
                   >
                     <Trophy className="w-3.5 h-3.5" />
@@ -475,8 +599,8 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                   </button>
                 </div>
               </div>
-            ))
-          )}
+            );
+          }))}
         </div>
       )}
 

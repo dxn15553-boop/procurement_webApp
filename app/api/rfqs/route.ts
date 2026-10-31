@@ -43,8 +43,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ sources: enriched });
     }
 
-    // Default: Return list of RFQs with vendors & quotations
-    const rfqs = await prisma.rfq.findMany({
+    // Default: Return list of RFQs with vendors & quotations (Synchronized per Source Request)
+    const rawRfqs = await prisma.rfq.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         createdBy: {
@@ -73,6 +73,29 @@ export async function GET(req: Request) {
         }
       }
     });
+
+    // Ensure each Source Request is listed as a single synchronized RFQ
+    const sourceMap = new Map<string, typeof rawRfqs[0]>();
+    for (const item of rawRfqs) {
+      const key = item.sourceNo.trim().toUpperCase();
+      if (!sourceMap.has(key)) {
+        sourceMap.set(key, item);
+      } else {
+        // Merge vendors into the existing record if any legacy duplicates exist
+        const existing = sourceMap.get(key)!;
+        const existingVendorIds = new Set(existing.vendors.map(v => v.id));
+        for (const v of item.vendors) {
+          if (!existingVendorIds.has(v.id)) {
+            existing.vendors.push(v);
+          }
+        }
+        if (item.comparativeStatement && !existing.comparativeStatement) {
+          existing.comparativeStatement = item.comparativeStatement;
+        }
+      }
+    }
+
+    const rfqs = Array.from(sourceMap.values());
 
     return NextResponse.json({ rfqs });
   } catch (error: any) {
@@ -109,59 +132,132 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // Auto-generate RFQ Number
-    const count = await prisma.rfq.count();
-    const year = new Date().getFullYear();
-    const rfqNumber = `RFQ-${year}-${String(count + 1).padStart(4, "0")}`;
+    const normalizedSourceNo = sourceNo.trim().toUpperCase();
 
-    // Create RFQ transaction with vendor invitations
-    const newRfq = await prisma.$transaction(async (tx) => {
-      const rfq = await tx.rfq.create({
+    // Check if an RFQ already exists for this Source Request
+    const existingRfq = await prisma.rfq.findFirst({
+      where: { sourceNo: normalizedSourceNo },
+      include: {
+        vendors: true
+      },
+      orderBy: { createdAt: "asc" }
+    });
+
+    let targetRfq: any;
+    let newlyInvitedVendors: any[] = [];
+
+    if (existingRfq) {
+      // Re-use the existing RFQ number! Do not change RFQ number for the same Source Request.
+      console.log(`Adding vendors to existing RFQ: ${existingRfq.rfqNumber} for Source: ${normalizedSourceNo}`);
+
+      // Update RFQ details if provided
+      await prisma.rfq.update({
+        where: { id: existingRfq.id },
         data: {
-          rfqNumber,
-          sourceNo: sourceNo.trim().toUpperCase(),
-          title: title.trim(),
-          description: description?.trim() || title.trim(),
-          specifications: specifications?.trim() || null,
-          quantity: quantity ? parseInt(quantity, 10) : null,
-          unit: unit?.trim() || null,
-          requiredDate: requiredDate ? new Date(requiredDate) : null,
-          submissionDeadline: new Date(submissionDeadline),
-          deliveryLocation: deliveryLocation?.trim() || "DXN Plant, Mandapally, Siddipet",
-          termsAndConditions: termsAndConditions?.trim() || null,
-          status: "DISPATCHED",
-          createdById: session.user.id,
-          vendors: {
-            create: selectedVendors.map((v: any) => ({
+          title: title.trim() || existingRfq.title,
+          description: description?.trim() || existingRfq.description,
+          specifications: specifications?.trim() || existingRfq.specifications,
+          quantity: quantity ? parseInt(quantity, 10) : existingRfq.quantity,
+          unit: unit?.trim() || existingRfq.unit,
+          requiredDate: requiredDate ? new Date(requiredDate) : existingRfq.requiredDate,
+          submissionDeadline: submissionDeadline ? new Date(submissionDeadline) : existingRfq.submissionDeadline,
+          deliveryLocation: deliveryLocation?.trim() || existingRfq.deliveryLocation,
+          termsAndConditions: termsAndConditions?.trim() || existingRfq.termsAndConditions,
+        }
+      });
+
+      // Avoid duplicate vendor invitations for the same RFQ
+      const existingVendorIds = new Set(existingRfq.vendors.map((v) => String(v.vendorId)));
+      const existingEmails = new Set(existingRfq.vendors.map((v) => (v.vendorEmail || "").toLowerCase().trim()));
+
+      const vendorsToAdd = selectedVendors.filter((v: any) => {
+        const vid = String(v.id);
+        const email = (v.email || "").toLowerCase().trim();
+        return !existingVendorIds.has(vid) && (!email || !existingEmails.has(email));
+      });
+
+      if (vendorsToAdd.length > 0) {
+        for (const v of vendorsToAdd) {
+          const createdVendor = await prisma.rfqVendor.create({
+            data: {
+              rfqId: existingRfq.id,
               vendorId: String(v.id),
               vendorName: v.company_name,
               vendorEmail: v.email,
               status: "INVITED",
-            }))
-          }
-        },
+            }
+          });
+          newlyInvitedVendors.push(createdVendor);
+        }
+      }
+
+      // Fetch the full updated RFQ with all vendors
+      targetRfq = await prisma.rfq.findUnique({
+        where: { id: existingRfq.id },
         include: {
-          vendors: true
+          vendors: {
+            include: { quotations: true }
+          },
+          comparativeStatement: true
         }
       });
+    } else {
+      // First time creating an RFQ for this Source Request:
+      // Auto-generate a new sequential RFQ Number
+      const count = await prisma.rfq.count();
+      const year = new Date().getFullYear();
+      const rfqNumber = `RFQ-${year}-${String(count + 1).padStart(4, "0")}`;
 
-      return rfq;
-    });
+      targetRfq = await prisma.$transaction(async (tx) => {
+        const rfq = await tx.rfq.create({
+          data: {
+            rfqNumber,
+            sourceNo: normalizedSourceNo,
+            title: title.trim(),
+            description: description?.trim() || title.trim(),
+            specifications: specifications?.trim() || null,
+            quantity: quantity ? parseInt(quantity, 10) : null,
+            unit: unit?.trim() || null,
+            requiredDate: requiredDate ? new Date(requiredDate) : null,
+            submissionDeadline: new Date(submissionDeadline),
+            deliveryLocation: deliveryLocation?.trim() || "DXN Plant, Mandapally, Siddipet",
+            termsAndConditions: termsAndConditions?.trim() || null,
+            status: "DISPATCHED",
+            createdById: session.user.id,
+            vendors: {
+              create: selectedVendors.map((v: any) => ({
+                vendorId: String(v.id),
+                vendorName: v.company_name,
+                vendorEmail: v.email,
+                status: "INVITED",
+              }))
+            }
+          },
+          include: {
+            vendors: true
+          }
+        });
 
-    // Fire & forget: send invitation email with direct magic link to each invited vendor
-    if (newRfq.vendors && newRfq.vendors.length > 0) {
-      newRfq.vendors.forEach((vendor) => {
+        return rfq;
+      });
+
+      newlyInvitedVendors = targetRfq.vendors;
+    }
+
+    // Fire & forget: send invitation email with direct magic link ONLY to newly invited vendors
+    if (newlyInvitedVendors.length > 0) {
+      newlyInvitedVendors.forEach((vendor) => {
         sendRfqInvitationEmail({
           to: vendor.vendorEmail,
           vendorName: vendor.vendorName,
-          rfqNumber: newRfq.rfqNumber,
-          sourceNo: newRfq.sourceNo,
-          title: newRfq.title,
-          specifications: newRfq.specifications,
-          quantity: newRfq.quantity,
-          unit: newRfq.unit,
-          submissionDeadline: newRfq.submissionDeadline.toISOString(),
-          deliveryLocation: newRfq.deliveryLocation,
+          rfqNumber: targetRfq.rfqNumber,
+          sourceNo: targetRfq.sourceNo,
+          title: targetRfq.title,
+          specifications: targetRfq.specifications,
+          quantity: targetRfq.quantity,
+          unit: targetRfq.unit,
+          submissionDeadline: targetRfq.submissionDeadline.toISOString(),
+          deliveryLocation: targetRfq.deliveryLocation,
           accessKey: vendor.accessKey,
         }).catch((err) => {
           console.error(`Failed to send RFQ email to ${vendor.vendorEmail}:`, err);
@@ -169,7 +265,12 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ success: true, rfq: newRfq }, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      rfq: targetRfq,
+      isExisting: !!existingRfq,
+      addedVendorsCount: newlyInvitedVendors.length,
+    }, { status: existingRfq ? 200 : 201 });
   } catch (error: any) {
     console.error("Error creating RFQ:", error);
     return NextResponse.json({ error: "Failed to create RFQ", details: error.message }, { status: 500 });
