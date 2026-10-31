@@ -433,227 +433,253 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                     </div>
                   </div>
 
-                  {/* Synchronized Bidding Summary Metrics */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-1">
-                    <div className="p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-                      <div>
-                        <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
-                          Vendors Invited
-                        </div>
-                        <div className="text-lg font-black text-neutral-900 dark:text-white mt-0.5">
-                          {rfq.vendors.length}
-                        </div>
-                      </div>
-                      <Building className="w-5 h-5 text-neutral-400" />
-                    </div>
-
-                    <div className="p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-                      <div>
-                        <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
-                          Quotations Received
-                        </div>
-                        <div className="text-lg font-black text-neutral-900 dark:text-white mt-0.5">
-                          {quotedCount} <span className="text-xs font-normal text-neutral-400">Quotes</span>
-                        </div>
-                      </div>
-                      <FileText className="w-5 h-5 text-neutral-400" />
-                    </div>
-
-                    <div className="p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-                      <div>
-                        <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
-                          Lowest Bid (L1)
-                        </div>
-                        <div className={`text-lg font-black mt-0.5 ${lowestBid !== null ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-400 text-sm"}`}>
-                          {lowestBid !== null ? `₹${lowestBid.toLocaleString()}` : "Awaiting Submissions"}
-                        </div>
-                      </div>
-                      <TrendingDown className={`w-5 h-5 ${lowestBid !== null ? "text-emerald-500" : "text-neutral-400"}`} />
-                    </div>
-                  </div>
-
-                  {/* Separate Quotations & Pending Invitations */}
-                  <div className="space-y-4 pt-1">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
-                        Submitted Quotations & Bids ({allQuotesList.length})
-                      </h4>
-                      <span className="text-[10px] text-neutral-400 font-mono">
-                        Source: {rfq.sourceNo} · RFQ: {rfq.rfqNumber}
+                  {/* Summary Bar */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800/40 rounded-lg border border-neutral-200 dark:border-neutral-800 text-xs">
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <span className="text-neutral-500">
+                        Invited Vendors: <strong className="text-neutral-900 dark:text-neutral-100">{rfq.vendors.length}</strong>
+                      </span>
+                      <span className="text-neutral-300 dark:text-neutral-700">·</span>
+                      <span className="text-neutral-500">
+                        Quotations Submitted: <strong className="text-neutral-900 dark:text-neutral-100">{allQuotesList.length}</strong>
+                      </span>
+                      <span className="text-neutral-300 dark:text-neutral-700">·</span>
+                      <span className="text-neutral-500">
+                        Lowest Landed Bid (L1):{" "}
+                        <strong className="text-emerald-600 dark:text-emerald-400 font-mono">
+                          {lowestBid !== null ? `₹${lowestBid.toLocaleString()}` : "Awaiting Quotes"}
+                        </strong>
                       </span>
                     </div>
 
-                    {allQuotesList.length === 0 ? (
-                      <div className="p-6 text-center text-xs text-neutral-400 bg-neutral-50/50 dark:bg-neutral-800/30 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700">
-                        <Clock className="w-6 h-6 mx-auto mb-1.5 opacity-40" />
-                        <span>No vendor quotations submitted yet for this Source Request.</span>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {allQuotesList.map((quote) => {
-                          const isWinningQuote =
-                            rfq.comparativeStatement?.recommendedVendorName?.toLowerCase().trim() ===
-                            quote.vendorName?.toLowerCase().trim();
-
-                          return (
-                            <div
-                              key={quote.id}
-                              className={`p-3.5 rounded-xl border text-xs flex flex-col justify-between gap-2.5 transition-all ${
-                                isWinningQuote
-                                  ? "bg-emerald-500/10 border-emerald-500 dark:bg-emerald-950/30 dark:border-emerald-500 shadow-xs"
-                                  : "bg-emerald-50/40 border-emerald-300 dark:bg-emerald-950/20 dark:border-emerald-800/80 shadow-xs"
-                              }`}
-                            >
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="font-bold text-neutral-900 dark:text-neutral-100 truncate">
-                                    {quote.vendorName}
-                                  </span>
-                                  <div className="flex items-center gap-1.5">
-                                    {isWinningQuote && (
-                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-xs">
-                                        Winner
-                                      </span>
-                                    )}
-                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                      {quote.status || "SUBMITTED"}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="text-[11px] text-neutral-500 truncate">{quote.vendorEmail}</div>
-                              </div>
-
-                              <div className="pt-2 border-t border-neutral-200/60 dark:border-neutral-700/60">
-                                <div className="space-y-1">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-black text-sm">
-                                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                                      <span>Quoted: ₹{quote.totalAmount.toLocaleString()}</span>
-                                    </div>
-                                  </div>
-                                  <div className="text-[10px] text-neutral-500 flex items-center justify-between">
-                                    <span className="font-mono">Ref: {quote.quotationNo}</span>
-                                    <span>{new Date(quote.submittedAt || "").toLocaleDateString()}</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* One-Click Direct Link Actions */}
-                              {quote.accessKey && (
-                                <div className="flex items-center justify-between pt-2 border-t border-neutral-200/40 dark:border-neutral-700/40 text-[11px]">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const prodUrl = `https://www.dxnmanufacturing.com/vendor/rfqs/${quote.accessKey}`;
-                                      navigator.clipboard.writeText(prodUrl);
-                                      toast.success(`Copied official link for ${quote.vendorName}!`);
-                                    }}
-                                    className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-medium cursor-pointer"
-                                    title="Copy official link to send via WhatsApp or Email"
-                                  >
-                                    <Copy className="w-3 h-3" />
-                                    <span>Copy Link</span>
-                                  </button>
-                                  <a
-                                    href={
-                                      typeof window !== "undefined" && window.location.hostname === "localhost"
-                                        ? `http://localhost:5173/vendor/rfqs/${quote.accessKey}`
-                                        : `https://www.dxnmanufacturing.com/vendor/rfqs/${quote.accessKey}`
-                                    }
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 hover:underline font-bold"
-                                    title="Open vendor quotation submission form"
-                                  >
-                                    <span>Open Form</span>
-                                    <ExternalLink className="w-3 h-3" />
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {pendingVendorsList.length > 0 && (
-                      <div className="space-y-2 pt-2">
-                        <h5 className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                          Invited Vendors Awaiting Quotes ({pendingVendorsList.length})
-                        </h5>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {pendingVendorsList.map((vendor) => (
-                            <div
-                              key={vendor.id}
-                              className="p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/40 text-xs flex flex-col justify-between gap-2.5"
-                            >
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="font-bold text-neutral-900 dark:text-neutral-100 truncate">
-                                    {vendor.vendorName}
-                                  </span>
-                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-neutral-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-300">
-                                    INVITED
-                                  </span>
-                                </div>
-                                <div className="text-[11px] text-neutral-500 truncate">{vendor.vendorEmail}</div>
-                              </div>
-                              <div className="pt-2 border-t border-neutral-200/60 dark:border-neutral-700/60 text-neutral-400 flex items-center gap-1.5 py-1">
-                                <Clock className="w-3.5 h-3.5" />
-                                <span>Awaiting Quotation Submission</span>
-                              </div>
-                              {vendor.accessKey && (
-                                <div className="flex items-center justify-between pt-2 border-t border-neutral-200/40 dark:border-neutral-700/40 text-[11px]">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const prodUrl = `https://www.dxnmanufacturing.com/vendor/rfqs/${vendor.accessKey}`;
-                                      navigator.clipboard.writeText(prodUrl);
-                                      toast.success(`Copied official link for ${vendor.vendorName}!`);
-                                    }}
-                                    className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-medium cursor-pointer"
-                                  >
-                                    <Copy className="w-3 h-3" />
-                                    <span>Copy Link</span>
-                                  </button>
-                                  <a
-                                    href={
-                                      typeof window !== "undefined" && window.location.hostname === "localhost"
-                                        ? `http://localhost:5173/vendor/rfqs/${vendor.accessKey}`
-                                        : `https://www.dxnmanufacturing.com/vendor/rfqs/${vendor.accessKey}`
-                                    }
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 hover:underline font-bold"
-                                  >
-                                    <span>Open Form</span>
-                                    <ExternalLink className="w-3 h-3" />
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                    {rfq.comparativeStatement && (
+                      <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Winning Bidder: {rfq.comparativeStatement.recommendedVendorName}</span>
+                      </span>
                     )}
                   </div>
 
+                  {/* Tabular Quotations & Bids Table */}
+                  <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-xs">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead className="bg-neutral-100/80 dark:bg-neutral-800/70 text-neutral-600 dark:text-neutral-300 font-bold uppercase tracking-wider text-[11px] border-b border-neutral-200 dark:border-neutral-800">
+                          <tr>
+                            <th className="py-3 px-4 w-28">Rank</th>
+                            <th className="py-3 px-4">Quotation Ref</th>
+                            <th className="py-3 px-4">Vendor Company</th>
+                            <th className="py-3 px-4 font-mono">Quoted Amount (₹)</th>
+                            <th className="py-3 px-4">Submitted Date</th>
+                            <th className="py-3 px-4">Status</th>
+                            <th className="py-3 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800 bg-white dark:bg-neutral-900">
+                          {allQuotesList.length === 0 && pendingVendorsList.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="py-8 text-center text-neutral-400 italic">
+                                No vendors invited yet. Click "Invite More Vendors" to dispatch RFQ.
+                              </td>
+                            </tr>
+                          ) : (
+                            <>
+                              {/* Submitted Quotations (sorted ascending by amount) */}
+                              {allQuotesList
+                                .slice()
+                                .sort((a, b) => Number(a.totalAmount) - Number(b.totalAmount))
+                                .map((quote, idx) => {
+                                  const isWinningQuote =
+                                    rfq.comparativeStatement?.recommendedVendorName?.toLowerCase().trim() ===
+                                    quote.vendorName?.toLowerCase().trim();
+                                  const isL1 = idx === 0;
+
+                                  return (
+                                    <tr
+                                      key={quote.id}
+                                      className={`hover:bg-neutral-50/70 dark:hover:bg-neutral-800/40 transition-colors ${
+                                        isWinningQuote
+                                          ? "bg-emerald-50/40 dark:bg-emerald-950/20"
+                                          : isL1
+                                          ? "bg-emerald-50/20 dark:bg-emerald-950/10"
+                                          : ""
+                                      }`}
+                                    >
+                                      {/* Rank */}
+                                      <td className="py-3 px-4">
+                                        {isWinningQuote ? (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-xs">
+                                            <CheckCircle2 className="w-3 h-3" /> Winner
+                                          </span>
+                                        ) : isL1 ? (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black bg-emerald-600 text-white shadow-xs">
+                                            <Trophy className="w-3 h-3" /> L1 Best
+                                          </span>
+                                        ) : (
+                                          <span className="font-mono text-xs font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded border border-neutral-200 dark:border-neutral-700">
+                                            L{idx + 1}
+                                          </span>
+                                        )}
+                                      </td>
+
+                                      {/* Quotation Ref */}
+                                      <td className="py-3 px-4 font-mono font-bold text-neutral-900 dark:text-neutral-100 text-xs">
+                                        {quote.quotationNo}
+                                      </td>
+
+                                      {/* Vendor Company */}
+                                      <td className="py-3 px-4">
+                                        <div className="font-bold text-neutral-900 dark:text-neutral-100">
+                                          {quote.vendorName}
+                                        </div>
+                                        <div className="text-[11px] text-neutral-500 font-mono">
+                                          {quote.vendorEmail}
+                                        </div>
+                                      </td>
+
+                                      {/* Quoted Amount */}
+                                      <td className="py-3 px-4 font-mono font-black text-sm text-emerald-700 dark:text-emerald-400">
+                                        ₹{Number(quote.totalAmount).toLocaleString()}
+                                      </td>
+
+                                      {/* Date */}
+                                      <td className="py-3 px-4 text-neutral-600 dark:text-neutral-400 text-xs">
+                                        {new Date(quote.submittedAt).toLocaleDateString()}
+                                      </td>
+
+                                      {/* Status */}
+                                      <td className="py-3 px-4">
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                          {quote.status || "SUBMITTED"}
+                                        </span>
+                                      </td>
+
+                                      {/* Actions */}
+                                      <td className="py-3 px-4 text-right">
+                                        <div className="flex items-center justify-end gap-3 text-xs">
+                                          {quote.accessKey && (
+                                            <>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  const prodUrl = `https://www.dxnmanufacturing.com/vendor/rfqs/${quote.accessKey}`;
+                                                  navigator.clipboard.writeText(prodUrl);
+                                                  toast.success(`Copied link for ${quote.vendorName}!`);
+                                                }}
+                                                className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 font-medium cursor-pointer"
+                                                title="Copy official link"
+                                              >
+                                                <Copy className="w-3.5 h-3.5" />
+                                                <span>Copy Link</span>
+                                              </button>
+                                              <a
+                                                href={
+                                                  typeof window !== "undefined" && window.location.hostname === "localhost"
+                                                    ? `http://localhost:5173/vendor/rfqs/${quote.accessKey}`
+                                                    : `https://www.dxnmanufacturing.com/vendor/rfqs/${quote.accessKey}`
+                                                }
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 hover:underline font-bold"
+                                              >
+                                                <span>Open Form</span>
+                                                <ExternalLink className="w-3.5 h-3.5" />
+                                              </a>
+                                            </>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+
+                              {/* Pending / Invited Vendors who haven't quoted yet */}
+                              {pendingVendorsList.map((vendor) => (
+                                <tr
+                                  key={vendor.id}
+                                  className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 transition-colors opacity-80"
+                                >
+                                  <td className="py-3 px-4 font-mono text-neutral-400 text-xs">
+                                    -
+                                  </td>
+                                  <td className="py-3 px-4 font-mono italic text-neutral-400 text-xs">
+                                    Awaiting Quote
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    <div className="font-semibold text-neutral-800 dark:text-neutral-200">
+                                      {vendor.vendorName}
+                                    </div>
+                                    <div className="text-[11px] text-neutral-500 font-mono">
+                                      {vendor.vendorEmail}
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4 text-neutral-400 italic font-mono text-xs">
+                                    Pending Submission
+                                  </td>
+                                  <td className="py-3 px-4 text-neutral-400 text-xs">-</td>
+                                  <td className="py-3 px-4">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-300 dark:border-neutral-700">
+                                      <Clock className="w-3 h-3" /> INVITED
+                                    </span>
+                                  </td>
+                                  <td className="py-3 px-4 text-right">
+                                    <div className="flex items-center justify-end gap-3 text-xs">
+                                      {vendor.accessKey && (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const prodUrl = `https://www.dxnmanufacturing.com/vendor/rfqs/${vendor.accessKey}`;
+                                              navigator.clipboard.writeText(prodUrl);
+                                              toast.success(`Copied link for ${vendor.vendorName}!`);
+                                            }}
+                                            className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 font-medium cursor-pointer"
+                                            title="Copy official link"
+                                          >
+                                            <Copy className="w-3.5 h-3.5" />
+                                            <span>Copy Link</span>
+                                          </button>
+                                          <a
+                                            href={
+                                              typeof window !== "undefined" && window.location.hostname === "localhost"
+                                                ? `http://localhost:5173/vendor/rfqs/${vendor.accessKey}`
+                                                : `https://www.dxnmanufacturing.com/vendor/rfqs/${vendor.accessKey}`
+                                            }
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 hover:underline font-bold"
+                                          >
+                                            <span>Open Form</span>
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                          </a>
+                                        </>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
                   {/* CS Action Bar */}
-                  <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between flex-wrap gap-3">
+                  <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between flex-wrap gap-3">
                     <div className="text-xs text-neutral-500">
                       {rfq.comparativeStatement ? (
                         <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
                           <CheckCircle2 className="w-4 h-4" />
                           <span>
-                            CS Confirmed & Approved · Winning Vendor:{" "}
+                            CS Confirmed · Winning Vendor:{" "}
                             <strong>{rfq.comparativeStatement.recommendedVendorName}</strong> · Advanced to PR
                           </span>
                         </span>
                       ) : (
                         <span>
-                          {allQuotesList.length} quotation(s) received across {rfq.vendors.length} vendor(s)
+                          {allQuotesList.length} quotation(s) received across {rfq.vendors.length} invited vendor(s)
                         </span>
                       )}
                     </div>
