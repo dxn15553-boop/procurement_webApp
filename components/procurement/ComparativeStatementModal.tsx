@@ -15,8 +15,11 @@ import {
   Clock,
   ShieldCheck,
   Send,
+  FileSpreadsheet,
+  FileDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { downloadRfqPdf, downloadBiddingsPdf, downloadBiddingsExcel, QuoteExportData } from "@/lib/rfqExportHelper";
 
 interface EvaluatedQuote {
   quotationId: string;
@@ -110,6 +113,25 @@ export function ComparativeStatementModal({
   const isL1Selected = selectedQuote?.isLowest || false;
   const isAlreadyApproved = (existingCs && existingCs.status === "APPROVED") || rfq?.status === "CLOSED";
 
+  const exportableQuotes: QuoteExportData[] = quotes.map((q) => ({
+    id: q.quotationId,
+    quotationNo: q.quotationNo,
+    vendorId: q.vendorId,
+    vendorName: q.vendorName,
+    vendorEmail: q.vendorEmail,
+    baseAmount: q.baseAmount,
+    taxAmount: q.taxAmount,
+    freightCharges: q.freightCharges,
+    otherCharges: q.otherCharges,
+    totalAmount: q.totalAmount,
+    leadTimeDays: q.leadTimeDays,
+    paymentTerms: q.paymentTerms,
+    deliveryTerms: q.deliveryTerms,
+    validityDays: q.validityDays,
+    remarks: q.remarks,
+    submittedAt: q.submittedAt,
+  }));
+
   const handleApproveCs = async () => {
     if (!selectedQuote) {
       toast.error("Please select a winning vendor.");
@@ -180,12 +202,49 @@ export function ComparativeStatementModal({
               </span>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {rfq && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => downloadRfqPdf(rfq)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg transition-colors cursor-pointer bg-white dark:bg-neutral-900 shadow-2xs"
+                  title="Download Official RFQ Document (PDF)"
+                >
+                  <FileDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                  <span className="hidden sm:inline">RFQ PDF</span>
+                </button>
+                {quotes.length > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => downloadBiddingsPdf(rfq, exportableQuotes)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg transition-colors cursor-pointer bg-white dark:bg-neutral-900 shadow-2xs"
+                      title="Download Bidding Comparative Statement (PDF)"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="hidden sm:inline">CS PDF</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadBiddingsExcel(rfq, exportableQuotes)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-lg transition-colors cursor-pointer bg-white dark:bg-neutral-900 shadow-2xs"
+                      title="Export Biddings to Excel (.xlsx)"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="hidden sm:inline">Excel</span>
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer ml-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -509,14 +568,38 @@ export function ComparativeStatementModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between p-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-800/40">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white border border-neutral-300 dark:border-neutral-700 rounded-lg transition-colors cursor-pointer bg-white dark:bg-neutral-900"
-          >
-            Close
-          </button>
+        <div className="flex items-center justify-between p-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-800/40 flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white border border-neutral-300 dark:border-neutral-700 rounded-lg transition-colors cursor-pointer bg-white dark:bg-neutral-900"
+            >
+              Close
+            </button>
+            {quotes.length > 0 && rfq && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => downloadBiddingsPdf(rfq, exportableQuotes)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-200 hover:text-neutral-900 dark:hover:text-white border border-neutral-300 dark:border-neutral-700 rounded-lg transition-colors cursor-pointer bg-white dark:bg-neutral-900 shadow-2xs"
+                  title="Download CS Bidding Statement as PDF"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Download CS (PDF)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => downloadBiddingsExcel(rfq, exportableQuotes)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-lg transition-colors cursor-pointer bg-white dark:bg-neutral-900 shadow-2xs"
+                  title="Export Bidding Data to Excel"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Export to Excel</span>
+                </button>
+              </>
+            )}
+          </div>
 
           {isAlreadyApproved ? (
             <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">

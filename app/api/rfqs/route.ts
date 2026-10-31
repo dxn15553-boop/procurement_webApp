@@ -56,7 +56,17 @@ export async function GET(req: Request) {
               select: {
                 id: true,
                 quotationNo: true,
+                baseAmount: true,
+                taxAmount: true,
+                freightCharges: true,
+                otherCharges: true,
                 totalAmount: true,
+                leadTimeDays: true,
+                paymentTerms: true,
+                deliveryTerms: true,
+                validityDays: true,
+                documentUrl: true,
+                remarks: true,
                 status: true,
                 submittedAt: true,
               }

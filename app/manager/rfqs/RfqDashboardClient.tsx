@@ -21,11 +21,15 @@ import {
   Calendar,
   Copy,
   Link2,
+  Trophy,
+  Download,
+  FileDown,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { VendorSelectionModal } from "@/components/procurement/VendorSelectionModal";
 import { ComparativeStatementModal } from "@/components/procurement/ComparativeStatementModal";
-import { Trophy } from "lucide-react";
+import { downloadRfqPdf, downloadBiddingsPdf, downloadBiddingsExcel, QuoteExportData } from "@/lib/rfqExportHelper";
 
 interface RfqItem {
   id: string;
@@ -33,6 +37,11 @@ interface RfqItem {
   sourceNo: string;
   title: string;
   description: string;
+  specifications?: string | null;
+  quantity?: number | null;
+  unit?: string | null;
+  deliveryLocation?: string | null;
+  termsAndConditions?: string | null;
   status: string;
   submissionDeadline: string;
   createdAt: string;
@@ -47,7 +56,16 @@ interface RfqItem {
     quotations: {
       id: string;
       quotationNo: string;
+      baseAmount?: number;
+      taxAmount?: number;
+      freightCharges?: number;
+      otherCharges?: number;
       totalAmount: number;
+      leadTimeDays?: number | null;
+      paymentTerms?: string | null;
+      deliveryTerms?: string | null;
+      validityDays?: number | null;
+      remarks?: string | null;
       status: string;
       submittedAt: string;
     }[];
@@ -57,6 +75,7 @@ interface RfqItem {
     csNumber: string;
     status: string;
     recommendedVendorName?: string;
+    recommendationReason?: string | null;
   } | null;
 }
 
@@ -330,13 +349,33 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                         )}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => handleOpenVendorSelection(source)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-[11px] uppercase tracking-wider transition-colors shadow-sm"
-                        >
-                          <Send className="w-3 h-3" />
-                          <span>{source.rfq ? "Add More Vendors" : "Select Vendors & RFQ"}</span>
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          {source.rfq && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const matchingRfq = rfqs.find((r) => r.sourceNo === source.id);
+                                if (matchingRfq) {
+                                  downloadRfqPdf(matchingRfq);
+                                } else {
+                                  toast.info(`RFQ ${source.rfq?.rfqNumber} registered. Switch to Source Request Biddings to download.`);
+                                }
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
+                              title="Download Official RFQ Document (PDF)"
+                            >
+                              <FileDown className="w-3 h-3 text-red-600 dark:text-red-400" />
+                              <span>RFQ PDF</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleOpenVendorSelection(source)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-[11px] uppercase tracking-wider transition-colors shadow-sm"
+                          >
+                            <Send className="w-3 h-3" />
+                            <span>{source.rfq ? "Add More Vendors" : "Select Vendors & RFQ"}</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -412,8 +451,8 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-3 self-start lg:self-center flex-wrap">
-                      <div className="text-right text-xs text-neutral-500 hidden sm:block">
+                    <div className="flex items-center gap-2 self-start lg:self-center flex-wrap">
+                      <div className="text-right text-xs text-neutral-500 hidden sm:block mr-1">
                         <div className="flex items-center gap-1 md:justify-end">
                           <Calendar className="w-3.5 h-3.5 text-neutral-400" />
                           <span>Deadline: {new Date(rfq.submissionDeadline).toLocaleDateString()}</span>
@@ -421,6 +460,40 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                         <div className="text-[11px] text-neutral-400">Created by {rfq.createdBy?.name || "Procurement"}</div>
                       </div>
 
+                      {/* Download RFQ */}
+                      <button
+                        type="button"
+                        onClick={() => downloadRfqPdf(rfq)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                        title="Download Official RFQ Document (PDF)"
+                      >
+                        <FileDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                        <span>Download RFQ</span>
+                      </button>
+
+                      {/* Download Biddings PDF */}
+                      <button
+                        type="button"
+                        onClick={() => downloadBiddingsPdf(rfq, allQuotesList)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                        title="Download Comparative Bidding Statement (PDF)"
+                      >
+                        <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>Download Biddings</span>
+                      </button>
+
+                      {/* Export Excel */}
+                      <button
+                        type="button"
+                        onClick={() => downloadBiddingsExcel(rfq, allQuotesList)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                        title="Export Bidding Data to Excel (.xlsx)"
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span className="hidden xl:inline">Excel</span>
+                      </button>
+
+                      {/* Invite More Vendors */}
                       <button
                         type="button"
                         onClick={() => handleOpenVendorSelection(null, rfq)}
@@ -684,26 +757,62 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                       )}
                     </div>
 
-                    <button
-                      onClick={() => {
-                        setSelectedRfqForCs(rfq.id);
-                        setIsCsModalOpen(true);
-                      }}
-                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-sm cursor-pointer ${
-                        rfq.comparativeStatement
-                          ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                          : allQuotesList.length > 0
-                          ? "bg-red-600 hover:bg-red-700 text-white"
-                          : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-neutral-700 cursor-not-allowed opacity-60"
-                      }`}
-                    >
-                      <Trophy className="w-3.5 h-3.5" />
-                      <span>
-                        {rfq.comparativeStatement
-                          ? "View Confirmed CS"
-                          : "Evaluate Comparative Statement (CS)"}
-                      </span>
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => downloadRfqPdf(rfq)}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-semibold cursor-pointer shadow-2xs"
+                        title="Download Official RFQ Document (PDF)"
+                      >
+                        <FileDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                        <span>RFQ PDF</span>
+                      </button>
+
+                      {allQuotesList.length > 0 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => downloadBiddingsPdf(rfq, allQuotesList)}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-semibold cursor-pointer shadow-2xs"
+                            title="Download Comparative Bidding Statement (PDF)"
+                          >
+                            <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>CS PDF</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => downloadBiddingsExcel(rfq, allQuotesList)}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-semibold cursor-pointer shadow-2xs"
+                            title="Export Bidding Data to Excel (.xlsx)"
+                          >
+                            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Excel</span>
+                          </button>
+                        </>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          setSelectedRfqForCs(rfq.id);
+                          setIsCsModalOpen(true);
+                        }}
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-sm cursor-pointer ${
+                          rfq.comparativeStatement
+                            ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                            : allQuotesList.length > 0
+                            ? "bg-red-600 hover:bg-red-700 text-white"
+                            : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-neutral-700 cursor-not-allowed opacity-60"
+                        }`}
+                      >
+                        <Trophy className="w-3.5 h-3.5" />
+                        <span>
+                          {rfq.comparativeStatement
+                            ? "View Confirmed CS"
+                            : "Evaluate Comparative Statement (CS)"}
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
