@@ -272,15 +272,16 @@ export default function VendorQuotationSubmitPage() {
       <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-red-600 flex items-center justify-center font-black text-white text-lg tracking-wider shadow-md">
-              DXN
-            </div>
+            <img src="/dxnLogo.png" alt="DXN Logo" className="h-10 w-auto object-contain bg-white rounded p-1" />
             <div>
               <h1 className="text-sm font-black uppercase tracking-wider text-white">
-                DXN MANUFACTURING (INDIA) PRIVATE LIMITED
+                DXN MANUFACTURING (INDIA) PVT. LTD.,
               </h1>
-              <p className="text-[11px] text-slate-400">
-                Procurement & Supply Chain Management · Official Vendor Portal
+              <p className="text-[10px] text-slate-400">
+                Sy. No: 392 &amp; 206 |Siddipet Industrial Park, Rajagopalpet (V) &amp; Mandapally (V)
+              </p>
+              <p className="text-[10px] text-slate-400">
+                | Nangunoor (M) &amp; Siddipet Urban (M) |Siddipet Dist. |-Telangana - 502267
               </p>
             </div>
           </div>
@@ -557,3 +558,4 @@ export default function VendorQuotationSubmitPage() {
     </div>
   );
 }
+

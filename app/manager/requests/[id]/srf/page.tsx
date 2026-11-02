@@ -94,20 +94,32 @@ export default async function RequestSRFPage({
 
       {/* Main SRF Document Sheet */}
       <div className="srf-sheet max-w-4xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-xl p-8 lg:p-12 text-slate-900">
-        {/* Document Header */}
-        <div className="srf-section border-b-2 border-slate-900 pb-5 mb-6 flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-indigo-600 inline-block" />
-              <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">
-                DXN Enterprise Procurement
-              </h2>
-            </div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 mt-1 uppercase">
-              Source Request Form (SRF)
+        {/* Official DXN Boxed Header (matching user reference) */}
+        <div className="srf-section border-2 border-slate-900 rounded-lg overflow-hidden flex mb-5 bg-white shadow-2xs">
+          <div className="w-24 sm:w-28 p-3 flex items-center justify-center border-r-2 border-slate-900 bg-white">
+            <img src="/dxnLogo.png" alt="DXN Logo" className="max-h-16 w-auto object-contain" />
+          </div>
+          <div className="flex-1 p-3 text-center flex flex-col justify-center bg-white">
+            <h1 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-tight">
+              DXN MANUFACTURING (INDIA) PVT. LTD.,
             </h1>
-            <p className="text-xs text-slate-500 font-medium tracking-wide">
-              Official Material & Service Sourcing Authorization Form
+            <p className="text-[11px] sm:text-xs text-slate-800 font-medium mt-0.5">
+              Sy. No: 392 &amp; 206 |Siddipet Industrial Park, Rajagopalpet (V) &amp; Mandapally (V)
+            </p>
+            <p className="text-[11px] sm:text-xs text-slate-800 font-medium">
+              | Nangunoor (M) &amp; Siddipet Urban (M) |Siddipet Dist. |-Telangana - 502267
+            </p>
+          </div>
+        </div>
+
+        {/* SRF Sub-bar: Document Title and Doc Date */}
+        <div className="srf-section flex items-center justify-between pb-3 mb-5 border-b border-slate-200">
+          <div>
+            <h2 className="text-lg font-black tracking-tight text-slate-900 uppercase">
+              Source Request Form (SRF)
+            </h2>
+            <p className="text-xs text-slate-500 font-medium">
+              Official Material &amp; Service Sourcing Authorization Form
             </p>
           </div>
           <div className="text-right">

@@ -6,6 +6,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 import { formatDate, parseItemDescription } from "@/lib/utils";
+import { drawDxnOfficialHeaderBox } from "@/lib/rfqExportHelper";
 
 interface SRFDownloadButtonProps {
   requestId: string;
@@ -52,32 +53,28 @@ export function SRFDownloadButton({
 
       const pageWidth = doc.internal.pageSize.getWidth();
 
-      // Top DXN Brand Bar
-      doc.setFillColor(15, 23, 42); // slate-900
-      doc.rect(0, 0, pageWidth, 28, "F");
+      // Top Official DXN Boxed Header (matching user reference)
+      const headerBottomY = drawDxnOfficialHeaderBox(doc, 14, 10, pageWidth - 28, 22);
 
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text("DXN ENTERPRISE PROCUREMENT", 14, 13);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.setTextColor(203, 213, 225);
-      doc.text("SOURCE REQUEST FORM (SRF) • OFFICIAL SOURCING AUTHORIZATION", 14, 20);
+      // SRF Document Sub-bar
+      const bannerY = headerBottomY + 4;
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.3);
+      doc.rect(14, bannerY, pageWidth - 28, 11, "FD");
 
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(56, 189, 248); // sky-400
-      doc.text(effectiveSrfNo, pageWidth - 14, 15, { align: "right" });
+      doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+      doc.text("SOURCE REQUEST FORM (SRF) • OFFICIAL SOURCING AUTHORIZATION", 18, bannerY + 7);
 
-      doc.setFontSize(8);
-      doc.setTextColor(226, 232, 240);
-      doc.text(`Date: ${srfDateFormatted}`, pageWidth - 14, 21, { align: "right" });
+      doc.setFontSize(9.5);
+      doc.setTextColor(2, 132, 199); // sky-600
+      doc.text(effectiveSrfNo, pageWidth - 18, bannerY + 7, { align: "right" });
 
       // Document Identification Summary Box
       autoTable(doc, {
-        startY: 32,
+        startY: bannerY + 14,
         theme: "plain",
         styles: {
           fontSize: 9,

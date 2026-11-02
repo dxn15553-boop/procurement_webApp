@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { parseItemDescription } from "@/lib/utils";
+import { DXN_LOGO_BASE64 } from "./dxnLogoData";
 
 export interface RfqExportData {
   id: string;
@@ -68,11 +69,75 @@ export interface QuoteExportData {
   status?: string;
 }
 
-const DXN_COMPANY_NAME = "DXN Manufacturing (India) Pvt Ltd (TS)";
-const DXN_COMPANY_FULL = "DXN MANUFACTURING (INDIA PRIVATE LIMITED)";
-const DXN_PLANT_ADDRESS = "Siddipet Industrial Park, Sy. No. 392 & 206, Mandapally & Rajagopalpet Village, Nanganur Mandal, Siddipet Dist - 502276, Telangana";
-const DXN_GSTIN = "36AABCD4141M1ZO";
-const DXN_STATE = "36-Telangana";
+export const DXN_COMPANY_HEADER = "DXN MANUFACTURING (INDIA) PVT. LTD.,";
+export const DXN_ADDRESS_LINE1 = "Sy. No: 392 & 206 |Siddipet Industrial Park, Rajagopalpet (V) & Mandapally (V)";
+export const DXN_ADDRESS_LINE2 = "| Nangunoor (M) & Siddipet Urban (M) |Siddipet Dist. |-Telangana - 502267";
+export const DXN_COMPANY_NAME = "DXN Manufacturing (India) Pvt Ltd (TS)";
+export const DXN_COMPANY_FULL = "DXN MANUFACTURING (INDIA PRIVATE LIMITED)";
+export const DXN_PLANT_ADDRESS = `${DXN_ADDRESS_LINE1} ${DXN_ADDRESS_LINE2}`;
+export const DXN_GSTIN = "36AABCD4141M1ZO";
+export const DXN_STATE = "36-Telangana";
+
+/**
+ * Draws the official DXN bordered header box matching the physical reference template
+ * (Box border with left DXN Logo and centered company name & address)
+ */
+export function drawDxnOfficialHeaderBox(
+  doc: jsPDF,
+  startX: number,
+  startY: number,
+  boxWidth: number,
+  boxHeight: number = 22
+) {
+  // 1. Draw outer border
+  doc.setDrawColor(15, 23, 42); // slate-900
+  doc.setLineWidth(0.4);
+  doc.rect(startX, startY, boxWidth, boxHeight);
+
+  // 2. Vertical divider between Logo and Address
+  const logoBoxWidth = 26;
+  const dividerX = startX + logoBoxWidth;
+  doc.line(dividerX, startY, dividerX, startY + boxHeight);
+
+  // 3. Render DXN Logo on left
+  try {
+    if (DXN_LOGO_BASE64) {
+      doc.addImage(
+        DXN_LOGO_BASE64,
+        "PNG",
+        startX + 3,
+        startY + 2,
+        logoBoxWidth - 6,
+        boxHeight - 4
+      );
+    }
+  } catch {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(220, 38, 38);
+    doc.text("DXN", startX + logoBoxWidth / 2, startY + boxHeight / 2 + 2, { align: "center" });
+  }
+
+  // 4. Center-aligned text block
+  const textAreaCenter = (dividerX + startX + boxWidth) / 2;
+
+  // Line 1: Company Title (Bold, uppercase)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(15, 23, 42);
+  doc.text(DXN_COMPANY_HEADER, textAreaCenter, startY + 6.8, { align: "center" });
+
+  // Line 2: Address line 1
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(51, 65, 85);
+  doc.text(DXN_ADDRESS_LINE1, textAreaCenter, startY + 12.2, { align: "center" });
+
+  // Line 3: Address line 2
+  doc.text(DXN_ADDRESS_LINE2, textAreaCenter, startY + 16.8, { align: "center" });
+
+  return startY + boxHeight;
+}
 
 /**
  * Generates and downloads the Official DXN Request for Quotation (RFQ) PDF
@@ -94,40 +159,28 @@ export function downloadRfqPdf(rfq: RfqExportData) {
       : format(new Date(), "dd MMM yyyy");
     const deptName = rfq.sourceDetails?.department_name || "Enterprise Operations";
 
-    // DXN Header Banner
-    doc.setFillColor(15, 23, 42); // slate-900
-    doc.rect(0, 0, pageWidth, 30, "F");
+    // Official DXN Boxed Header (matching user reference)
+    const headerBottomY = drawDxnOfficialHeaderBox(doc, 14, 10, pageWidth - 28, 22);
 
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text(DXN_COMPANY_FULL, 14, 11);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(203, 213, 225);
-    doc.text(DXN_PLANT_ADDRESS, 14, 17);
-    doc.text(`GSTIN: ${DXN_GSTIN}  |  State: ${DXN_STATE}  |  Place of Supply: ${DXN_STATE}`, 14, 22);
+    // RFQ Sourcing Banner & Identifier Sub-bar
+    const bannerY = headerBottomY + 4;
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.3);
+    doc.rect(14, bannerY, pageWidth - 28, 11, "FD");
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(239, 68, 68); // red-500
-    doc.text(rfq.rfqNumber, pageWidth - 14, 13, { align: "right" });
-
-    doc.setFontSize(7.5);
-    doc.setTextColor(226, 232, 240);
-    doc.text(`Source Ref: ${rfq.sourceNo}`, pageWidth - 14, 19, { align: "right" });
-    doc.text(`Dept: ${deptName.toUpperCase()}`, pageWidth - 14, 25, { align: "right" });
-
-    // Document Subtitle
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10.5);
+    doc.setFontSize(9);
     doc.setTextColor(15, 23, 42);
-    doc.text("REQUEST FOR QUOTATION (RFQ) • OFFICIAL PROCUREMENT SOURCING", 14, 37);
+    doc.text("REQUEST FOR QUOTATION (RFQ) • OFFICIAL PROCUREMENT SOURCING", 18, bannerY + 7);
+
+    doc.setFontSize(9.5);
+    doc.setTextColor(220, 38, 38); // red-600
+    doc.text(rfq.rfqNumber, pageWidth - 18, bannerY + 7, { align: "right" });
 
     // RFQ Overview Metadata Table
     autoTable(doc, {
-      startY: 40,
+      startY: bannerY + 14,
       theme: "plain",
       styles: { fontSize: 8, cellPadding: 2.5 },
       headStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: "bold" },
@@ -288,31 +341,23 @@ export function downloadBiddingsPdf(rfq: RfqExportData, quotes: QuoteExportData[
     const refNo = `DXN/TS/CS/26-27/${rfq.sourceNo.replace("SRC-", "")}/${rfq.rfqNumber.replace("RFQ-", "")}`;
     const todayFormatted = format(new Date(), "dd/MM/yyyy");
 
-    // Top Header - Matching Image 2
-    doc.setTextColor(15, 23, 42);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.text(DXN_COMPANY_NAME, 14, 12);
-
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(100, 116, 139);
-    doc.text(`${DXN_PLANT_ADDRESS}  |  GSTIN: ${DXN_GSTIN}`, 14, 16.5);
+    // Top Header - Official DXN Boxed Header (matching user reference)
+    const headerBottomY = drawDxnOfficialHeaderBox(doc, 14, 7, pageWidth - 28, 19);
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10.5);
+    doc.setFontSize(9.5);
     doc.setTextColor(15, 23, 42);
     const csTitle = `COMPARATIVE STATEMENT OF ${rfq.title.toUpperCase()} FOR ${deptName.toUpperCase()}`;
-    doc.text(csTitle, 14, 22.5);
+    doc.text(csTitle, 14, headerBottomY + 5);
 
     // Reference and Date Row
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
-    doc.text(`REF NO: ${refNo}`, 14, 28);
-    doc.text(`Date: ${todayFormatted}`, pageWidth - 14, 28, { align: "right" });
+    doc.text(`REF NO: ${refNo}`, 14, headerBottomY + 9.5);
+    doc.text(`Date: ${todayFormatted}`, pageWidth - 14, headerBottomY + 9.5, { align: "right" });
 
-    doc.setFontSize(8.5);
-    doc.text("STATEMENT:", 14, 33);
+    doc.setFontSize(8);
+    doc.text("STATEMENT:", 14, headerBottomY + 13.5);
 
     // Parse Requirement Items
     const parsedItems = parseItemDescription(rfq.description || rfq.title);
@@ -500,7 +545,7 @@ export function downloadBiddingsPdf(rfq: RfqExportData, quotes: QuoteExportData[
 
     // Render AutoTable with Landscape geometry
     autoTable(doc, {
-      startY: 36,
+      startY: headerBottomY + 16,
       head: [headRow1, headRow2],
       body: tableBody,
       theme: "grid",
@@ -577,10 +622,13 @@ export function downloadBiddingsExcel(rfq: RfqExportData, quotes: QuoteExportDat
     const todayFormatted = format(new Date(), "dd/MM/yyyy");
     const parsedItems = parseItemDescription(rfq.description || rfq.title);
 
-    // Build workbook rows structured after Image 2
+    // Build workbook rows structured after official DXN reference
     const excelRows: any[][] = [
-      [DXN_COMPANY_NAME],
-      [`${DXN_PLANT_ADDRESS} | GSTIN: ${DXN_GSTIN}`],
+      [DXN_COMPANY_HEADER],
+      [DXN_ADDRESS_LINE1],
+      [DXN_ADDRESS_LINE2],
+      [`GSTIN: ${DXN_GSTIN} | State: ${DXN_STATE}`],
+      [],
       [`COMPARATIVE STATEMENT OF ${rfq.title.toUpperCase()} FOR ${deptName.toUpperCase()}`],
       [`REF NO: ${refNo}`, "", "", "", `Date: ${todayFormatted}`],
       ["STATEMENT:"],
