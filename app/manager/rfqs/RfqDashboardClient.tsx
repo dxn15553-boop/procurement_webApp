@@ -826,7 +826,9 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                                               <button
                                                 type="button"
                                                 onClick={() => {
-                                                  const prodUrl = `https://www.dxnmanufacturing.com/vendor/rfqs/${quote.accessKey}`;
+                                                  const prodUrl = typeof window !== "undefined"
+                                                    ? `${window.location.origin}/vendor/rfqs/${quote.accessKey}`
+                                                    : `/vendor/rfqs/${quote.accessKey}`;
                                                   navigator.clipboard.writeText(prodUrl);
                                                   toast.success(`Copied link for ${quote.vendorName}!`);
                                                 }}
@@ -837,11 +839,7 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                                                 <span>Copy Link</span>
                                               </button>
                                               <a
-                                                href={
-                                                  typeof window !== "undefined" && window.location.hostname === "localhost"
-                                                    ? `http://localhost:5173/vendor/rfqs/${quote.accessKey}`
-                                                    : `https://www.dxnmanufacturing.com/vendor/rfqs/${quote.accessKey}`
-                                                }
+                                                href={`/vendor/rfqs/${quote.accessKey}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 hover:underline font-bold"
@@ -893,7 +891,9 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                                           <button
                                             type="button"
                                             onClick={() => {
-                                              const prodUrl = `https://www.dxnmanufacturing.com/vendor/rfqs/${vendor.accessKey}`;
+                                              const prodUrl = typeof window !== "undefined"
+                                                ? `${window.location.origin}/vendor/rfqs/${vendor.accessKey}`
+                                                : `/vendor/rfqs/${vendor.accessKey}`;
                                               navigator.clipboard.writeText(prodUrl);
                                               toast.success(`Copied link for ${vendor.vendorName}!`);
                                             }}
@@ -904,11 +904,7 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                                             <span>Copy Link</span>
                                           </button>
                                           <a
-                                            href={
-                                              typeof window !== "undefined" && window.location.hostname === "localhost"
-                                                ? `http://localhost:5173/vendor/rfqs/${vendor.accessKey}`
-                                                : `https://www.dxnmanufacturing.com/vendor/rfqs/${vendor.accessKey}`
-                                            }
+                                            href={`/vendor/rfqs/${vendor.accessKey}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 hover:underline font-bold"

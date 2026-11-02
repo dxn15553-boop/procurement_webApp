@@ -234,7 +234,13 @@ export async function sendRfqInvitationEmail({
   submissionDeadline,
   deliveryLocation,
   accessKey,
-  vendorPortalUrl = process.env.VENDOR_PORTAL_URL || process.env.NEXT_PUBLIC_VENDOR_PORTAL_URL || "https://www.dxnmanufacturing.com",
+  vendorPortalUrl =
+    process.env.VENDOR_PORTAL_URL ||
+    process.env.NEXT_PUBLIC_VENDOR_PORTAL_URL ||
+    process.env.NEXTAUTH_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null) ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+    "https://procurement-web-app-dun.vercel.app",
 }: RfqInvitationEmailProps) {
   if (!process.env.SMTP_USER && process.env.NODE_ENV === "production") {
     console.warn("SMTP credentials not configured. Skipping vendor RFQ email.");

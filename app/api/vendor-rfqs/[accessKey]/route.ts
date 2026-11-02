@@ -5,7 +5,7 @@ function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept, Origin",
   };
 }
 
@@ -19,9 +19,17 @@ export async function GET(
 ) {
   try {
     const { accessKey } = await params;
+    const cleanAccessKey = accessKey ? decodeURIComponent(accessKey).trim() : "";
+
+    if (!cleanAccessKey) {
+      return NextResponse.json(
+        { error: "Access token is required." },
+        { status: 400, headers: corsHeaders() }
+      );
+    }
 
     const invitation = await prisma.rfqVendor.findUnique({
-      where: { accessKey },
+      where: { accessKey: cleanAccessKey },
       include: {
         rfq: {
           select: {
@@ -51,20 +59,20 @@ export async function GET(
 
     if (!invitation) {
       return NextResponse.json(
-        { error: "Invitation not found." },
+        { error: "Invitation not found or link has expired." },
         { status: 404, headers: corsHeaders() }
       );
     }
 
-    // Mark as VIEWED if still INVITED
+    // Mark as VIEWED if still INVITED (non-blocking)
     if (invitation.status === "INVITED") {
-      await prisma.rfqVendor.update({
+      prisma.rfqVendor.update({
         where: { id: invitation.id },
         data: {
           status: "VIEWED",
           viewedAt: new Date(),
         },
-      });
+      }).catch((e) => console.warn("Could not mark RFQ as viewed:", e));
     }
 
     return NextResponse.json({ invitation }, { headers: corsHeaders() });
