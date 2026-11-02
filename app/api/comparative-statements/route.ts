@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveVendorId } from "@/lib/departmentHelper";
+import { fetchSourceRequestByNo } from "@/lib/sourceDb";
 
 export async function GET(req: Request) {
   try {
@@ -41,25 +42,35 @@ export async function GET(req: Request) {
     const rfq = await prisma.rfq.findUnique({
       where: { id: rfqId },
       include: {
+        createdBy: {
+          select: { id: true, name: true, email: true },
+        },
         vendors: {
           include: {
             quotations: {
               orderBy: { version: "desc" },
-              include: { items: true }
-            }
-          }
+              include: { items: true },
+            },
+          },
         },
         comparativeStatement: {
           include: {
             items: true,
-            approvedBy: { select: { id: true, name: true, email: true } }
-          }
-        }
-      }
+            approvedBy: { select: { id: true, name: true, email: true } },
+          },
+        },
+      },
     });
 
     if (!rfq) {
       return NextResponse.json({ error: "RFQ not found" }, { status: 404 });
+    }
+
+    let sourceDetails = null;
+    try {
+      sourceDetails = await fetchSourceRequestByNo(rfq.sourceNo);
+    } catch (e) {
+      console.warn("Could not lookup source details for CS:", e);
     }
 
     // Extract all latest quotations
@@ -100,7 +111,19 @@ export async function GET(req: Request) {
     }));
 
     return NextResponse.json({
-      rfq,
+      rfq: {
+        ...rfq,
+        sourceDetails: sourceDetails
+          ? {
+              department_name: sourceDetails.department_name,
+              requester_name: sourceDetails.requester_name,
+              priority: sourceDetails.priority,
+              purpose_justification: sourceDetails.purpose_justification,
+              required_by_date: sourceDetails.required_by_date,
+              handler_name: sourceDetails.handler_name,
+            }
+          : null,
+      },
       quotes: rankedQuotes,
       existingCs: rfq.comparativeStatement || null,
     });

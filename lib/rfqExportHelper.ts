@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { parseItemDescription } from "@/lib/utils";
 
 export interface RfqExportData {
   id: string;
@@ -19,6 +20,14 @@ export interface RfqExportData {
   status: string;
   createdAt: string;
   createdBy?: { name: string; email: string };
+  sourceDetails?: {
+    department_name?: string | null;
+    requester_name?: string | null;
+    priority?: string | null;
+    purpose_justification?: string | null;
+    required_by_date?: string | Date | null;
+    handler_name?: string | null;
+  } | null;
   vendors: {
     id?: string;
     vendorId: string;
@@ -44,6 +53,7 @@ export interface QuoteExportData {
   vendorName: string;
   vendorEmail: string;
   baseAmount?: number;
+  discountAmount?: number;
   taxAmount?: number;
   freightCharges?: number;
   otherCharges?: number;
@@ -51,11 +61,18 @@ export interface QuoteExportData {
   leadTimeDays?: number | null;
   paymentTerms?: string | null;
   deliveryTerms?: string | null;
+  warranty?: string | null;
   validityDays?: number | null;
   remarks?: string | null;
   submittedAt: string;
   status?: string;
 }
+
+const DXN_COMPANY_NAME = "DXN Manufacturing (India) Pvt Ltd (TS)";
+const DXN_COMPANY_FULL = "DXN MANUFACTURING (INDIA PRIVATE LIMITED)";
+const DXN_PLANT_ADDRESS = "Siddipet Industrial Park, Sy. No. 392 & 206, Mandapally & Rajagopalpet Village, Nanganur Mandal, Siddipet Dist - 502276, Telangana";
+const DXN_GSTIN = "36AABCD4141M1ZO";
+const DXN_STATE = "36-Telangana";
 
 /**
  * Generates and downloads the Official DXN Request for Quotation (RFQ) PDF
@@ -75,35 +92,44 @@ export function downloadRfqPdf(rfq: RfqExportData) {
     const formattedCreated = rfq.createdAt
       ? format(new Date(rfq.createdAt), "dd MMM yyyy")
       : format(new Date(), "dd MMM yyyy");
+    const deptName = rfq.sourceDetails?.department_name || "Enterprise Operations";
 
     // DXN Header Banner
     doc.setFillColor(15, 23, 42); // slate-900
-    doc.rect(0, 0, pageWidth, 28, "F");
+    doc.rect(0, 0, pageWidth, 30, "F");
 
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("DXN ENTERPRISE PROCUREMENT", 14, 13);
+    doc.setFontSize(14);
+    doc.text(DXN_COMPANY_FULL, 14, 11);
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
+    doc.setFontSize(7.5);
     doc.setTextColor(203, 213, 225);
-    doc.text("REQUEST FOR QUOTATION (RFQ) • OFFICIAL PROCUREMENT SOURCING", 14, 20);
+    doc.text(DXN_PLANT_ADDRESS, 14, 17);
+    doc.text(`GSTIN: ${DXN_GSTIN}  |  State: ${DXN_STATE}  |  Place of Supply: ${DXN_STATE}`, 14, 22);
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.setTextColor(239, 68, 68); // red-500
-    doc.text(rfq.rfqNumber, pageWidth - 14, 15, { align: "right" });
+    doc.text(rfq.rfqNumber, pageWidth - 14, 13, { align: "right" });
 
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setTextColor(226, 232, 240);
-    doc.text(`Source Ref: ${rfq.sourceNo}`, pageWidth - 14, 21, { align: "right" });
+    doc.text(`Source Ref: ${rfq.sourceNo}`, pageWidth - 14, 19, { align: "right" });
+    doc.text(`Dept: ${deptName.toUpperCase()}`, pageWidth - 14, 25, { align: "right" });
+
+    // Document Subtitle
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text("REQUEST FOR QUOTATION (RFQ) • OFFICIAL PROCUREMENT SOURCING", 14, 37);
 
     // RFQ Overview Metadata Table
     autoTable(doc, {
-      startY: 32,
+      startY: 40,
       theme: "plain",
-      styles: { fontSize: 8.5, cellPadding: 2.8 },
+      styles: { fontSize: 8, cellPadding: 2.5 },
       headStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: "bold" },
       body: [
         [
@@ -113,15 +139,15 @@ export function downloadRfqPdf(rfq: RfqExportData) {
           { content: rfq.sourceNo, styles: { fontStyle: "bold", textColor: [15, 23, 42] } },
         ],
         [
-          { content: "DATE DISPATCHED", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
-          { content: formattedCreated, styles: { fontStyle: "bold", textColor: [15, 23, 42] } },
+          { content: "TARGET DEPARTMENT", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
+          { content: deptName.toUpperCase(), styles: { fontStyle: "bold", textColor: [15, 23, 42] } },
           { content: "SUBMISSION DEADLINE", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
           { content: formattedDeadline, styles: { fontStyle: "bold", textColor: [220, 38, 38] } },
         ],
         [
-          { content: "DELIVERY LOCATION", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
+          { content: "DELIVERY DESTINATION", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
           {
-            content: rfq.deliveryLocation || "Mandapally, Siddipet (DXN Flagship Plant)",
+            content: rfq.deliveryLocation || "Mandapally & Rajagopalpet, Siddipet (DXN Flagship Plant)",
             styles: { fontStyle: "bold", textColor: [15, 23, 42] },
           },
           { content: "RFQ STATUS", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
@@ -131,38 +157,41 @@ export function downloadRfqPdf(rfq: RfqExportData) {
     });
 
     // Section 1: Item Requirements & Scope
-    const currentY1 = (doc as any).lastAutoTable.finalY + 6;
+    const currentY1 = (doc as any).lastAutoTable.finalY + 5;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(9.5);
     doc.setTextColor(15, 23, 42);
-    doc.text("1. PROCUREMENT ITEM SPECIFICATIONS & REQUIREMENT SCOPE", 14, currentY1);
+    doc.text("1. PROCUREMENT ITEM SPECIFICATIONS & SCOPE OF SUPPLY", 14, currentY1);
+
+    const parsedItems = parseItemDescription(rfq.description || rfq.title);
+    const itemRows = parsedItems.map((item, idx) => [
+      idx + 1,
+      `${item.itemName}\n${item.details || ""}`.trim(),
+      item.itemType || "Standard Material",
+      item.qty !== "—" && item.qty ? item.qty : `${rfq.quantity || 1} ${rfq.unit || "Nos"}`,
+      "Mandapally Plant",
+    ]);
 
     autoTable(doc, {
       startY: currentY1 + 3,
-      head: [["#", "Item Requirement / Subject", "Quantity / Unit", "Specifications & Technical Details"]],
-      body: [
-        [
-          "1",
-          rfq.title || "Procurement Item",
-          `${rfq.quantity || 1} ${rfq.unit || "Lots / Units"}`,
-          rfq.specifications || rfq.description || "As per standard DXN technical specifications.",
-        ],
-      ],
+      head: [["#", "Item Description & Requirement Details", "Item Type", "Quantity / UOM", "Delivery Location"]],
+      body: itemRows,
       theme: "striped",
-      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontSize: 8.5, fontStyle: "bold" },
-      styles: { fontSize: 8.5, cellPadding: 3.5, valign: "top" },
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontSize: 8, fontStyle: "bold" },
+      styles: { fontSize: 7.5, cellPadding: 3, valign: "top" },
       columnStyles: {
-        0: { cellWidth: 10, halign: "center" },
-        1: { cellWidth: 65, fontStyle: "bold" },
+        0: { cellWidth: 8, halign: "center" },
+        1: { cellWidth: 85, fontStyle: "bold" },
         2: { cellWidth: 35 },
-        3: { cellWidth: 72 },
+        3: { cellWidth: 26, halign: "center" },
+        4: { cellWidth: 28 },
       },
     });
 
     // Section 2: Invited Vendors Register
-    const currentY2 = (doc as any).lastAutoTable.finalY + 6;
+    const currentY2 = (doc as any).lastAutoTable.finalY + 5;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(9.5);
     doc.setTextColor(15, 23, 42);
     doc.text(`2. INVITED VENDORS REGISTER (${rfq.vendors.length} Vendors)`, 14, currentY2);
 
@@ -171,7 +200,7 @@ export function downloadRfqPdf(rfq: RfqExportData) {
       v.vendorName || "Vendor Organization",
       v.vendorEmail || "—",
       v.status || "INVITED",
-      v.accessKey ? "Secure Link Dispatched" : "Direct Invite",
+      v.accessKey ? "Official Online Link Dispatched" : "Direct Invite",
     ]);
 
     autoTable(doc, {
@@ -180,48 +209,49 @@ export function downloadRfqPdf(rfq: RfqExportData) {
       body: vendorRows.length > 0 ? vendorRows : [["—", "No vendors recorded", "—", "—", "—"]],
       theme: "grid",
       headStyles: { fillColor: [51, 65, 85], textColor: [255, 255, 255], fontSize: 8, fontStyle: "bold" },
-      styles: { fontSize: 8, cellPadding: 3 },
+      styles: { fontSize: 7.5, cellPadding: 2.8 },
       columnStyles: {
-        0: { cellWidth: 10, halign: "center" },
+        0: { cellWidth: 8, halign: "center" },
         1: { cellWidth: 65, fontStyle: "bold" },
-        2: { cellWidth: 50 },
+        2: { cellWidth: 52 },
         3: { cellWidth: 28, halign: "center" },
         4: { cellWidth: 29, halign: "center" },
       },
     });
 
     // Section 3: Commercial & Bidding Instructions
-    const currentY3 = (doc as any).lastAutoTable.finalY + 6;
+    const currentY3 = (doc as any).lastAutoTable.finalY + 5;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(9.5);
     doc.setTextColor(15, 23, 42);
     doc.text("3. COMMERCIAL INSTRUCTIONS & SUBMISSION GUIDELINES", 14, currentY3);
 
     const instructions = [
-      "1. All commercial pricing must be quoted in Indian Rupees (INR) and itemize Base Price, GST %, and Freight charges.",
-      "2. Quotations must be submitted directly through the DXN Vendor Portal link provided before the submission deadline.",
-      "3. Delivery Plant: FOR Destination - DXN Manufacturing India Pvt. Ltd., Mandapally, Siddipet.",
-      "4. Standard Payment Terms: 30 Days Credit after delivery and acceptance/inspection, unless explicitly negotiated.",
-      "5. Commercial offers must remain firm and valid for a minimum of 60 days from the closing deadline.",
+      "1. All commercial pricing must be quoted in Indian Rupees (INR) and itemize Base Rate, GST %, and Freight charges.",
+      "2. Quotations must be submitted directly through the DXN Vendor Quotation Portal before the submission deadline.",
+      "3. Delivery Destination: FOR Destination - DXN Manufacturing India Pvt. Ltd., Mandapally & Rajagopalpet, Siddipet.",
+      "4. Standard Payment Terms: 100% payment within 30 days after receipt of material along with correct tax invoice.",
+      "5. Warranty: Minimum one year warranty for manufacturing defects.",
+      "6. Commercial offers must remain firm and valid for a minimum of 60 days from the closing deadline.",
     ];
 
     autoTable(doc, {
       startY: currentY3 + 3,
       theme: "plain",
-      styles: { fontSize: 8, cellPadding: 2, textColor: [71, 85, 105] },
+      styles: { fontSize: 7.5, cellPadding: 1.8, textColor: [71, 85, 105] },
       body: instructions.map((ins) => [{ content: ins }]),
     });
 
-    // Section 4: Sign-off & Authorization Box
-    const currentY4 = (doc as any).lastAutoTable.finalY + 8;
+    // Section 4: Sign-off & Authorization Box (matching DXN physical format)
+    const currentY4 = (doc as any).lastAutoTable.finalY + 6;
     autoTable(doc, {
       startY: currentY4,
-      head: [["Prepared By (Procurement)", "Verified By (HOD / Tech)", "Authorized By (Plant Head)"]],
+      head: [["Prepared By", "Checked By", "Approved By"]],
       body: [
         [
-          `\n\n\n${rfq.createdBy?.name || "Procurement Officer"}\nDXN Procurement Department`,
-          "\n\n\nTechnical Evaluation Authority\nDXN Engineering / User Dept",
-          "\n\n\nHead of Procurement & Operations\nDXN Manufacturing India Pvt. Ltd.",
+          `\n\n\n${rfq.createdBy?.name || "Procurement Officer"}\nProcurement Department`,
+          `\n\n\nHead of Department\n${deptName}`,
+          "\n\n\nPlant Head / Director\nDXN Manufacturing (India) Pvt Ltd",
         ],
       ],
       theme: "grid",
@@ -239,257 +269,481 @@ export function downloadRfqPdf(rfq: RfqExportData) {
 }
 
 /**
- * Generates and downloads the Official Comparative Bidding Statement & Evaluation Report (PDF)
+ * Generates and downloads the Official DXN Comparative Statement (CS) PDF
+ * Modeled after DXN Physical Reference Document (Image 2)
  */
 export function downloadBiddingsPdf(rfq: RfqExportData, quotes: QuoteExportData[]) {
   try {
+    // DXN Official Comparative Statement is printed in LANDSCAPE orientation
     const doc = new jsPDF({
-      orientation: "portrait",
+      orientation: "landscape",
       unit: "mm",
       format: "a4",
     });
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const sortedQuotes = quotes.slice().sort((a, b) => Number(a.totalAmount) - Number(b.totalAmount));
-    const lowestBid = sortedQuotes.length > 0 ? sortedQuotes[0].totalAmount : null;
-    const winnerName = rfq.comparativeStatement?.recommendedVendorName || null;
-    const generatedDate = format(new Date(), "dd MMM yyyy, hh:mm a");
+    const winnerName = rfq.comparativeStatement?.recommendedVendorName || (sortedQuotes[0]?.vendorName ?? "L1 Vendor");
+    const deptName = rfq.sourceDetails?.department_name || "COSMETICS & TOILETRY DEPARTMENT";
+    const refNo = `DXN/TS/CS/26-27/${rfq.sourceNo.replace("SRC-", "")}/${rfq.rfqNumber.replace("RFQ-", "")}`;
+    const todayFormatted = format(new Date(), "dd/MM/yyyy");
 
-    // DXN Header Banner
-    doc.setFillColor(15, 23, 42); // slate-900
-    doc.rect(0, 0, pageWidth, 28, "F");
-
-    doc.setTextColor(255, 255, 255);
+    // Top Header - Matching Image 2
+    doc.setTextColor(15, 23, 42);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("DXN ENTERPRISE PROCUREMENT", 14, 13);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(203, 213, 225);
-    doc.text("COMMERCIAL BIDDING SUMMARY & COMPARATIVE STATEMENT (CS)", 14, 20);
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(16, 185, 129); // emerald-500
-    doc.text(`CS EVALUATION`, pageWidth - 14, 15, { align: "right" });
+    doc.setFontSize(13);
+    doc.text(DXN_COMPANY_NAME, 14, 12);
 
     doc.setFontSize(8);
-    doc.setTextColor(226, 232, 240);
-    doc.text(`Date: ${generatedDate}`, pageWidth - 14, 21, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 116, 139);
+    doc.text(`${DXN_PLANT_ADDRESS}  |  GSTIN: ${DXN_GSTIN}`, 14, 16.5);
 
-    // Bidding Metadata Table
-    autoTable(doc, {
-      startY: 32,
-      theme: "plain",
-      styles: { fontSize: 8.5, cellPadding: 2.8 },
-      headStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: "bold" },
-      body: [
-        [
-          { content: "SOURCE REQ NO", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
-          { content: rfq.sourceNo, styles: { fontStyle: "bold", textColor: [15, 23, 42] } },
-          { content: "RFQ NUMBER", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
-          { content: rfq.rfqNumber, styles: { fontStyle: "bold", textColor: [220, 38, 38] } },
-        ],
-        [
-          { content: "ITEM TITLE", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
-          { content: rfq.title, styles: { fontStyle: "bold", textColor: [15, 23, 42] } },
-          { content: "TOTAL INVITED / QUOTED", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
-          {
-            content: `${rfq.vendors.length} Invited · ${sortedQuotes.length} Quotes`,
-            styles: { fontStyle: "bold", textColor: [15, 23, 42] },
-          },
-        ],
-        [
-          { content: "LOWEST BID (L1)", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
-          {
-            content: lowestBid !== null ? `INR ${lowestBid.toLocaleString("en-IN")}` : "Awaiting Submissions",
-            styles: { fontStyle: "bold", textColor: [16, 185, 129] },
-          },
-          { content: "WINNING VENDOR", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
-          {
-            content: winnerName ? `${winnerName} (CONFIRMED)` : "Under Evaluation",
-            styles: { fontStyle: "bold", textColor: winnerName ? [16, 185, 129] : [234, 88, 12] },
-          },
-        ],
-      ],
-    });
-
-    // Section 1: Detailed Comparative Table
-    const currentY1 = (doc as any).lastAutoTable.finalY + 6;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(10.5);
     doc.setTextColor(15, 23, 42);
-    doc.text("1. COMMERCIAL BID EVALUATION MATRIX (RANKED L1 TO LN)", 14, currentY1);
+    const csTitle = `COMPARATIVE STATEMENT OF ${rfq.title.toUpperCase()} FOR ${deptName.toUpperCase()}`;
+    doc.text(csTitle, 14, 22.5);
 
-    const biddingsTableBody = sortedQuotes.map((q, idx) => {
-      const isWinner = winnerName && q.vendorName.toLowerCase().trim() === winnerName.toLowerCase().trim();
-      const rankBadge = isWinner ? "WINNER" : idx === 0 ? "L1 (LOWEST)" : `L${idx + 1}`;
-      const baseAmt = q.baseAmount !== undefined ? `INR ${q.baseAmount.toLocaleString("en-IN")}` : "—";
-      const taxAmt = q.taxAmount !== undefined ? `INR ${q.taxAmount.toLocaleString("en-IN")}` : "—";
-      const totalAmt = `INR ${Number(q.totalAmount).toLocaleString("en-IN")}`;
-      const leadTime = q.leadTimeDays ? `${q.leadTimeDays} Days` : "15 Days";
+    // Reference and Date Row
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "bold");
+    doc.text(`REF NO: ${refNo}`, 14, 28);
+    doc.text(`Date: ${todayFormatted}`, pageWidth - 14, 28, { align: "right" });
 
-      return [
-        rankBadge,
-        q.quotationNo || `QUO-${idx + 1}`,
-        `${q.vendorName}\n(${q.vendorEmail})`,
-        baseAmt,
-        taxAmt,
-        totalAmt,
-        leadTime,
-        q.paymentTerms || "30 Days Credit",
-      ];
+    doc.setFontSize(8.5);
+    doc.text("STATEMENT:", 14, 33);
+
+    // Parse Requirement Items
+    const parsedItems = parseItemDescription(rfq.description || rfq.title);
+
+    // Build the Side-by-Side Vendor Matrix (matching Image 2)
+    // Left Columns: SL.NO | DESCRIPTION | Qty | UOM
+    // Right Columns: For each vendor, two columns: Rate | Amount (or single combined column)
+    const vendorCols = sortedQuotes.slice(0, 5); // display up to 5 vendors side-by-side cleanly
+    const numVendors = vendorCols.length;
+
+    // Table Header Structure
+    // Header Row 1: SL.NO | DESCRIPTION | Qty | UOM | Vendor 1 (colSpan 2) | Vendor 2 (colSpan 2) ...
+    // Header Row 2: " " | " " | " " | " " | Rate | Total | Rate | Total ...
+    const headRow1: any[] = [
+      { content: "SL.NO", rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+      { content: "DESCRIPTION", rowSpan: 2, styles: { valign: "middle" } },
+      { content: "Qty", rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+      { content: "UOM", rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+    ];
+
+    const headRow2: any[] = [];
+
+    vendorCols.forEach((v) => {
+      const isWinner = winnerName && v.vendorName.toLowerCase().trim() === winnerName.toLowerCase().trim();
+      headRow1.push({
+        content: `${v.vendorName.toUpperCase()}${isWinner ? " (L1 / WINNER)" : ""}`,
+        colSpan: 2,
+        styles: { halign: "center", fillColor: isWinner ? [22, 101, 52] : [51, 65, 85], fontStyle: "bold" },
+      });
+      headRow2.push({ content: "Rate (INR)", styles: { halign: "right" } });
+      headRow2.push({ content: "Amount (INR)", styles: { halign: "right" } });
     });
 
+    // Item Data Rows
+    const tableBody: any[] = [];
+    parsedItems.forEach((item, itemIdx) => {
+      const row: any[] = [
+        itemIdx + 1,
+        `${item.itemName}\n${item.details || ""}`.trim(),
+        item.qty && item.qty !== "—" ? item.qty : String(rfq.quantity || 1),
+        rfq.unit || "Nos",
+      ];
+
+      vendorCols.forEach((v) => {
+        const vendorBase = Number(v.baseAmount) || Number(v.totalAmount) || 0;
+        const itemQty = Number(item.qty) || Number(rfq.quantity) || 1;
+        const totalItemsCount = parsedItems.length || 1;
+        const estimatedItemRate = vendorBase / (itemQty * totalItemsCount);
+        const estimatedItemAmt = estimatedItemRate * itemQty;
+
+        row.push(estimatedItemRate.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        row.push(estimatedItemAmt.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      });
+
+      tableBody.push(row);
+    });
+
+    // Commercial Terms & Financial Comparison Rows (Line-for-line matching Image 2)
+    // 1. TOTAL BASIC
+    const basicRow: any[] = [
+      { content: "TOTAL BASIC", colSpan: 4, styles: { fontStyle: "bold", fillColor: [248, 250, 252] } },
+    ];
+    vendorCols.forEach((v) => {
+      const base = Number(v.baseAmount) || Number(v.totalAmount) || 0;
+      basicRow.push({ content: " ", styles: { fillColor: [248, 250, 252] } });
+      basicRow.push({
+        content: base.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        styles: { fontStyle: "bold", halign: "right", fillColor: [248, 250, 252] },
+      });
+    });
+    tableBody.push(basicRow);
+
+    // 2. Discount
+    const discountRow: any[] = [
+      { content: "Discount", colSpan: 4, styles: { fontStyle: "bold" } },
+    ];
+    vendorCols.forEach((v) => {
+      const disc = Number(v.discountAmount) || 0;
+      discountRow.push({ content: disc > 0 ? "5%" : "—", styles: { halign: "right" } });
+      discountRow.push({
+        content: disc > 0 ? disc.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—",
+        styles: { halign: "right" },
+      });
+    });
+    tableBody.push(discountRow);
+
+    // 3. After Discount Basic Fare
+    const afterDiscountRow: any[] = [
+      { content: "After Discount Basic Fare", colSpan: 4, styles: { fontStyle: "bold", fillColor: [248, 250, 252] } },
+    ];
+    vendorCols.forEach((v) => {
+      const base = Number(v.baseAmount) || Number(v.totalAmount) || 0;
+      const disc = Number(v.discountAmount) || 0;
+      const netBase = Math.max(0, base - disc);
+      afterDiscountRow.push({ content: " ", styles: { fillColor: [248, 250, 252] } });
+      afterDiscountRow.push({
+        content: netBase.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        styles: { fontStyle: "bold", halign: "right", fillColor: [248, 250, 252] },
+      });
+    });
+    tableBody.push(afterDiscountRow);
+
+    // 4. GST
+    const gstRow: any[] = [
+      { content: "GST (18% / Taxes)", colSpan: 4, styles: { fontStyle: "bold" } },
+    ];
+    vendorCols.forEach((v) => {
+      const tax = Number(v.taxAmount) || 0;
+      gstRow.push({ content: "18%", styles: { halign: "right" } });
+      gstRow.push({
+        content: tax > 0 ? tax.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "Included / Extra",
+        styles: { halign: "right" },
+      });
+    });
+    tableBody.push(gstRow);
+
+    // 5. Transportation / Freight
+    const transRow: any[] = [
+      { content: "Transportation / Freight", colSpan: 4, styles: { fontStyle: "bold" } },
+    ];
+    vendorCols.forEach((v) => {
+      const freight = Number(v.freightCharges) || 0;
+      transRow.push({ content: freight > 0 ? "Without GST" : "—", styles: { halign: "right" } });
+      transRow.push({
+        content: freight > 0 ? freight.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "Extra / Included",
+        styles: { halign: "right" },
+      });
+    });
+    tableBody.push(transRow);
+
+    // 6. Total+GST (Landed Cost)
+    const totalGstRow: any[] = [
+      { content: "Total+GST (Evaluated Landed Cost)", colSpan: 4, styles: { fontStyle: "bold", fillColor: [241, 245, 249] } },
+    ];
+    vendorCols.forEach((v) => {
+      const tot = Number(v.totalAmount) || 0;
+      totalGstRow.push({ content: " ", styles: { fillColor: [241, 245, 249] } });
+      totalGstRow.push({
+        content: tot.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        styles: { fontStyle: "bold", halign: "right", textColor: [16, 100, 50], fillColor: [241, 245, 249] },
+      });
+    });
+    tableBody.push(totalGstRow);
+
+    // 7. Warranty (matching Image 2)
+    const warrantyRow: any[] = [
+      { content: "Warranty", colSpan: 4, styles: { fontStyle: "bold" } },
+    ];
+    vendorCols.forEach((v) => {
+      warrantyRow.push({
+        content: v.warranty || "One Year (Manufacturing defects)",
+        colSpan: 2,
+        styles: { halign: "center", fontSize: 6.5 },
+      });
+    });
+    tableBody.push(warrantyRow);
+
+    // 8. Payment Terms (matching Image 2)
+    const paymentRow: any[] = [
+      { content: "Payment terms", colSpan: 4, styles: { fontStyle: "bold" } },
+    ];
+    vendorCols.forEach((v) => {
+      paymentRow.push({
+        content:
+          v.paymentTerms ||
+          "100% payment will be made within 30 days after receipt of the material, along with the correct tax invoice.",
+        colSpan: 2,
+        styles: { fontSize: 6.5 },
+      });
+    });
+    tableBody.push(paymentRow);
+
+    // 9. Delivery (matching Image 2)
+    const deliveryRow: any[] = [
+      { content: "Delivery", colSpan: 4, styles: { fontStyle: "bold" } },
+    ];
+    vendorCols.forEach((v) => {
+      deliveryRow.push({
+        content: v.leadTimeDays ? `${v.leadTimeDays} days after PO` : "Material will be dispatch within 2-3 weeks after issuing the PO.",
+        colSpan: 2,
+        styles: { fontSize: 6.5 },
+      });
+    });
+    tableBody.push(deliveryRow);
+
+    // Render AutoTable with Landscape geometry
     autoTable(doc, {
-      startY: currentY1 + 3,
-      head: [["Rank", "Quote Ref", "Vendor Company & Email", "Base Amount", "Taxes", "Total Landed", "Lead Time", "Payment Terms"]],
-      body: biddingsTableBody.length > 0 ? biddingsTableBody : [["—", "—", "No quotations received yet", "—", "—", "—", "—", "—"]],
-      theme: "striped",
-      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontSize: 8, fontStyle: "bold" },
-      styles: { fontSize: 7.5, cellPadding: 3, valign: "top" },
+      startY: 36,
+      head: [headRow1, headRow2],
+      body: tableBody,
+      theme: "grid",
+      headStyles: {
+        fillColor: [30, 41, 59],
+        textColor: [255, 255, 255],
+        fontSize: 7.5,
+        fontStyle: "bold",
+        halign: "center",
+      },
+      styles: {
+        fontSize: 7,
+        cellPadding: 2,
+        overflow: "linebreak",
+        valign: "middle",
+      },
       columnStyles: {
-        0: { cellWidth: 22, halign: "center", fontStyle: "bold" },
-        1: { cellWidth: 26, fontStyle: "bold" },
-        2: { cellWidth: 44 },
-        3: { cellWidth: 20, halign: "right" },
-        4: { cellWidth: 18, halign: "right" },
-        5: { cellWidth: 22, halign: "right", fontStyle: "bold" },
-        6: { cellWidth: 15, halign: "center" },
-        7: { cellWidth: 21 },
+        0: { cellWidth: 10, halign: "center" },
+        1: { cellWidth: 70 },
+        2: { cellWidth: 12, halign: "center" },
+        3: { cellWidth: 14, halign: "center" },
       },
     });
 
-    // Section 2: Justification / Selection Remarks
-    if (rfq.comparativeStatement) {
-      const currentY2 = (doc as any).lastAutoTable.finalY + 6;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(15, 23, 42);
-      doc.text("2. COMPARATIVE STATEMENT (CS) SANCTION & VENDOR SELECTION", 14, currentY2);
+    const finalY = (doc as any).lastAutoTable.finalY + 4;
 
-      autoTable(doc, {
-        startY: currentY2 + 3,
-        theme: "plain",
-        styles: { fontSize: 8, cellPadding: 2.5 },
-        body: [
-          [
-            { content: "RECOMMENDED VENDOR", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
-            {
-              content: rfq.comparativeStatement.recommendedVendorName || "—",
-              styles: { fontStyle: "bold", textColor: [16, 185, 129] },
-            },
-          ],
-          [
-            { content: "SELECTION JUSTIFICATION", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
-            {
-              content:
-                rfq.comparativeStatement.recommendationReason ||
-                "Lowest evaluated commercial bidder (L1) meeting all technical and compliance requirements.",
-              styles: { textColor: [15, 23, 42] },
-            },
-          ],
-          [
-            { content: "APPROVAL STATUS", styles: { fontStyle: "bold", textColor: [100, 116, 139] } },
-            {
-              content: "CS APPROVED · PURCHASE REQUISITION (PR) GENERATED",
-              styles: { fontStyle: "bold", textColor: [16, 185, 129] },
-            },
-          ],
-        ],
-      });
-    }
+    // Bottom Note & Official Suggestion Box (matching Image 2)
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(15, 23, 42);
+    doc.text(`Note: ${rfq.title.toUpperCase()} FOR ${deptName.toUpperCase()}`, 14, finalY);
 
-    // Section 3: Official Sign-off Block
-    const currentY3 = (doc as any).lastAutoTable.finalY + 8;
+    const suggestionText = `Suggestion :Comparing these ${numVendors > 1 ? `${numVendors} ` : ""}quotations "${winnerName}" supplier price is low, so we suggest "${winnerName}"`;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(185, 28, 28); // red-700
+    doc.text(suggestionText, 14, finalY + 5.5);
+
+    // Signatures Trail - Exactly Matching Image 2
     autoTable(doc, {
-      startY: currentY3,
-      head: [["Commercial Evaluator", "Procurement Section Head", "Financial Sanctioning Authority"]],
+      startY: finalY + 9,
+      head: [["Prepared By", "Checked By", "Approved By"]],
       body: [
         [
-          "\n\n\nProcurement Specialist\nDXN Sourcing Team",
-          "\n\n\nManager - Procurement\nDXN Manufacturing India Pvt. Ltd.",
-          "\n\n\nDirector / Head of Finance\nDXN Global Flagship Hub",
+          `\n\n\n${rfq.createdBy?.name || "Procurement Officer"}\nDXN Sourcing Team`,
+          `\n\n\nHead of Department\n${deptName}`,
+          "\n\n\nDirector / Sanctioning Authority\nDXN Manufacturing (India) Pvt Ltd",
         ],
       ],
       theme: "grid",
-      headStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontSize: 8, fontStyle: "bold" },
-      styles: { fontSize: 7.5, cellPadding: 3, halign: "center" },
+      headStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontSize: 8, fontStyle: "bold", halign: "center" },
+      styles: { fontSize: 7.5, cellPadding: 2.5, halign: "center" },
     });
 
-    const fileName = `Bidding_Statement_${rfq.rfqNumber}_${rfq.sourceNo}.pdf`;
+    const fileName = `Comparative_Statement_${rfq.rfqNumber}_${rfq.sourceNo}.pdf`;
     doc.save(fileName);
-    toast.success(`Downloaded bidding comparative statement (${fileName})!`);
+    toast.success(`Downloaded official DXN Comparative Statement (${fileName})!`);
   } catch (error) {
-    console.error("Failed to generate Biddings PDF:", error);
-    toast.error("Failed to generate Biddings comparative report.");
+    console.error("Failed to generate Comparative Statement PDF:", error);
+    toast.error("Failed to generate Comparative Statement document.");
   }
 }
 
 /**
- * Generates and downloads the Bidding Breakdown in Excel (.xlsx) format
+ * Generates and downloads the Official DXN Comparative Statement in Excel (.xlsx) format
+ * Modeled after DXN Physical Reference Document (Image 2)
  */
 export function downloadBiddingsExcel(rfq: RfqExportData, quotes: QuoteExportData[]) {
   try {
     const sortedQuotes = quotes.slice().sort((a, b) => Number(a.totalAmount) - Number(b.totalAmount));
-    const winnerName = rfq.comparativeStatement?.recommendedVendorName || null;
+    const winnerName = rfq.comparativeStatement?.recommendedVendorName || (sortedQuotes[0]?.vendorName ?? "L1 Vendor");
+    const deptName = rfq.sourceDetails?.department_name || "COSMETICS & TOILETRY DEPARTMENT";
+    const refNo = `DXN/TS/CS/26-27/${rfq.sourceNo.replace("SRC-", "")}/${rfq.rfqNumber.replace("RFQ-", "")}`;
+    const todayFormatted = format(new Date(), "dd/MM/yyyy");
+    const parsedItems = parseItemDescription(rfq.description || rfq.title);
 
-    const dataRows = sortedQuotes.map((q, idx) => {
-      const isWinner = winnerName && q.vendorName.toLowerCase().trim() === winnerName.toLowerCase().trim();
-      const rank = isWinner ? "CONFIRMED WINNER" : idx === 0 ? "L1 (Lowest Bid)" : `L${idx + 1}`;
-
-      return {
-        "Rank": rank,
-        "Quotation Ref": q.quotationNo,
-        "Vendor Company Name": q.vendorName,
-        "Vendor Email": q.vendorEmail,
-        "Base Amount (INR)": q.baseAmount ?? 0,
-        "GST / Tax Amount (INR)": q.taxAmount ?? 0,
-        "Freight Charges (INR)": q.freightCharges ?? 0,
-        "Other Charges (INR)": q.otherCharges ?? 0,
-        "Total Landed Cost (INR)": q.totalAmount,
-        "Delivery Lead Time (Days)": q.leadTimeDays ?? "15",
-        "Payment Terms": q.paymentTerms || "30 Days Credit",
-        "Delivery Terms": q.deliveryTerms || "FOR Destination",
-        "Offer Validity (Days)": q.validityDays ?? "60",
-        "Submitted Date": q.submittedAt ? format(new Date(q.submittedAt), "yyyy-MM-dd HH:mm") : "—",
-        "Quotation Status": q.status || "SUBMITTED",
-        "Compliance Remarks": q.remarks || "Fully compliant with specifications",
-      };
-    });
-
-    const ws = XLSX.utils.json_to_sheet(dataRows);
-
-    // Auto-size columns
-    ws["!cols"] = [
-      { wch: 18 }, // Rank
-      { wch: 18 }, // Quotation Ref
-      { wch: 28 }, // Vendor Company Name
-      { wch: 26 }, // Vendor Email
-      { wch: 18 }, // Base Amount
-      { wch: 20 }, // Tax Amount
-      { wch: 20 }, // Freight Charges
-      { wch: 18 }, // Other Charges
-      { wch: 22 }, // Total Landed Cost
-      { wch: 24 }, // Delivery Lead Time
-      { wch: 30 }, // Payment Terms
-      { wch: 22 }, // Delivery Terms
-      { wch: 20 }, // Validity
-      { wch: 20 }, // Submitted Date
-      { wch: 16 }, // Status
-      { wch: 35 }, // Compliance Remarks
+    // Build workbook rows structured after Image 2
+    const excelRows: any[][] = [
+      [DXN_COMPANY_NAME],
+      [`${DXN_PLANT_ADDRESS} | GSTIN: ${DXN_GSTIN}`],
+      [`COMPARATIVE STATEMENT OF ${rfq.title.toUpperCase()} FOR ${deptName.toUpperCase()}`],
+      [`REF NO: ${refNo}`, "", "", "", `Date: ${todayFormatted}`],
+      ["STATEMENT:"],
+      [],
     ];
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Bidding Summary");
+    // Header Row 1: SL.NO, DESCRIPTION, Qty, UOM, and vendor names
+    const header1: any[] = ["SL.NO", "DESCRIPTION", "Qty", "UOM"];
+    sortedQuotes.forEach((v) => {
+      const isWinner = winnerName && v.vendorName.toLowerCase().trim() === winnerName.toLowerCase().trim();
+      header1.push(`${v.vendorName.toUpperCase()}${isWinner ? " (L1 / RECOMMENDED)" : ""}`);
+      header1.push("");
+    });
+    excelRows.push(header1);
 
-    const fileName = `Bidding_Summary_${rfq.rfqNumber}_${rfq.sourceNo}.xlsx`;
+    // Header Row 2: Rate, Amount for each vendor
+    const header2: any[] = ["", "", "", ""];
+    sortedQuotes.forEach(() => {
+      header2.push("Rate (INR)");
+      header2.push("Amount (INR)");
+    });
+    excelRows.push(header2);
+
+    // Item Rows
+    parsedItems.forEach((item, idx) => {
+      const row: any[] = [
+        idx + 1,
+        `${item.itemName} ${item.details || ""}`.trim(),
+        item.qty && item.qty !== "—" ? item.qty : rfq.quantity || 1,
+        rfq.unit || "Nos",
+      ];
+
+      sortedQuotes.forEach((v) => {
+        const vendorBase = Number(v.baseAmount) || Number(v.totalAmount) || 0;
+        const itemQty = Number(item.qty) || Number(rfq.quantity) || 1;
+        const totalItemsCount = parsedItems.length || 1;
+        const estimatedItemRate = vendorBase / (itemQty * totalItemsCount);
+        const estimatedItemAmt = estimatedItemRate * itemQty;
+
+        row.push(estimatedItemRate);
+        row.push(estimatedItemAmt);
+      });
+
+      excelRows.push(row);
+    });
+
+    // Commercial Terms Rows
+    // 1. TOTAL BASIC
+    const basicRow: any[] = ["TOTAL BASIC", "", "", ""];
+    sortedQuotes.forEach((v) => {
+      const base = Number(v.baseAmount) || Number(v.totalAmount) || 0;
+      basicRow.push("");
+      basicRow.push(base);
+    });
+    excelRows.push(basicRow);
+
+    // 2. Discount
+    const discRow: any[] = ["Discount", "", "", ""];
+    sortedQuotes.forEach((v) => {
+      const disc = Number(v.discountAmount) || 0;
+      discRow.push(disc > 0 ? "5%" : "—");
+      discRow.push(disc > 0 ? disc : "—");
+    });
+    excelRows.push(discRow);
+
+    // 3. After Discount Basic Fare
+    const afterDiscRow: any[] = ["After Discount Basic Fare", "", "", ""];
+    sortedQuotes.forEach((v) => {
+      const base = Number(v.baseAmount) || Number(v.totalAmount) || 0;
+      const disc = Number(v.discountAmount) || 0;
+      afterDiscRow.push("");
+      afterDiscRow.push(Math.max(0, base - disc));
+    });
+    excelRows.push(afterDiscRow);
+
+    // 4. GST
+    const gstRow: any[] = ["GST (18% / Taxes)", "", "", ""];
+    sortedQuotes.forEach((v) => {
+      const tax = Number(v.taxAmount) || 0;
+      gstRow.push("18%");
+      gstRow.push(tax > 0 ? tax : "Included / Extra");
+    });
+    excelRows.push(gstRow);
+
+    // 5. Transportation
+    const transRow: any[] = ["Transportation", "", "", ""];
+    sortedQuotes.forEach((v) => {
+      const freight = Number(v.freightCharges) || 0;
+      transRow.push(freight > 0 ? "Without GST" : "—");
+      transRow.push(freight > 0 ? freight : "Extra / Included");
+    });
+    excelRows.push(transRow);
+
+    // 6. Total+GST
+    const totalGstRow: any[] = ["Total+GST (Evaluated Landed Cost)", "", "", ""];
+    sortedQuotes.forEach((v) => {
+      totalGstRow.push("");
+      totalGstRow.push(Number(v.totalAmount) || 0);
+    });
+    excelRows.push(totalGstRow);
+
+    // 7. Warranty
+    const warrantyRow: any[] = ["Warranty", "", "", ""];
+    sortedQuotes.forEach((v) => {
+      warrantyRow.push(v.warranty || "One Year (Manufacturing defects)");
+      warrantyRow.push("");
+    });
+    excelRows.push(warrantyRow);
+
+    // 8. Payment terms
+    const paymentRow: any[] = ["Payment terms", "", "", ""];
+    sortedQuotes.forEach((v) => {
+      paymentRow.push(
+        v.paymentTerms ||
+          "100% payment will be made within 30 days after receipt of the material, along with the correct tax invoice."
+      );
+      paymentRow.push("");
+    });
+    excelRows.push(paymentRow);
+
+    // 9. Delivery
+    const deliveryRow: any[] = ["Delivery", "", "", ""];
+    sortedQuotes.forEach((v) => {
+      deliveryRow.push(
+        v.leadTimeDays ? `${v.leadTimeDays} days after PO` : "Material will be dispatch within 2-3 weeks after issuing the PO."
+      );
+      deliveryRow.push("");
+    });
+    excelRows.push(deliveryRow);
+
+    excelRows.push([]);
+    excelRows.push([`Note: ${rfq.title.toUpperCase()} FOR ${deptName.toUpperCase()}`]);
+    excelRows.push([
+      `Suggestion: Comparing these quotations "${winnerName}" supplier price is low, so we suggest "${winnerName}"`,
+    ]);
+    excelRows.push([]);
+    excelRows.push(["Prepared By", "", "Checked By", "", "Approved By"]);
+    excelRows.push([
+      `${rfq.createdBy?.name || "Procurement Officer"} (Procurement)`,
+      "",
+      `Head of Department (${deptName})`,
+      "",
+      "Plant Head / Sanctioning Authority",
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet(excelRows);
+
+    // Auto-size columns
+    const colWidths = [{ wch: 8 }, { wch: 45 }, { wch: 10 }, { wch: 10 }];
+    sortedQuotes.forEach(() => {
+      colWidths.push({ wch: 18 });
+      colWidths.push({ wch: 18 });
+    });
+    ws["!cols"] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Comparative Statement");
+
+    const fileName = `Comparative_Statement_${rfq.rfqNumber}_${rfq.sourceNo}.xlsx`;
     XLSX.writeFile(wb, fileName);
-    toast.success(`Exported biddings to Excel (${fileName})!`);
+    toast.success(`Exported DXN Comparative Statement to Excel (${fileName})!`);
   } catch (error) {
-    console.error("Failed to export Biddings to Excel:", error);
-    toast.error("Failed to export Biddings to Excel.");
+    console.error("Failed to export Comparative Statement to Excel:", error);
+    toast.error("Failed to export Comparative Statement to Excel.");
   }
 }
-
