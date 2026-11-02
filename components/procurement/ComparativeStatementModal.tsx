@@ -85,11 +85,11 @@ export function ComparativeStatementModal({
       setExistingCs(data.existingCs || null);
 
       if (data.existingCs && (data.existingCs.status === "APPROVED" || data.rfq?.status === "CLOSED")) {
-        const winningQuote = (data.quotes || []).find(
+        const selectedQuoteMatch = (data.quotes || []).find(
           (q: EvaluatedQuote) => q.vendorId === data.existingCs.recommendedVendorId
         );
-        if (winningQuote) {
-          setSelectedQuoteId(winningQuote.quotationId);
+        if (selectedQuoteMatch) {
+          setSelectedQuoteId(selectedQuoteMatch.quotationId);
         } else if (data.quotes && data.quotes.length > 0) {
           setSelectedQuoteId(data.quotes[0].quotationId);
         }
@@ -134,7 +134,7 @@ export function ComparativeStatementModal({
 
   const handleApproveCs = async () => {
     if (!selectedQuote) {
-      toast.error("Please select a winning vendor.");
+      toast.error("Please select a vendor.");
       return;
     }
 
@@ -279,7 +279,7 @@ export function ComparativeStatementModal({
                         </span>
                       </div>
                       <div className="text-xs text-emerald-800 dark:text-emerald-300 mt-0.5">
-                        Winning Vendor: <strong>{existingCs?.recommendedVendorName || selectedQuote?.vendorName}</strong>
+                        Selected Vendor: <strong>{existingCs?.recommendedVendorName || selectedQuote?.vendorName}</strong>
                         {existingCs?.recommendationReason && (
                           <span className="ml-1 text-emerald-700/80 dark:text-emerald-400/80">
                             · Justification: {existingCs.recommendationReason}
@@ -484,13 +484,13 @@ export function ComparativeStatementModal({
                       ))}
                     </tr>
 
-                    {/* WINNER SELECTION OR CONFIRMED BADGE */}
+                    {/* VENDOR SELECTION OR CONFIRMED BADGE */}
                     <tr className="bg-neutral-50/80 dark:bg-neutral-800/50">
                       <td className="py-3 px-4 font-bold text-neutral-900 dark:text-neutral-100 border-r">
-                        {isAlreadyApproved ? "Selected Winner" : "Select Winning Vendor"}
+                        {isAlreadyApproved ? "Selected Vendor" : "Select Vendor"}
                       </td>
                       {quotes.map((q) => {
-                        const isWinningVendor = isAlreadyApproved
+                        const isSelectedVendor = isAlreadyApproved
                           ? existingCs?.recommendedVendorId
                             ? q.vendorId === existingCs.recommendedVendorId
                             : selectedQuoteId === q.quotationId
@@ -499,10 +499,10 @@ export function ComparativeStatementModal({
                         return (
                           <td key={q.quotationId} className="py-3 px-4 border-r">
                             {isAlreadyApproved ? (
-                              isWinningVendor ? (
+                              isSelectedVendor ? (
                                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black bg-emerald-600 text-white shadow-xs">
                                   <CheckCircle2 className="w-3.5 h-3.5" />
-                                  <span>Confirmed Winner</span>
+                                  <span>Selected Vendor</span>
                                 </div>
                               ) : (
                                 <span className="text-neutral-400 dark:text-neutral-500 text-xs font-medium">
@@ -513,19 +513,19 @@ export function ComparativeStatementModal({
                               <label className="flex items-center gap-2 cursor-pointer font-bold text-xs select-none">
                                 <input
                                   type="radio"
-                                  name="winningVendor"
-                                  checked={isWinningVendor}
+                                  name="selectedVendor"
+                                  checked={isSelectedVendor}
                                   onChange={() => setSelectedQuoteId(q.quotationId)}
                                   className="w-4 h-4 text-red-600 focus:ring-red-500 cursor-pointer"
                                 />
                                 <span
                                   className={
-                                    isWinningVendor
+                                    isSelectedVendor
                                       ? "text-red-600 dark:text-red-400 font-black"
                                       : "text-neutral-700 dark:text-neutral-200 font-semibold hover:text-neutral-900 dark:hover:text-white"
                                   }
                                 >
-                                  Select as Winner
+                                  {isSelectedVendor ? "Selected" : "Select Vendor"}
                                 </span>
                               </label>
                             )}

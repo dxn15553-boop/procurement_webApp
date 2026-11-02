@@ -249,7 +249,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Comparative Statement ${cs.csNumber} approved! Winning vendor: ${recommendedVendorName}`,
+      message: `Comparative Statement ${cs.csNumber} approved! Selected vendor: ${recommendedVendorName}`,
       cs,
     }, { status: 201 });
   } catch (error: any) {

@@ -718,7 +718,7 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                     {rfq.comparativeStatement && (
                       <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Winning Bidder: {rfq.comparativeStatement.recommendedVendorName}</span>
+                        <span>Selected Vendor: {rfq.comparativeStatement.recommendedVendorName}</span>
                       </span>
                     )}
                   </div>
@@ -753,7 +753,7 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                                 .slice()
                                 .sort((a, b) => Number(a.totalAmount) - Number(b.totalAmount))
                                 .map((quote, idx) => {
-                                  const isWinningQuote =
+                                  const isSelectedQuote =
                                     rfq.comparativeStatement?.recommendedVendorName?.toLowerCase().trim() ===
                                     quote.vendorName?.toLowerCase().trim();
                                   const isL1 = idx === 0;
@@ -762,7 +762,7 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                                     <tr
                                       key={quote.id}
                                       className={`hover:bg-neutral-50/70 dark:hover:bg-neutral-800/40 transition-colors ${
-                                        isWinningQuote
+                                        isSelectedQuote
                                           ? "bg-emerald-50/40 dark:bg-emerald-950/20"
                                           : isL1
                                           ? "bg-emerald-50/20 dark:bg-emerald-950/10"
@@ -771,9 +771,9 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                                     >
                                       {/* Rank */}
                                       <td className="py-3 px-4">
-                                        {isWinningQuote ? (
+                                        {isSelectedQuote ? (
                                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-xs">
-                                            <CheckCircle2 className="w-3 h-3" /> Winner
+                                            <CheckCircle2 className="w-3 h-3" /> Selected
                                           </span>
                                         ) : isL1 ? (
                                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black bg-emerald-600 text-white shadow-xs">
@@ -932,7 +932,7 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                         <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
                           <CheckCircle2 className="w-4 h-4" />
                           <span>
-                            CS Confirmed · Winning Vendor:{" "}
+                            CS Confirmed · Selected Vendor:{" "}
                             <strong>{rfq.comparativeStatement.recommendedVendorName}</strong> · Advanced to PR
                           </span>
                         </span>

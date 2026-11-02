@@ -336,7 +336,7 @@ export function downloadBiddingsPdf(rfq: RfqExportData, quotes: QuoteExportData[
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const sortedQuotes = quotes.slice().sort((a, b) => Number(a.totalAmount) - Number(b.totalAmount));
-    const winnerName = rfq.comparativeStatement?.recommendedVendorName || (sortedQuotes[0]?.vendorName ?? "L1 Vendor");
+    const selectedVendorName = rfq.comparativeStatement?.recommendedVendorName || (sortedQuotes[0]?.vendorName ?? "L1 Vendor");
     const deptName = rfq.sourceDetails?.department_name || "COSMETICS & TOILETRY DEPARTMENT";
     const refNo = `DXN/TS/CS/26-27/${rfq.sourceNo.replace("SRC-", "")}/${rfq.rfqNumber.replace("RFQ-", "")}`;
     const todayFormatted = format(new Date(), "dd/MM/yyyy");
@@ -390,11 +390,11 @@ export function downloadBiddingsPdf(rfq: RfqExportData, quotes: QuoteExportData[
     const headRow2: any[] = [];
 
     vendorCols.forEach((v) => {
-      const isWinner = winnerName && v.vendorName.toLowerCase().trim() === winnerName.toLowerCase().trim();
+      const isSelected = selectedVendorName && v.vendorName.toLowerCase().trim() === selectedVendorName.toLowerCase().trim();
       headRow1.push({
-        content: `${v.vendorName.toUpperCase()}${isWinner ? " (L1 / WINNER)" : ""}`,
+        content: `${v.vendorName.toUpperCase()}${isSelected ? " (L1 / SELECTED)" : ""}`,
         colSpan: 2,
-        styles: { halign: "center", fillColor: isWinner ? [22, 101, 52] : [51, 65, 85], fontStyle: "bold" },
+        styles: { halign: "center", fillColor: isSelected ? [22, 101, 52] : [51, 65, 85], fontStyle: "bold" },
       });
       headRow2.push({ content: "Rate (INR)", styles: { halign: "right" } });
       headRow2.push({ content: "Amount (INR)", styles: { halign: "right" } });
@@ -590,7 +590,7 @@ export function downloadBiddingsPdf(rfq: RfqExportData, quotes: QuoteExportData[
     doc.text(noteLines, 14, finalY);
     finalY += noteLines.length * 3.8 + 1.5;
 
-    const suggestionText = `Suggestion :Comparing these ${numVendors > 1 ? `${numVendors} ` : ""}quotations "${winnerName}" supplier price is low, so we suggest "${winnerName}"`;
+    const suggestionText = `Suggestion :Comparing these ${numVendors > 1 ? `${numVendors} ` : ""}quotations "${selectedVendorName}" supplier price is low, so we suggest "${selectedVendorName}"`;
     const suggestionLines = doc.splitTextToSize(suggestionText, pageWidth - 28);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
@@ -630,7 +630,7 @@ export function downloadBiddingsPdf(rfq: RfqExportData, quotes: QuoteExportData[
 export function downloadBiddingsExcel(rfq: RfqExportData, quotes: QuoteExportData[]) {
   try {
     const sortedQuotes = quotes.slice().sort((a, b) => Number(a.totalAmount) - Number(b.totalAmount));
-    const winnerName = rfq.comparativeStatement?.recommendedVendorName || (sortedQuotes[0]?.vendorName ?? "L1 Vendor");
+    const selectedVendorName = rfq.comparativeStatement?.recommendedVendorName || (sortedQuotes[0]?.vendorName ?? "L1 Vendor");
     const deptName = rfq.sourceDetails?.department_name || "COSMETICS & TOILETRY DEPARTMENT";
     const refNo = `DXN/TS/CS/26-27/${rfq.sourceNo.replace("SRC-", "")}/${rfq.rfqNumber.replace("RFQ-", "")}`;
     const todayFormatted = format(new Date(), "dd/MM/yyyy");
@@ -652,8 +652,8 @@ export function downloadBiddingsExcel(rfq: RfqExportData, quotes: QuoteExportDat
     // Header Row 1: SL.NO, DESCRIPTION, Qty, UOM, and vendor names
     const header1: any[] = ["SL.NO", "DESCRIPTION", "Qty", "UOM"];
     sortedQuotes.forEach((v) => {
-      const isWinner = winnerName && v.vendorName.toLowerCase().trim() === winnerName.toLowerCase().trim();
-      header1.push(`${v.vendorName.toUpperCase()}${isWinner ? " (L1 / RECOMMENDED)" : ""}`);
+      const isSelected = selectedVendorName && v.vendorName.toLowerCase().trim() === selectedVendorName.toLowerCase().trim();
+      header1.push(`${v.vendorName.toUpperCase()}${isSelected ? " (L1 / SELECTED)" : ""}`);
       header1.push("");
     });
     excelRows.push(header1);
@@ -776,7 +776,7 @@ export function downloadBiddingsExcel(rfq: RfqExportData, quotes: QuoteExportDat
     excelRows.push([]);
     excelRows.push([`Note: ${rfq.title.toUpperCase()} FOR ${deptName.toUpperCase()}`]);
     excelRows.push([
-      `Suggestion: Comparing these quotations "${winnerName}" supplier price is low, so we suggest "${winnerName}"`,
+      `Suggestion: Comparing these quotations "${selectedVendorName}" supplier price is low, so we suggest "${selectedVendorName}"`,
     ]);
     excelRows.push([]);
     excelRows.push(["Prepared By", "", "Checked By", "", "Approved By"]);
