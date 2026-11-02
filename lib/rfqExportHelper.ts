@@ -342,22 +342,31 @@ export function downloadBiddingsPdf(rfq: RfqExportData, quotes: QuoteExportData[
     const todayFormatted = format(new Date(), "dd/MM/yyyy");
 
     // Top Header - Official DXN Boxed Header (matching user reference)
-    const headerBottomY = drawDxnOfficialHeaderBox(doc, 14, 7, pageWidth - 28, 19);
+    let currentY = drawDxnOfficialHeaderBox(doc, 14, 7, pageWidth - 28, 19);
+    currentY += 4.5;
 
+    // CS Title - clean redundant prefix and dynamically calculate wrapped lines to prevent any overlap
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
     doc.setTextColor(15, 23, 42);
-    const csTitle = `COMPARATIVE STATEMENT OF ${rfq.title.toUpperCase()} FOR ${deptName.toUpperCase()}`;
-    doc.text(csTitle, 14, headerBottomY + 5);
+    const cleanTitle = rfq.title.replace(/^RFQ (FOR|for) /i, "").trim().toUpperCase();
+    const csTitle = `COMPARATIVE STATEMENT OF ${cleanTitle} FOR ${deptName.toUpperCase()}`;
+    const csTitleLines = doc.splitTextToSize(csTitle, pageWidth - 28);
+    doc.text(csTitleLines, 14, currentY);
+    currentY += csTitleLines.length * 4.2 + 1.5;
 
-    // Reference and Date Row
+    // Reference and Date Row (strictly below the title)
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
-    doc.text(`REF NO: ${refNo}`, 14, headerBottomY + 9.5);
-    doc.text(`Date: ${todayFormatted}`, pageWidth - 14, headerBottomY + 9.5, { align: "right" });
+    doc.setTextColor(30, 41, 59);
+    doc.text(`REF NO: ${refNo}`, 14, currentY);
+    doc.text(`Date: ${todayFormatted}`, pageWidth - 14, currentY, { align: "right" });
+    currentY += 4.5;
 
+    // STATEMENT label
     doc.setFontSize(8);
-    doc.text("STATEMENT:", 14, headerBottomY + 13.5);
+    doc.text("STATEMENT:", 14, currentY);
+    currentY += 3.5;
 
     // Parse Requirement Items
     const parsedItems = parseItemDescription(rfq.description || rfq.title);
@@ -545,7 +554,7 @@ export function downloadBiddingsPdf(rfq: RfqExportData, quotes: QuoteExportData[
 
     // Render AutoTable with Landscape geometry
     autoTable(doc, {
-      startY: headerBottomY + 16,
+      startY: currentY,
       head: [headRow1, headRow2],
       body: tableBody,
       theme: "grid",
@@ -563,30 +572,35 @@ export function downloadBiddingsPdf(rfq: RfqExportData, quotes: QuoteExportData[
         valign: "middle",
       },
       columnStyles: {
-        0: { cellWidth: 10, halign: "center" },
-        1: { cellWidth: 70 },
+        0: { cellWidth: 14, halign: "center" }, // enough width for "SL.NO" on 1 line
+        1: { cellWidth: 66 },
         2: { cellWidth: 12, halign: "center" },
         3: { cellWidth: 14, halign: "center" },
       },
     });
 
-    const finalY = (doc as any).lastAutoTable.finalY + 4;
+    let finalY = (doc as any).lastAutoTable.finalY + 4;
 
-    // Bottom Note & Official Suggestion Box (matching Image 2)
+    // Bottom Note & Official Suggestion Box (with dynamic line splitting to prevent overlap)
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
     doc.setTextColor(15, 23, 42);
-    doc.text(`Note: ${rfq.title.toUpperCase()} FOR ${deptName.toUpperCase()}`, 14, finalY);
+    const noteText = `Note: ${cleanTitle} FOR ${deptName.toUpperCase()}`;
+    const noteLines = doc.splitTextToSize(noteText, pageWidth - 28);
+    doc.text(noteLines, 14, finalY);
+    finalY += noteLines.length * 3.8 + 1.5;
 
     const suggestionText = `Suggestion :Comparing these ${numVendors > 1 ? `${numVendors} ` : ""}quotations "${winnerName}" supplier price is low, so we suggest "${winnerName}"`;
+    const suggestionLines = doc.splitTextToSize(suggestionText, pageWidth - 28);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
     doc.setTextColor(185, 28, 28); // red-700
-    doc.text(suggestionText, 14, finalY + 5.5);
+    doc.text(suggestionLines, 14, finalY);
+    finalY += suggestionLines.length * 4 + 2;
 
     // Signatures Trail - Exactly Matching Image 2
     autoTable(doc, {
-      startY: finalY + 9,
+      startY: finalY + 1.5,
       head: [["Prepared By", "Checked By", "Approved By"]],
       body: [
         [
