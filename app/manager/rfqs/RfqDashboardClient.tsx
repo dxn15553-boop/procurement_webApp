@@ -31,7 +31,14 @@ import { toast } from "sonner";
 import { VendorSelectionModal } from "@/components/procurement/VendorSelectionModal";
 import { ComparativeStatementModal } from "@/components/procurement/ComparativeStatementModal";
 import { SourceInformationModal, SourceDetailsData } from "@/components/procurement/SourceInformationModal";
-import { downloadRfqPdf, downloadBiddingsPdf, downloadBiddingsExcel, QuoteExportData } from "@/lib/rfqExportHelper";
+import {
+  downloadRfqPdf,
+  downloadBiddingsPdf,
+  downloadBiddingsExcel,
+  downloadConsolidatedBiddingsPdf,
+  downloadConsolidatedBiddingsExcel,
+  QuoteExportData,
+} from "@/lib/rfqExportHelper";
 
 interface RfqItem {
   id: string;
@@ -122,6 +129,9 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
   const [selectedSourceForDetails, setSelectedSourceForDetails] = useState<SourceDetailsData | null>(null);
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
   const [selectedSourceFilter, setSelectedSourceFilter] = useState<string>("ALL");
+
+  // Multi-Source Consolidated Bidding Export State
+  const [selectedRfqIdsForBatch, setSelectedRfqIdsForBatch] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadData();
@@ -218,6 +228,64 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
   const displayedRfqs = filteredRfqs.filter((r) =>
     selectedSourceFilter === "ALL" ? true : r.sourceNo === selectedSourceFilter
   );
+
+  const toggleSelectRfqForBatch = (rfqId: string) => {
+    setSelectedRfqIdsForBatch((prev) => {
+      const next = new Set(prev);
+      if (next.has(rfqId)) {
+        next.delete(rfqId);
+      } else {
+        next.add(rfqId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAllDisplayed = () => {
+    if (selectedRfqIdsForBatch.size === displayedRfqs.length && displayedRfqs.length > 0) {
+      setSelectedRfqIdsForBatch(new Set());
+    } else {
+      setSelectedRfqIdsForBatch(new Set(displayedRfqs.map((r) => r.id)));
+    }
+  };
+
+  const getConsolidatedBatchItems = () => {
+    const targetRfqs =
+      selectedRfqIdsForBatch.size > 0
+        ? displayedRfqs.filter((r) => selectedRfqIdsForBatch.has(r.id))
+        : displayedRfqs;
+
+    return targetRfqs.map((rfq) => ({
+      rfq,
+      quotes: rfq.vendors.flatMap((vendor) =>
+        (vendor.quotations || []).map((quote) => ({
+          ...quote,
+          vendorId: vendor.vendorId,
+          vendorName: vendor.vendorName,
+          vendorEmail: vendor.vendorEmail,
+          accessKey: vendor.accessKey,
+        }))
+      ),
+    }));
+  };
+
+  const handleExportConsolidatedPdf = () => {
+    const items = getConsolidatedBatchItems();
+    if (items.length === 0) {
+      toast.error("No source requests available for consolidated export.");
+      return;
+    }
+    downloadConsolidatedBiddingsPdf(items);
+  };
+
+  const handleExportConsolidatedExcel = () => {
+    const items = getConsolidatedBatchItems();
+    if (items.length === 0) {
+      toast.error("No source requests available for consolidated export.");
+      return;
+    }
+    downloadConsolidatedBiddingsExcel(items);
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -461,6 +529,72 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
             </div>
           )}
 
+          {/* CONSOLIDATED / MULTI-SOURCE COMPARATIVE STATEMENT TOOLBAR */}
+          {displayedRfqs.length > 0 && (
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-xl bg-linear-to-r from-slate-900 via-slate-850 to-slate-800 text-white shadow-md border border-slate-700/80">
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className="flex items-center gap-2 cursor-pointer select-none font-bold text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-600 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={selectedRfqIdsForBatch.size === displayedRfqs.length && displayedRfqs.length > 0}
+                    onChange={toggleSelectAllDisplayed}
+                    className="w-4 h-4 text-red-600 rounded focus:ring-red-500 cursor-pointer accent-red-600"
+                  />
+                  <span>
+                    {selectedRfqIdsForBatch.size === displayedRfqs.length && displayedRfqs.length > 0
+                      ? "Deselect All Sources"
+                      : "Select All Sources"}
+                  </span>
+                </label>
+
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="px-2.5 py-1 rounded-md bg-slate-700 text-slate-200 font-mono font-bold text-[11px]">
+                    {selectedRfqIdsForBatch.size > 0
+                      ? `${selectedRfqIdsForBatch.size} of ${displayedRfqs.length} Selected`
+                      : `All ${displayedRfqs.length} Sources Ready`}
+                  </span>
+                  <span className="text-slate-400 text-xs hidden lg:inline">
+                    {selectedRfqIdsForBatch.size > 0
+                      ? "Export selected sources into a single Comparative Statement"
+                      : "Exports all active sources if no individual selection is made"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleExportConsolidatedPdf}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-95"
+                  title="Export Official DXN Consolidated Comparative Statement across multiple sources (PDF)"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>
+                    Consolidated CS (PDF)
+                    <span className="ml-1.5 px-1.5 py-0.5 rounded bg-black/25 text-[10px] font-mono">
+                      {selectedRfqIdsForBatch.size > 0 ? selectedRfqIdsForBatch.size : displayedRfqs.length} Sources
+                    </span>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportConsolidatedExcel}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-95"
+                  title="Export Multi-Tab Excel Workbook with Master Summary & Source breakdown"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>
+                    Consolidated CS (Excel)
+                    <span className="ml-1.5 px-1.5 py-0.5 rounded bg-black/25 text-[10px] font-mono">
+                      {selectedRfqIdsForBatch.size > 0 ? selectedRfqIdsForBatch.size : displayedRfqs.length} Sheets
+                    </span>
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {displayedRfqs.length === 0 ? (
             <div className="p-12 text-center text-xs text-neutral-500 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
               No active Source Request biddings found matching your filter.
@@ -539,22 +673,36 @@ export function RfqDashboardClient({ userRole }: { userRole: string }) {
                         </span>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const dataToOpen = matchingSource || {
-                            id: rfq.sourceNo,
-                            description: rfq.description || rfq.title,
-                          };
-                          setSelectedSourceForDetails(dataToOpen);
-                          setIsSourceModalOpen(true);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700 font-bold text-xs cursor-pointer shadow-2xs transition-colors"
-                        title="Open complete source requisition dossier modal"
-                      >
-                        <Info className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                        <span>View Source Dossier</span>
-                      </button>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <label className="inline-flex items-center gap-2 cursor-pointer select-none px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:border-red-400 text-xs font-semibold transition-all shadow-2xs">
+                          <input
+                            type="checkbox"
+                            checked={selectedRfqIdsForBatch.has(rfq.id)}
+                            onChange={() => toggleSelectRfqForBatch(rfq.id)}
+                            className="w-4 h-4 text-red-600 rounded focus:ring-red-500 cursor-pointer accent-red-600"
+                          />
+                          <span className={selectedRfqIdsForBatch.has(rfq.id) ? "text-red-600 dark:text-red-400 font-bold" : "text-neutral-600 dark:text-neutral-300"}>
+                            {selectedRfqIdsForBatch.has(rfq.id) ? "Included in Batch" : "Select for Batch"}
+                          </span>
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const dataToOpen = matchingSource || {
+                              id: rfq.sourceNo,
+                              description: rfq.description || rfq.title,
+                            };
+                            setSelectedSourceForDetails(dataToOpen);
+                            setIsSourceModalOpen(true);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700 font-bold text-xs cursor-pointer shadow-2xs transition-colors"
+                          title="Open complete source requisition dossier modal"
+                        >
+                          <Info className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                          <span>View Source Dossier</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Source Details Grid */}
